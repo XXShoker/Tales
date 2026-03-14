@@ -31,11 +31,8 @@ p, li, .stMarkdown, .stText {
 }
 
 /* Боковая панель */
-.css-1d391kg, .css-1wrcr25 {
+.css-1d391kg, .css-1wrcr25, section[data-testid="stSidebar"] {
     background-color: #f5e9d8 !important;
-}
-.sidebar-content {
-    background-color: #f5e9d8;
 }
 
 /* Кнопки */
@@ -58,7 +55,7 @@ p, li, .stMarkdown, .stText {
     transform: translateY(-2px);
 }
 
-/* Кнопки в сайдбаре (сменить сказку и т.д.) */
+/* Кнопки в сайдбаре */
 .sidebar .stButton > button {
     background-color: #cbb89e;
     border-color: #9b7e62;
@@ -68,7 +65,14 @@ p, li, .stMarkdown, .stText {
     background-color: #b89e7c;
 }
 
-/* Карточки сказок на главной */
+/* ===== КАРТОЧКИ СКАЗОК ===== */
+/* Сама колонка */
+div[data-testid="column"] {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Контейнер внутри колонки (с рамкой) */
 div[data-testid="column"] > div {
     background-color: #fffaf0;
     border-radius: 20px !important;
@@ -85,7 +89,7 @@ div[data-testid="column"] > div:hover {
     box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
 
-/* Изображения обложек */
+/* Изображение */
 div[data-testid="column"] img {
     height: 200px !important;
     width: 100% !important;
@@ -95,9 +99,28 @@ div[data-testid="column"] img {
     border: 1px solid #d4b68a;
 }
 
-/* Кнопка "Начать" прижата к низу карточки */
+/* Заголовок сказки */
+div[data-testid="column"] h4 {
+    margin: 0 0 5px 0 !important;
+    font-size: 1.2rem;
+}
+
+/* Описание (текст) – растягивается, занимает всё доступное место */
+div[data-testid="column"] p {
+    flex-grow: 1;
+    margin-bottom: 10px !important;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+/* Кнопка "Начать" – прижата к низу */
 div[data-testid="column"] .stButton {
     margin-top: auto;
+    width: 100%;
+}
+
+div[data-testid="column"] .stButton button {
+    width: 100%;
 }
 
 /* Сообщения чата */
@@ -135,8 +158,8 @@ div[data-testid="column"] .stButton {
     background-color: #b5926a !important;
 }
 
-/* Ссылка доната */
-.stLinkButton a {
+/* Ссылка доната (fallback для старых версий) */
+.stLinkButton a, a button {
     background-color: #d4b68a;
     color: #2a1c0e;
     border-radius: 30px;
@@ -144,15 +167,17 @@ div[data-testid="column"] .stButton {
     text-decoration: none;
     font-weight: 600;
     transition: background-color 0.3s;
+    border: none;
+    cursor: pointer;
 }
 
-.stLinkButton a:hover {
+.stLinkButton a:hover, a button:hover {
     background-color: #b89e7c;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# --- Инициализация состояния (без изменений) ---
+# --- Инициализация состояния ---
 if "selected_tale" not in st.session_state:
     st.session_state.selected_tale = None
 if "scene_id" not in st.session_state:
@@ -164,9 +189,10 @@ if "scenes" not in st.session_state:
 if "scene_history" not in st.session_state:
     st.session_state.scene_history = []
 if "achieved_endings" not in st.session_state:
-    st.session_state.achieved_endings = {}
+    st.session_state.achieved_endings = {}  # {tale_name: set(endings_ids)}
 
 def count_total_endings(tale_name):
+    """Подсчитывает количество концовок (сцен с options=[]) в сказке"""
     tale = tales.get(tale_name)
     if not tale:
         return 0
@@ -177,6 +203,7 @@ def count_total_endings(tale_name):
     return count
 
 def get_ending_stats(tale_name):
+    """Возвращает (количество открытых, всего)"""
     opened = len(st.session_state.achieved_endings.get(tale_name, set()))
     total = count_total_endings(tale_name)
     return opened, total
@@ -220,7 +247,7 @@ def reset_to_main():
     st.session_state.scenes = {}
     st.session_state.scene_history = []
 
-# --- Боковая панель (с иконкой) ---
+# --- Боковая панель ---
 with st.sidebar:
     st.markdown("## 📖 О проекте")
     st.markdown(
