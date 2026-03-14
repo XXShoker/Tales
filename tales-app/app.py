@@ -320,9 +320,6 @@ if st.session_state.selected_tale is None:
         else:
             img_html = f'<img src="https://via.placeholder.com/280x160/ffe6f0/ff69b4?text=✨+{tale_name}" alt="{tale_name}">'
         
-        # Создаем уникальный ключ для кнопки
-        button_key = f"btn_{tale_name}"
-        
         return f'''
         <a href="?tale={tale_name}" target="_self" style="text-decoration: none; color: inherit;">
             <div class="tale-card">
@@ -335,8 +332,9 @@ if st.session_state.selected_tale is None:
         '''
 
     # Секция "Советские сказки"
-    st.markdown('<div class="carousel-title">📚 Советские сказки</div>', unsafe_allow_html=True)
+    st.markdown("## 📚 Советские сказки")
     
+    # Создаем карусель
     carousel_html = '<div class="carousel-container">'
     for tale_name in soviet_tales:
         if tale_name in all_tales:
@@ -347,7 +345,7 @@ if st.session_state.selected_tale is None:
 
     # Секция "Новые сказки"
     if new_tales and any(t in all_tales for t in new_tales):
-        st.markdown('<div class="carousel-title">🆕 Новые сказки</div>', unsafe_allow_html=True)
+        st.markdown("## 🆕 Новые сказки")
         
         carousel_html = '<div class="carousel-container">'
         for tale_name in new_tales:
