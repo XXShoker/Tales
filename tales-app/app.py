@@ -17,8 +17,6 @@ if "scene_history" not in st.session_state:
     st.session_state.scene_history = []
 if "achieved_endings" not in st.session_state:
     st.session_state.achieved_endings = {}  # {tale_name: set(endings_ids)}
-if "total_endings" not in st.session_state:
-    st.session_state.total_endings = {}     # {tale_name: count} (можно вычислить, но проще захардкодить или подсчитать)
 
 def count_total_endings(tale_name):
     """Подсчитывает количество концовок (сцен с options=[]) в сказке"""
@@ -71,7 +69,6 @@ def go_back():
         st.rerun()
 
 def reset_to_main():
-    # При выходе не сбрасываем achieved_endings – они сохраняются между сессиями
     st.session_state.selected_tale = None
     st.session_state.scene_id = "start"
     st.session_state.messages = []
@@ -88,11 +85,12 @@ with st.sidebar:
         "Все сказки абсолютно бесплатны."
     )
     st.markdown("---")
+    # Кнопка доната с актуальной ссылкой
     try:
-        st.link_button("💖 Поддержать донатом", "https://donate.stream/your-link", width='stretch')
+        st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", width='stretch')
     except AttributeError:
         st.markdown(
-            '<a href="https://donate.stream/your-link" target="_blank">'
+            '<a href="https://donate.stream/donate_69b56f4953f16" target="_blank">'
             '<button style="background-color:#FF4B4B; color:white; padding:0.5rem 1rem; '
             'border:none; border-radius:0.5rem; width:100%; font-size:1rem; '
             'cursor:pointer;">💖 Поддержать донатом</button></a>',
@@ -176,9 +174,22 @@ else:
                 st.markdown(f"## {type_emoji} **Концовка #{ending_num}**")
                 st.markdown(f"**Тип:** {ending_type.capitalize()}")
                 
+                # --- Дополнительное сообщение в зависимости от типа ---
+                if ending_type == "happy":
+                    st.success("🎉 Поздравляем! Это счастливый конец!")
+                else:
+                    st.info("😕 Это не счастливый конец. Попробуй пройти сказку снова, возможно, ты найдёшь счастливый конец!")
+                
+                # Показываем общее количество концовок в этой сказке
+                opened, total = get_ending_stats(tale)
+                st.markdown(f"*Всего в этой сказке **{total}** концовок. Ты нашёл уже **{opened}**.*")
+            else:
+                # Старая сказка без типов концовок
+                st.markdown("---")
+                st.markdown("🎉 **Конец сказки!**")
+            
             # Кнопки после концовки
             st.markdown("---")
-            st.markdown("🎉 **Конец сказки!**")
             if len(st.session_state.scene_history) > 1:
                 if st.button("↩️ Вернуться к предыдущему выбору", width='stretch'):
                     go_back()
