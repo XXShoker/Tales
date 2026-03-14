@@ -92,7 +92,7 @@ st.markdown("""
         padding: 30px;
         border: 2px solid #e9d9c4;
         box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        height: 800px;
+        height: 500px;
         width: 100%;
         display: flex;
         flex-direction: column;
@@ -108,7 +108,7 @@ st.markdown("""
     /* Изображения */
     div[data-testid="column"] img {
         width: 100%;
-        height: 500px;
+        height: 300px;
         object-fit: cover;
         border-radius: 15px;
         border: 2px solid #d4b68a;
