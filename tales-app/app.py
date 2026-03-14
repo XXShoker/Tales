@@ -91,7 +91,7 @@ st.markdown("""
         box-shadow: 0 10px 25px rgba(93, 58, 26, 0.1);
         border: 2px solid #e9d9c4;
         transition: all 0.3s ease;
-        height: 600px;  /* Увеличено в 2 раза */
+        height: 1200px;  /* Увеличено в 2 раза */
         display: flex;
         flex-direction: column;
         backdrop-filter: blur(5px);
