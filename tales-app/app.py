@@ -65,36 +65,34 @@ p, li, .stMarkdown, .stText {
     background-color: #b89e7c;
 }
 
-/* ===== КАРУСЕЛЬ СО СКАЗКАМИ ===== */
-/* Контейнер для горизонтальной прокрутки */
-.scroll-container {
+/* Карусель */
+.carousel-container {
+    display: flex;
+    flex-wrap: nowrap;
     overflow-x: auto;
-    white-space: nowrap;
+    gap: 20px;
     padding: 10px 0;
-    margin-bottom: 20px;
     scrollbar-width: thin;
     scrollbar-color: #b5926a #f5e9d8;
 }
 
-.scroll-container::-webkit-scrollbar {
+.carousel-container::-webkit-scrollbar {
     height: 8px;
 }
-.scroll-container::-webkit-scrollbar-track {
+
+.carousel-container::-webkit-scrollbar-track {
     background: #f5e9d8;
     border-radius: 10px;
 }
-.scroll-container::-webkit-scrollbar-thumb {
+
+.carousel-container::-webkit-scrollbar-thumb {
     background: #b5926a;
     border-radius: 10px;
 }
 
-/* Карточка сказки */
-.tale-card {
-    display: inline-block;
+.carousel-card {
+    flex: 0 0 auto;
     width: 240px;
-    margin-right: 20px;
-    vertical-align: top;
-    white-space: normal;
     background-color: #fffaf0;
     border-radius: 20px;
     padding: 15px;
@@ -103,12 +101,11 @@ p, li, .stMarkdown, .stText {
     transition: box-shadow 0.3s ease;
 }
 
-.tale-card:hover {
+.carousel-card:hover {
     box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
 
-/* Изображение в карточке */
-.tale-card img {
+.carousel-card img {
     width: 100%;
     height: 150px;
     object-fit: cover;
@@ -117,20 +114,18 @@ p, li, .stMarkdown, .stText {
     margin-bottom: 10px;
 }
 
-/* Заголовок сказки */
-.tale-card h4 {
+.carousel-card h4 {
     margin: 0 0 5px 0;
     font-size: 1.2rem;
     white-space: normal;
 }
 
-/* Описание */
-.tale-card p {
+.carousel-card p {
     font-size: 0.9rem;
     line-height: 1.4;
     margin: 0 0 10px 0;
     white-space: normal;
-    height: 60px; /* фиксированная высота для двух-трёх строк */
+    height: 60px;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
@@ -138,12 +133,11 @@ p, li, .stMarkdown, .stText {
     -webkit-box-orient: vertical;
 }
 
-/* Кнопка внутри карточки */
-.tale-card .stButton {
+.carousel-card .stButton {
     width: 100%;
 }
 
-.tale-card .stButton button {
+.carousel-card .stButton button {
     width: 100%;
     padding: 0.4rem;
     font-size: 0.9rem;
@@ -164,10 +158,10 @@ p, li, .stMarkdown, .stText {
 
 /* Адаптация для мобильных */
 @media (max-width: 600px) {
-    .tale-card {
+    .carousel-card {
         width: 200px;
     }
-    .tale-card img {
+    .carousel-card img {
         height: 120px;
     }
     h1 {
@@ -277,7 +271,7 @@ with st.sidebar:
     )
     st.markdown("---")
     try:
-        st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", width='stretch')
+        st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", use_container_width=True)
     except AttributeError:
         st.markdown(
             '<a href="https://donate.stream/donate_69b56f4953f16" target="_blank">'
@@ -297,10 +291,10 @@ with st.sidebar:
         st.markdown("---")
     
     if st.session_state.selected_tale is not None:
-        if st.button("🔄 Сменить сказку", width='stretch'):
+        if st.button("🔄 Сменить сказку", use_container_width=True):
             reset_to_main()
             st.rerun()
-        if st.button("❌ Завершить и выйти", width='stretch'):
+        if st.button("❌ Завершить и выйти", use_container_width=True):
             reset_to_main()
             st.rerun()
 
@@ -314,27 +308,27 @@ if st.session_state.selected_tale is None:
     soviet_tales = ["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"]
     new_tales = ["Путешествие в Волшебный лес"]
 
-    # Функция для отрисовки карточки сказки
+    # Функция для отрисовки карточки сказки (без использования st.container, чтобы не ломать верстку)
     def render_tale_card(tale_name):
         cover_path = tales[tale_name].get("cover", "")
         if cover_path and os.path.exists(cover_path):
-            st.image(cover_path)
+            st.image(cover_path, use_container_width=True)
         else:
-            st.image("https://via.placeholder.com/240x150/ffe6f0/ff69b4?text=✨+Сказка")
+            st.image("https://via.placeholder.com/240x150/ffe6f0/ff69b4?text=✨+Сказка", use_container_width=True)
         st.markdown(f"#### {tale_name}")
         if tales[tale_name].get("description"):
             st.markdown(tales[tale_name]["description"])
-        if st.button(f"✨ Начать", key=f"choose_{tale_name}"):
+        if st.button(f"✨ Начать", key=f"choose_{tale_name}", use_container_width=True):
             start_tale(tale_name)
             st.rerun()
 
     # Секция "Советские сказки"
     st.markdown("## 📚 Советские сказки")
     with st.container():
-        st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
+        st.markdown('<div class="carousel-container">', unsafe_allow_html=True)
         for tale_name in soviet_tales:
             if tale_name in all_tales:
-                st.markdown('<div class="tale-card">', unsafe_allow_html=True)
+                st.markdown('<div class="carousel-card">', unsafe_allow_html=True)
                 render_tale_card(tale_name)
                 st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
@@ -342,10 +336,10 @@ if st.session_state.selected_tale is None:
     # Секция "Новые сказки"
     st.markdown("## 🆕 Новые сказки")
     with st.container():
-        st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
+        st.markdown('<div class="carousel-container">', unsafe_allow_html=True)
         for tale_name in new_tales:
             if tale_name in all_tales:
-                st.markdown('<div class="tale-card">', unsafe_allow_html=True)
+                st.markdown('<div class="carousel-card">', unsafe_allow_html=True)
                 render_tale_card(tale_name)
                 st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
@@ -353,7 +347,7 @@ if st.session_state.selected_tale is None:
     st.markdown("---")
     st.markdown("🌟 *Все сказки бесплатны. Если хотите поддержать проект, воспользуйтесь кнопкой в боковой панели.*")
 else:
-    # Отображаем историю сообщений (без изменений)
+    # Отображаем историю сообщений
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
@@ -395,23 +389,23 @@ else:
             
             st.markdown("---")
             if len(st.session_state.scene_history) > 1:
-                if st.button("↩️ Вернуться к предыдущему выбору", width='stretch'):
+                if st.button("↩️ Вернуться к предыдущему выбору", use_container_width=True):
                     go_back()
-            if st.button("🔄 Начать эту сказку заново", width='stretch'):
+            if st.button("🔄 Начать эту сказку заново", use_container_width=True):
                 start_tale(st.session_state.selected_tale)
                 st.rerun()
         else:
             st.markdown("### Твой выбор:")
             for opt in current_scene["options"]:
-                if st.button(opt["text"], key=f"choice_{opt['next']}", width='stretch'):
+                if st.button(opt["text"], key=f"choice_{opt['next']}", use_container_width=True):
                     handle_choice(opt["text"], opt["next"])
                     st.rerun()
             if len(st.session_state.scene_history) > 1:
                 st.markdown("---")
-                if st.button("↩️ Назад к предыдущему выбору", width='stretch'):
+                if st.button("↩️ Назад к предыдущему выбору", use_container_width=True):
                     go_back()
     else:
         st.error("⚠️ Сцена не найдена. Вернитесь к выбору сказок.")
-        if st.button("⬅️ К выбору сказок", width='stretch'):
+        if st.button("⬅️ К выбору сказок", use_container_width=True):
             reset_to_main()
             st.rerun()
