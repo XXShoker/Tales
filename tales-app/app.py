@@ -4,89 +4,122 @@ from tales_data import tales
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="wide")
 
-# --- Стили ---
+# --- Стили для Netflix-карусели ---
 st.markdown("""
 <style>
-/* Подключаем шрифты */
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Open+Sans:wght@400;600&display=swap');
-
-/* Общий фон – старая бумага */
-.stApp {
-    background-color: #fef9e7;
-}
-
-/* Заголовки */
-h1, h2, h3, h4, h5, h6 {
-    font-family: 'Cormorant Garamond', serif;
-    color: #5d3a1a;
-    font-weight: 600;
-}
-
-/* Боковая панель */
-.css-1d391kg, section[data-testid="stSidebar"] {
-    background-color: #f5e9d8 !important;
-}
-
-/* Карточки в карусели */
-.carousel-container {
-    display: flex;
-    overflow-x: auto;
-    gap: 20px;
-    padding: 20px 0;
-    scrollbar-width: thin;
-}
-
-.carousel-container .stButton > button {
-    width: 280px;
-    height: 380px;
-    white-space: normal;
-    word-wrap: break-word;
-    background-color: #fffaf0;
-    color: #3e2c1b;
-    border: 1px solid #e9d9c4;
-    border-radius: 16px;
-    padding: 16px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    text-align: left;
-    font-family: 'Open Sans', sans-serif;
-}
-
-.carousel-container .stButton > button:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px rgba(0,0,0,0.12);
-    background-color: #fffaf0;
-}
-
-.carousel-container img {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-    border-radius: 12px;
-    margin-bottom: 10px;
-}
-
-.carousel-container h4 {
-    margin: 0 0 5px 0;
-    font-size: 1.3rem;
-    color: #5d3a1a;
-}
-
-.carousel-container p {
-    font-size: 0.9rem;
-    margin: 0;
-    flex-grow: 1;
-}
-
-/* Адаптация */
-@media (max-width: 600px) {
-    .carousel-container .stButton > button {
-        width: 220px;
+    /* Netflix-style горизонтальный скролл */
+    div[data-testid="column"] {
+        min-width: 280px;
+        max-width: 280px;
+        width: 280px !important;
+        flex: 0 0 280px !important;
+        padding: 0 5px !important;
     }
-}
+    
+    /* Контейнер для горизонтального скролла */
+    .stHorizontalBlock {
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        gap: 16px !important;
+        padding: 10px 0 20px 0 !important;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Скрываем стандартные отступы Streamlit */
+    .stHorizontalBlock::before, .stHorizontalBlock::after {
+        display: none !important;
+    }
+    
+    /* Карточка сказки */
+    .st-emotion-cache-ocqkz7, .st-emotion-cache-1r6slb0 {
+        width: 100% !important;
+        background-color: #fffaf0;
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        border: 1px solid #e9d9c4;
+        transition: all 0.3s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .st-emotion-cache-ocqkz7:hover, .st-emotion-cache-1r6slb0:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+    }
+    
+    /* Изображение в карточке */
+    .st-emotion-cache-ocqkz7 img, .st-emotion-cache-1r6slb0 img {
+        width: 100%;
+        height: 160px;
+        object-fit: cover;
+        border-radius: 12px;
+        margin-bottom: 12px;
+    }
+    
+    /* Заголовок */
+    .st-emotion-cache-ocqkz7 h4, .st-emotion-cache-1r6slb0 h4 {
+        margin: 0 0 8px 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #5d3a1a;
+    }
+    
+    /* Описание */
+    .st-emotion-cache-ocqkz7 p, .st-emotion-cache-1r6slb0 p {
+        font-size: 0.9rem;
+        line-height: 1.4;
+        margin: 0 0 12px 0;
+        flex-grow: 1;
+        color: #3e2c1b;
+    }
+    
+    /* Кнопка */
+    .st-emotion-cache-ocqkz7 .stButton button, .st-emotion-cache-1r6slb0 .stButton button {
+        width: 100%;
+        background-color: #e6d5b8;
+        color: #3e2c1b;
+        border: 1px solid #b5926a;
+        border-radius: 30px;
+        padding: 8px 16px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        margin-top: auto;
+    }
+    
+    .st-emotion-cache-ocqkz7 .stButton button:hover, .st-emotion-cache-1r6slb0 .stButton button:hover {
+        background-color: #d4b68a;
+        transform: scale(1.02);
+    }
+    
+    /* Боковая панель */
+    section[data-testid="stSidebar"] {
+        background-color: #f5e9d8;
+    }
+    
+    /* Заголовки секций */
+    .carousel-title {
+        font-size: 1.8rem;
+        margin: 20px 0 10px 0;
+        color: #5d3a1a;
+        font-weight: 600;
+    }
+    
+    /* Адаптация для мобильных */
+    @media (max-width: 600px) {
+        div[data-testid="column"] {
+            min-width: 220px;
+            max-width: 220px;
+            width: 220px !important;
+            flex: 0 0 220px !important;
+        }
+        
+        .st-emotion-cache-ocqkz7 img, .st-emotion-cache-1r6slb0 img {
+            height: 130px;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -187,39 +220,37 @@ if st.session_state.selected_tale is None:
     soviet_tales = ["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"]
     new_tales = ["Путешествие в Волшебный лес"]
 
-    # Советские сказки
-    st.markdown("## 📚 Советские сказки")
+    # Советские сказки - горизонтальный скролл
+    st.markdown('<div class="carousel-title">📚 Советские сказки</div>', unsafe_allow_html=True)
     
-    # Создаем горизонтальный скролл с помощью колонок
-    cols = st.columns(len(soviet_tales))
-    for i, tale_name in enumerate(soviet_tales):
-        if tale_name in all_tales:
-            with cols[i]:
-                with st.container():
-                    # Картинка
+    # Создаем контейнер с горизонтальным скроллом
+    with st.container():
+        cols = st.columns(len(soviet_tales))
+        for i, tale_name in enumerate(soviet_tales):
+            if tale_name in all_tales:
+                with cols[i]:
+                    # Карточка сказки
                     cover_path = tales[tale_name].get("cover", "")
                     if cover_path and os.path.exists(cover_path):
                         st.image(cover_path, use_container_width=True)
                     else:
                         st.image("https://via.placeholder.com/280x160/ffe6f0/ff69b4?text=✨", use_container_width=True)
                     
-                    # Название и описание
                     st.markdown(f"#### {tale_name}")
                     st.markdown(tales[tale_name].get("description", ""))
                     
-                    # Кнопка
-                    if st.button("✨ Начать", key=f"choose_{tale_name}", use_container_width=True):
+                    if st.button("✨ Начать", key=f"soviet_{tale_name}", use_container_width=True):
                         start_tale(tale_name)
                         st.rerun()
 
-    # Новые сказки
+    # Новые сказки - горизонтальный скролл
     if new_tales:
-        st.markdown("## 🆕 Новые сказки")
-        cols = st.columns(len(new_tales))
-        for i, tale_name in enumerate(new_tales):
-            if tale_name in all_tales:
-                with cols[i]:
-                    with st.container():
+        st.markdown('<div class="carousel-title">🆕 Новые сказки</div>', unsafe_allow_html=True)
+        with st.container():
+            cols = st.columns(len(new_tales))
+            for i, tale_name in enumerate(new_tales):
+                if tale_name in all_tales:
+                    with cols[i]:
                         cover_path = tales[tale_name].get("cover", "")
                         if cover_path and os.path.exists(cover_path):
                             st.image(cover_path, use_container_width=True)
@@ -229,7 +260,7 @@ if st.session_state.selected_tale is None:
                         st.markdown(f"#### {tale_name}")
                         st.markdown(tales[tale_name].get("description", ""))
                         
-                        if st.button("✨ Начать", key=f"choose_{tale_name}_new", use_container_width=True):
+                        if st.button("✨ Начать", key=f"new_{tale_name}", use_container_width=True):
                             start_tale(tale_name)
                             st.rerun()
 
