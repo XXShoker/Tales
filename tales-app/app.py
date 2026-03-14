@@ -28,29 +28,17 @@ def start_tale(tale_name):
     st.session_state.scene_id = "start"
     st.session_state.messages = []
     st.session_state.scene_history = ["start"]
-
     tale = tales[tale_name]
     st.session_state.scenes = tale["scenes"]
-
     first_scene = tale["scenes"]["start"]
-    st.session_state.messages.append({
-        "role": "assistant",
-        "content": first_scene["text"]
-    })
+    st.session_state.messages.append({"role": "assistant", "content": first_scene["text"]})
 
 def handle_choice(text, next_scene):
-    st.session_state.messages.append({
-        "role": "user",
-        "content": text
-    })
+    st.session_state.messages.append({"role": "user", "content": text})
     st.session_state.scene_id = next_scene
     st.session_state.scene_history.append(next_scene)
-
     scene = st.session_state.scenes[next_scene]
-    st.session_state.messages.append({
-        "role": "assistant",
-        "content": scene["text"]
-    })
+    st.session_state.messages.append({"role": "assistant", "content": scene["text"]})
 
 def go_back():
     if len(st.session_state.scene_history) > 1:
@@ -140,21 +128,20 @@ def show_carousel(tales_list):
     </style>
     <div class="carousel">
     """
-
     for tale_name in tales_list:
         if tale_name not in tales:
             continue
         tale = tales[tale_name]
-        cover_path = tale.get("cover","")
+        cover_path = tale.get("cover", "")
         img_html = ""
         if cover_path and os.path.exists(cover_path):
             img_base64 = image_to_base64(cover_path)
             ext = os.path.splitext(cover_path)[1].lower()
-            mime = "image/jpeg" if ext in [".jpg",".jpeg"] else "image/png"
+            mime = "image/jpeg" if ext in [".jpg", ".jpeg"] else "image/png"
             img_html = f'<img src="data:{mime};base64,{img_base64}">'
         else:
             img_html = '<img src="https://via.placeholder.com/240x160">'
-        desc = tale.get("description","")
+        desc = tale.get("description", "")
         html += f"""
         <div class="card">
             {img_html}
@@ -172,7 +159,7 @@ def show_carousel(tales_list):
 params = st.query_params
 if "tale" in params:
     selected = params["tale"][0]
-    if selected in tales:
+    if selected in tales and st.session_state.selected_tale is None:
         start_tale(selected)
 
 # -------------------------
@@ -194,6 +181,7 @@ with st.sidebar:
 # -------------------------
 st.title("📖 Интерактивные сказки")
 
+# Показываем карусель только если сказка ещё не выбрана
 if st.session_state.selected_tale is None:
     st.markdown("## 📚 Советские сказки")
     show_carousel([
@@ -202,14 +190,12 @@ if st.session_state.selected_tale is None:
         "Золотая рыбка",
         "Курочка Ряба"
     ])
-
     st.markdown("## 🆕 Новые сказки")
     show_carousel([
         "Путешествие в Волшебный лес"
     ])
-
 else:
-    # История чата
+    # Показываем историю чата
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
