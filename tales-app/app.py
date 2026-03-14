@@ -66,14 +66,14 @@ p, li, .stMarkdown, .stText {
 }
 
 /* ===== КАРТОЧКИ СКАЗОК ===== */
-/* Сама колонка */
+/* Контейнер, который содержит карточку (колонка) */
 div[data-testid="column"] {
     display: flex;
     flex-direction: column;
 }
 
-/* Контейнер внутри колонки (с рамкой) */
-div[data-testid="column"] > div {
+/* Сам элемент с рамкой (st.container с border=True) */
+div[data-testid="column"] > div:has(> div) {
     background-color: #fffaf0;
     border-radius: 20px !important;
     padding: 15px;
@@ -83,10 +83,6 @@ div[data-testid="column"] > div {
     height: 100%;
     display: flex;
     flex-direction: column;
-}
-
-div[data-testid="column"] > div:hover {
-    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
 
 /* Изображение */
@@ -99,23 +95,24 @@ div[data-testid="column"] img {
     border: 1px solid #d4b68a;
 }
 
-/* Заголовок сказки */
+/* Заголовок сказки (h4) */
 div[data-testid="column"] h4 {
     margin: 0 0 5px 0 !important;
     font-size: 1.2rem;
+    line-height: 1.3;
 }
 
-/* Описание (текст) – растягивается, занимает всё доступное место */
-div[data-testid="column"] p {
-    flex-grow: 1;
-    margin-bottom: 10px !important;
+/* Описание – все параграфы внутри карточки, кроме заголовка и кнопки */
+div[data-testid="column"] p:not(.stButton p) {
+    flex: 1 1 auto;
+    margin: 0 0 10px 0 !important;
     font-size: 0.9rem;
     line-height: 1.4;
 }
 
-/* Кнопка "Начать" – прижата к низу */
+/* Контейнер кнопки (сама кнопка) */
 div[data-testid="column"] .stButton {
-    margin-top: auto;
+    margin-top: auto !important;
     width: 100%;
 }
 
@@ -158,7 +155,7 @@ div[data-testid="column"] .stButton button {
     background-color: #b5926a !important;
 }
 
-/* Ссылка доната (fallback для старых версий) */
+/* Ссылка доната (fallback) */
 .stLinkButton a, a button {
     background-color: #d4b68a;
     color: #2a1c0e;
