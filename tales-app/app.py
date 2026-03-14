@@ -85,14 +85,14 @@ st.markdown("""
         box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     }
     
-    /* КАРТОЧКИ СКАЗОК - УНИФИЦИРОВАННЫЙ РАЗМЕР 1000px */
+    /* КАРТОЧКИ СКАЗОК - 1000px */
     div[data-testid="column"] > div {
         background-color: #fffaf0;
         border-radius: 20px;
         padding: 30px;
         border: 2px solid #e9d9c4;
         box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        height: 1000px;  /* ФИКСИРОВАННАЯ ВЫСОТА 1000px */
+        height: 1000px;
         width: 100%;
         display: flex;
         flex-direction: column;
@@ -105,10 +105,10 @@ st.markdown("""
         border-color: #d4b68a;
     }
     
-    /* Изображения - фиксированный размер под 1000px */
+    /* Изображения */
     div[data-testid="column"] img {
         width: 100%;
-        height: 500px;  /* Половина карточки */
+        height: 500px;
         object-fit: cover;
         border-radius: 15px;
         border: 2px solid #d4b68a;
@@ -117,20 +117,20 @@ st.markdown("""
     
     /* Заголовок сказки */
     div[data-testid="column"] h3 {
-        font-size: 2.5rem;  /* Крупнее для масштаба */
+        font-size: 2.5rem;
         margin: 0 0 15px 0;
         color: #2c1e0e !important;
     }
     
     /* Описание сказки */
     div[data-testid="column"] p {
-        font-size: 1.2rem;  /* Крупнее */
+        font-size: 1.2rem;
         margin: 0 0 25px 0;
         flex-grow: 1;
         color: #1a1309 !important;
         line-height: 1.5;
-        max-height: 200px;  /* Ограничение высоты текста */
-        overflow-y: auto;    /* Прокрутка при необходимости */
+        max-height: 200px;
+        overflow-y: auto;
         padding-right: 10px;
     }
     
@@ -173,7 +173,7 @@ st.markdown("""
         color: #2c1e0e !important;
     }
     
-    /* Адаптация для мобильных - уменьшаем пропорционально */
+    /* Адаптация для мобильных */
     @media (max-width: 600px) {
         div[data-testid="column"] > div {
             height: 800px;
@@ -268,7 +268,7 @@ with st.sidebar:
     st.markdown("## 📖 О проекте")
     st.markdown("Вы сами выбираете, как развернётся история. Все сказки абсолютно бесплатны.")
     st.markdown("---")
-    st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", use_container_width=True)
+    st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", width='stretch')
     
     if st.session_state.selected_tale:
         st.markdown("---")
@@ -278,7 +278,7 @@ with st.sidebar:
         if total > 0:
             st.progress(min(opened/total, 1.0))
         st.markdown(f"Найдено концовок: **{opened} / {total}**")
-        if st.button("🔄 Сменить сказку", use_container_width=True):
+        if st.button("🔄 Сменить сказку", width='stretch'):
             reset_to_main()
             st.rerun()
 
@@ -294,24 +294,24 @@ if st.session_state.selected_tale is None:
         # Колобок
         with st.container():
             if os.path.exists("images/kolobok_cover.jpg"):
-                st.image("images/kolobok_cover.jpg", use_container_width=True)
+                st.image("images/kolobok_cover.jpg", width='stretch')
             else:
-                st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨+Колобок", use_container_width=True)
+                st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨+Колобок", width='stretch')
             st.markdown("### Колобок")
             st.markdown("Помоги Колобку убежать от всех зверей и найти настоящих друзей!")
-            if st.button("✨ Начать", key="start_kolobok", use_container_width=True):
+            if st.button("✨ Начать", key="start_kolobok", width='stretch'):
                 start_tale("Колобок")
                 st.rerun()
         
         # Золотая рыбка
         with st.container():
             if os.path.exists("images/rybka_cover.jpg"):
-                st.image("images/rybka_cover.jpg", use_container_width=True)
+                st.image("images/rybka_cover.jpg", width='stretch')
             else:
-                st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨+Золотая+рыбка", use_container_width=True)
+                st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨+Золотая+рыбка", width='stretch')
             st.markdown("### Золотая рыбка")
             st.markdown("Старик поймал золотую рыбку. Хватит ли мудрости не быть жадным?")
-            if st.button("✨ Начать", key="start_rybka", use_container_width=True):
+            if st.button("✨ Начать", key="start_rybka", width='stretch'):
                 start_tale("Золотая рыбка")
                 st.rerun()
     
@@ -319,24 +319,24 @@ if st.session_state.selected_tale is None:
         # Теремок
         with st.container():
             if os.path.exists("images/teremok_cover.jpg"):
-                st.image("images/teremok_cover.jpg", use_container_width=True)
+                st.image("images/teremok_cover.jpg", width='stretch')
             else:
-                st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨+Теремок", use_container_width=True)
+                st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨+Теремок", width='stretch')
             st.markdown("### Теремок")
             st.markdown("Построй свой теремок и реши, кого пускать, а кого нет.")
-            if st.button("✨ Начать", key="start_teremok", use_container_width=True):
+            if st.button("✨ Начать", key="start_teremok", width='stretch'):
                 start_tale("Теремок")
                 st.rerun()
         
         # Курочка Ряба
         with st.container():
             if os.path.exists("images/ryaba_cover.jpg"):
-                st.image("images/ryaba_cover.jpg", use_container_width=True)
+                st.image("images/ryaba_cover.jpg", width='stretch')
             else:
-                st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨+Курочка+Ряба", use_container_width=True)
+                st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨+Курочка+Ряба", width='stretch')
             st.markdown("### Курочка Ряба")
             st.markdown("Курочка снесла золотое яичко. Что делать с разбитым яйцом?")
-            if st.button("✨ Начать", key="start_ryaba", use_container_width=True):
+            if st.button("✨ Начать", key="start_ryaba", width='stretch'):
                 start_tale("Курочка Ряба")
                 st.rerun()
 
@@ -348,12 +348,12 @@ if st.session_state.selected_tale is None:
         with col1:
             with st.container():
                 if os.path.exists("images/forest_cover.jpg"):
-                    st.image("images/forest_cover.jpg", use_container_width=True)
+                    st.image("images/forest_cover.jpg", width='stretch')
                 else:
-                    st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨+Волшебный+лес", use_container_width=True)
+                    st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨+Волшебный+лес", width='stretch')
                 st.markdown("### Путешествие в Волшебный лес")
                 st.markdown("Отправляйся в загадочный лес, где живут говорящие звери и феи!")
-                if st.button("✨ Начать", key="start_forest", use_container_width=True):
+                if st.button("✨ Начать", key="start_forest", width='stretch'):
                     start_tale("Путешествие в Волшебный лес")
                     st.rerun()
 
@@ -396,24 +396,24 @@ else:
             col1, col2 = st.columns(2)
             with col1:
                 if len(st.session_state.scene_history) > 1:
-                    if st.button("↩️ Вернуться назад", use_container_width=True):
+                    if st.button("↩️ Вернуться назад", width='stretch'):
                         go_back()
             with col2:
-                if st.button("🔄 Начать заново", use_container_width=True):
+                if st.button("🔄 Начать заново", width='stretch'):
                     start_tale(st.session_state.selected_tale)
                     st.rerun()
         else:
             st.markdown("### Твой выбор:")
             for opt in current["options"]:
-                if st.button(opt["text"], key=f"choice_{opt['next']}", use_container_width=True):
+                if st.button(opt["text"], key=f"choice_{opt['next']}", width='stretch'):
                     handle_choice(opt["text"], opt["next"])
                     st.rerun()
             if len(st.session_state.scene_history) > 1:
                 st.markdown("---")
-                if st.button("↩️ Назад к выбору", use_container_width=True):
+                if st.button("↩️ Назад к выбору", width='stretch'):
                     go_back()
     else:
         st.error("⚠️ Сцена не найдена")
-        if st.button("⬅️ К выбору сказок", use_container_width=True):
+        if st.button("⬅️ К выбору сказок", width='stretch'):
             reset_to_main()
             st.rerun()
