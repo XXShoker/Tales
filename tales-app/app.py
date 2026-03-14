@@ -93,6 +93,13 @@ def reset():
 # CAROUSEL
 # -------------------------
 
+def image_to_base64(path):
+    try:
+        with open(path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except:
+        return None
+        
 def show_carousel(tales_list):
 
     html = """
@@ -145,7 +152,6 @@ def show_carousel(tales_list):
     .card img{
 
         width:100%;
-
         height:160px;
 
         object-fit:cover;
@@ -203,17 +209,26 @@ def show_carousel(tales_list):
 
         tale = tales[tale_name]
 
-        cover = tale.get("cover","")
+        cover_path = tale.get("cover","")
 
-        # IMPORTANT: для iframe нужно абсолютный путь
-        cover = "/" + cover
+        img_html = ""
+
+        if cover_path and os.path.exists(cover_path):
+
+            img_base64 = image_to_base64(cover_path)
+
+            img_html = f'<img src="data:image/jpeg;base64,{img_base64}">'
+
+        else:
+
+            img_html = '<img src="https://via.placeholder.com/240x160">'
 
         desc = tale.get("description","")
 
         html += f"""
         <div class="card">
 
-            <img src="{cover}">
+            {img_html}
 
             <div class="card-title">{tale_name}</div>
 
