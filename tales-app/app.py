@@ -280,7 +280,7 @@ with st.sidebar:
     )
     st.markdown("---")
     try:
-        st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", width='stretch')
+        st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", use_container_width=True)
     except AttributeError:
         st.markdown(
             '<a href="https://donate.stream/donate_69b56f4953f16" target="_blank">'
@@ -300,10 +300,10 @@ with st.sidebar:
         st.markdown("---")
     
     if st.session_state.selected_tale is not None:
-        if st.button("🔄 Сменить сказку", width='stretch'):
+        if st.button("🔄 Сменить сказку", use_container_width=True):
             reset_to_main()
             st.rerun()
-        if st.button("❌ Завершить и выйти", width='stretch'):
+        if st.button("❌ Завершить и выйти", use_container_width=True):
             reset_to_main()
             st.rerun()
 
@@ -320,13 +320,13 @@ if st.session_state.selected_tale is None:
     def show_tale_card(tale_name):
         cover_path = tales[tale_name].get("cover", "")
         if cover_path and os.path.exists(cover_path):
-            st.image(cover_path, width='stretch')
+            st.image(cover_path, use_container_width=True)
         else:
-            st.image("https://via.placeholder.com/240x150/ffe6f0/ff69b4?text=✨+Сказка", width='stretch')
+            st.image("https://via.placeholder.com/240x150/ffe6f0/ff69b4?text=✨+Сказка", use_container_width=True)
         st.markdown(f"#### {tale_name}")
         if tales[tale_name].get("description"):
             st.markdown(tales[tale_name]["description"])
-        if st.button(f"✨ Начать", key=f"choose_{tale_name}", width='stretch'):
+        if st.button(f"✨ Начать", key=f"choose_{tale_name}", use_container_width=True):
             start_tale(tale_name)
             st.rerun()
 
@@ -400,23 +400,23 @@ else:
             
             st.markdown("---")
             if len(st.session_state.scene_history) > 1:
-                if st.button("↩️ Вернуться к предыдущему выбору", width='stretch'):
+                if st.button("↩️ Вернуться к предыдущему выбору", use_container_width=True):
                     go_back()
-            if st.button("🔄 Начать эту сказку заново", width='stretch'):
+            if st.button("🔄 Начать эту сказку заново", use_container_width=True):
                 start_tale(st.session_state.selected_tale)
                 st.rerun()
         else:
             st.markdown("### Твой выбор:")
             for opt in current_scene["options"]:
-                if st.button(opt["text"], key=f"choice_{opt['next']}", width='stretch'):
+                if st.button(opt["text"], key=f"choice_{opt['next']}", use_container_width=True):
                     handle_choice(opt["text"], opt["next"])
                     st.rerun()
             if len(st.session_state.scene_history) > 1:
                 st.markdown("---")
-                if st.button("↩️ Назад к предыдущему выбору", width='stretch'):
+                if st.button("↩️ Назад к предыдущему выбору", use_container_width=True):
                     go_back()
     else:
         st.error("⚠️ Сцена не найдена. Вернитесь к выбору сказок.")
-        if st.button("⬅️ К выбору сказок", width='stretch'):
+        if st.button("⬅️ К выбору сказок", use_container_width=True):
             reset_to_main()
             st.rerun()
