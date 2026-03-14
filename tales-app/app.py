@@ -65,7 +65,7 @@ p, li, .stMarkdown, .stText {
     background-color: #b89e7c;
 }
 
-/* Карусель */
+/* --- Карусель (горизонтальная прокрутка) --- */
 .carousel-container {
     display: flex;
     flex-wrap: nowrap;
@@ -90,6 +90,7 @@ p, li, .stMarkdown, .stText {
     border-radius: 10px;
 }
 
+/* Карточка сказки */
 .carousel-card {
     flex: 0 0 auto;
     width: 240px;
@@ -99,12 +100,15 @@ p, li, .stMarkdown, .stText {
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     border: 1px solid #e9d9c4;
     transition: box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
 
 .carousel-card:hover {
     box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
 
+/* Изображение */
 .carousel-card img {
     width: 100%;
     height: 150px;
@@ -114,18 +118,20 @@ p, li, .stMarkdown, .stText {
     margin-bottom: 10px;
 }
 
+/* Заголовок */
 .carousel-card h4 {
     margin: 0 0 5px 0;
     font-size: 1.2rem;
     white-space: normal;
 }
 
+/* Описание */
 .carousel-card p {
     font-size: 0.9rem;
     line-height: 1.4;
     margin: 0 0 10px 0;
     white-space: normal;
-    height: 60px;
+    flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
@@ -133,8 +139,10 @@ p, li, .stMarkdown, .stText {
     -webkit-box-orient: vertical;
 }
 
+/* Кнопка */
 .carousel-card .stButton {
     width: 100%;
+    margin-top: auto;
 }
 
 .carousel-card .stButton button {
@@ -174,7 +182,7 @@ p, li, .stMarkdown, .stText {
     background-color: #b5926a !important;
 }
 
-/* Ссылка доната (fallback) */
+/* Ссылка доната (fallback для старых версий) */
 .stLinkButton a, a button {
     background-color: #d4b68a;
     color: #2a1c0e;
@@ -303,18 +311,18 @@ st.title("📖 Интерактивные сказки")
 st.caption("Выбирайте свой путь в каждой истории!")
 
 if st.session_state.selected_tale is None:
-    # Определяем списки сказок
+    # Определяем группы сказок
     all_tales = list(tales.keys())
     soviet_tales = ["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"]
     new_tales = ["Путешествие в Волшебный лес"]
 
-    # Функция для отрисовки карточки сказки (без использования st.container, чтобы не ломать верстку)
-    def render_tale_card(tale_name):
+    # Функция для отображения одной карточки
+    def show_tale_card(tale_name):
         cover_path = tales[tale_name].get("cover", "")
         if cover_path and os.path.exists(cover_path):
-            st.image(cover_path, use_container_width=True)
+            st.image(cover_path, width=240)
         else:
-            st.image("https://via.placeholder.com/240x150/ffe6f0/ff69b4?text=✨+Сказка", use_container_width=True)
+            st.image("https://via.placeholder.com/240x150/ffe6f0/ff69b4?text=✨+Сказка", width=240)
         st.markdown(f"#### {tale_name}")
         if tales[tale_name].get("description"):
             st.markdown(tales[tale_name]["description"])
@@ -324,30 +332,28 @@ if st.session_state.selected_tale is None:
 
     # Секция "Советские сказки"
     st.markdown("## 📚 Советские сказки")
-    with st.container():
-        st.markdown('<div class="carousel-container">', unsafe_allow_html=True)
-        for tale_name in soviet_tales:
-            if tale_name in all_tales:
-                st.markdown('<div class="carousel-card">', unsafe_allow_html=True)
-                render_tale_card(tale_name)
-                st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('<div class="carousel-container">', unsafe_allow_html=True)
+    for tale_name in soviet_tales:
+        if tale_name in all_tales:
+            st.markdown('<div class="carousel-card">', unsafe_allow_html=True)
+            show_tale_card(tale_name)
+            st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # Секция "Новые сказки"
     st.markdown("## 🆕 Новые сказки")
-    with st.container():
-        st.markdown('<div class="carousel-container">', unsafe_allow_html=True)
-        for tale_name in new_tales:
-            if tale_name in all_tales:
-                st.markdown('<div class="carousel-card">', unsafe_allow_html=True)
-                render_tale_card(tale_name)
-                st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('<div class="carousel-container">', unsafe_allow_html=True)
+    for tale_name in new_tales:
+        if tale_name in all_tales:
+            st.markdown('<div class="carousel-card">', unsafe_allow_html=True)
+            show_tale_card(tale_name)
+            st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("---")
     st.markdown("🌟 *Все сказки бесплатны. Если хотите поддержать проект, воспользуйтесь кнопкой в боковой панели.*")
 else:
-    # Отображаем историю сообщений
+    # --- Отображение сказки (история сообщений) ---
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
@@ -356,6 +362,7 @@ else:
 
     if current_scene:
         if not current_scene.get("options"):
+            # Концовка
             if current_scene.get("ending_type") and current_scene.get("ending_number"):
                 ending_type = current_scene["ending_type"]
                 ending_num = current_scene["ending_number"]
