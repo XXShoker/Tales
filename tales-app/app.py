@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import base64
 from tales_data import tales
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="wide")
@@ -35,47 +36,19 @@ p, li, .stMarkdown, .stText {
     background-color: #f5e9d8 !important;
 }
 
-/* Кнопки */
-.stButton > button {
-    font-family: 'Open Sans', sans-serif;
-    background-color: #e6d5b8;
-    color: #3e2c1b;
-    border: 1px solid #b5926a;
-    border-radius: 30px;
-    padding: 0.5rem 1rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.stButton > button:hover {
-    background-color: #d4b68a;
-    color: #2a1c0e;
-    border-color: #8b6b4f;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    transform: translateY(-2px);
-}
-
-/* Кнопки в сайдбаре */
-.sidebar .stButton > button {
-    background-color: #cbb89e;
-    border-color: #9b7e62;
-}
-
-.sidebar .stButton > button:hover {
-    background-color: #b89e7c;
-}
-
 /* --- Карусель как в Netflix --- */
 .carousel-title {
     font-size: 1.8rem;
     margin: 20px 0 10px 0;
     padding-left: 5px;
+    font-family: 'Cormorant Garamond', serif;
+    color: #5d3a1a;
 }
 
 .carousel-container {
     display: flex;
     overflow-x: auto;
-    gap: 16px;
+    gap: 20px;
     padding: 10px 5px 20px 5px;
     scrollbar-width: thin;
     scrollbar-color: #b5926a #f5e9d8;
@@ -108,6 +81,9 @@ p, li, .stMarkdown, .stText {
     border: 1px solid #e9d9c4;
     transition: all 0.3s ease;
     cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: block;
 }
 
 .tale-card:hover {
@@ -158,7 +134,6 @@ p, li, .stMarkdown, .stText {
 
 .tale-card .start-button:hover {
     background-color: #d4b68a;
-    transform: scale(1.02);
 }
 
 /* Сообщения чата */
@@ -222,6 +197,8 @@ if "scene_history" not in st.session_state:
     st.session_state.scene_history = []
 if "achieved_endings" not in st.session_state:
     st.session_state.achieved_endings = {}
+if "clicked_tale" not in st.session_state:
+    st.session_state.clicked_tale = None
 
 def count_total_endings(tale_name):
     tale = tales.get(tale_name)
@@ -279,7 +256,6 @@ def reset_to_main():
 
 def get_image_base64(image_path):
     """Конвертирует изображение в base64 для вставки в HTML"""
-    import base64
     try:
         with open(image_path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode()
@@ -318,32 +294,17 @@ with st.sidebar:
 st.title("📖 Интерактивные сказки")
 st.caption("Выбирайте свой путь в каждой истории!")
 
+# Проверяем, не была ли выбрана сказка через кнопку
+if st.session_state.clicked_tale:
+    start_tale(st.session_state.clicked_tale)
+    st.session_state.clicked_tale = None
+    st.rerun()
+
 if st.session_state.selected_tale is None:
     # Определяем группы сказок
     all_tales = list(tales.keys())
     soviet_tales = ["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"]
     new_tales = ["Путешествие в Волшебный лес"]
-
-    # JavaScript для обработки кликов
-    st.markdown("""
-    <script>
-    function startTale(taleName) {
-        // Создаем скрытый input и триггерим событие
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.id = 'selected-tale';
-        input.value = taleName;
-        document.body.appendChild(input);
-        
-        // Триггерим событие изменения
-        const event = new Event('change', { bubbles: true });
-        input.dispatchEvent(event);
-        
-        // Перезагружаем страницу
-        window.location.reload();
-    }
-    </script>
-    """, unsafe_allow_html=True)
 
     # Функция для создания HTML карточки
     def create_tale_card(tale_name):
@@ -359,13 +320,18 @@ if st.session_state.selected_tale is None:
         else:
             img_html = f'<img src="https://via.placeholder.com/280x160/ffe6f0/ff69b4?text=✨+{tale_name}" alt="{tale_name}">'
         
+        # Создаем уникальный ключ для кнопки
+        button_key = f"btn_{tale_name}"
+        
         return f'''
-        <div class="tale-card" onclick="startTale('{tale_name}')">
-            {img_html}
-            <h3>{tale_name}</h3>
-            <p>{description}</p>
-            <div class="start-button">✨ Начать</div>
-        </div>
+        <a href="?tale={tale_name}" target="_self" style="text-decoration: none; color: inherit;">
+            <div class="tale-card">
+                {img_html}
+                <h3>{tale_name}</h3>
+                <p>{description}</p>
+                <div class="start-button">✨ Начать</div>
+            </div>
+        </a>
         '''
 
     # Секция "Советские сказки"
@@ -394,11 +360,14 @@ if st.session_state.selected_tale is None:
     st.markdown("---")
     st.markdown("🌟 *Все сказки бесплатны. Если хотите поддержать проект, воспользуйтесь кнопкой в боковой панели.*")
 
-    # Скрытый элемент для передачи выбранной сказки
-    selected = st.text_input("selected_tale", key="selected_tale_input", label_visibility="collapsed")
-    if selected and selected in all_tales:
-        start_tale(selected)
-        st.rerun()
+    # Обработка URL параметра
+    query_params = st.query_params
+    if "tale" in query_params:
+        tale_name = query_params["tale"]
+        if tale_name in all_tales:
+            st.session_state.clicked_tale = tale_name
+            st.query_params.clear()
+            st.rerun()
 
 else:
     # Отображение сказки (история сообщений)
