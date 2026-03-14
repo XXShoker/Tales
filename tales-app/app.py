@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import base64
 from tales_data import tales
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="wide")
@@ -153,6 +154,20 @@ st.markdown("""
         border-radius: 10px !important;
     }
     
+    /* Сообщения чата */
+    .stChatMessage {
+        background: white !important;
+        border-radius: 20px !important;
+        padding: 12px 20px !important;
+        border: 2px solid #e9d9c4 !important;
+        margin-bottom: 10px !important;
+    }
+    
+    .stChatMessage[data-testid="chatMessageUser"] {
+        background: linear-gradient(135deg, #e6d5b8, #d4b68a) !important;
+        border-color: #b5926a !important;
+    }
+    
     /* Адаптация для мобильных */
     @media (max-width: 600px) {
         .row {
@@ -168,7 +183,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- Инициализация ---
+# --- Инициализация состояния ---
 if "selected_tale" not in st.session_state:
     st.session_state.selected_tale = None
 if "scene_id" not in st.session_state:
@@ -234,6 +249,7 @@ def go_back():
 
 def reset_to_main():
     st.session_state.selected_tale = None
+    st.session_state.scene_id = "start"
     st.session_state.messages = []
     st.session_state.scenes = {}
     st.session_state.scene_history = []
@@ -243,7 +259,6 @@ def get_image_html(tale_name):
     if cover_path and os.path.exists(cover_path):
         try:
             with open(cover_path, "rb") as f:
-                import base64
                 img_data = base64.b64encode(f.read()).decode()
                 return f'<img src="data:image/jpeg;base64,{img_data}" alt="{tale_name}">'
         except:
@@ -255,7 +270,7 @@ with st.sidebar:
     st.markdown("## 📖 О проекте")
     st.markdown("Добро пожаловать в мир интерактивных сказок! Вы сами выбираете, как развернётся история. Все сказки абсолютно бесплатны.")
     st.markdown("---")
-    st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", use_container_width=True)
+    st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", width='stretch')
     
     if st.session_state.selected_tale:
         st.markdown("---")
@@ -265,12 +280,13 @@ with st.sidebar:
         if total > 0:
             st.progress(min(opened/total, 1.0))
         st.markdown(f"Найдено: **{opened} / {total}**")
-        if st.button("🔄 Сменить сказку", use_container_width=True):
+        if st.button("🔄 Сменить сказку", width='stretch'):
             reset_to_main()
             st.rerun()
 
 # --- Основная область ---
 st.title("📖 Интерактивные сказки")
+st.caption("Выбирайте свой путь в каждой истории!")
 
 if st.session_state.selected_tale is None:
     all_tales = list(tales.keys())
@@ -280,97 +296,128 @@ if st.session_state.selected_tale is None:
     # Советские сказки
     st.markdown('<div class="section-title">📚 Советские сказки</div>', unsafe_allow_html=True)
     
-    # СОЗДАЕМ ДВЕ КОЛОНКИ ЧЕРЕЗ HTML
-    html = '<div class="row">'
-    
     # Левая колонка
-    html += '<div class="column">'
-    for i, name in enumerate(soviet[:2]):  # первые две сказки
-        if name in all_tales:
-            html += f'''
-            <div class="tale-card">
-                {get_image_html(name)}
-                <h3>{name}</h3>
-                <p>{tales[name].get("description", "")}</p>
-                <div class="start-btn" onclick="document.getElementById('btn_{name}').click()">✨ Начать</div>
-            </div>
-            '''
-    html += '</div>'
+    col1, col2 = st.columns(2)
     
-    # Правая колонка
-    html += '<div class="column">'
-    for i, name in enumerate(soviet[2:4]):  # вторые две сказки
-        if name in all_tales:
-            html += f'''
-            <div class="tale-card">
-                {get_image_html(name)}
-                <h3>{name}</h3>
-                <p>{tales[name].get("description", "")}</p>
-                <div class="start-btn" onclick="document.getElementById('btn_{name}').click()">✨ Начать</div>
-            </div>
-            '''
-    html += '</div>'
-    html += '</div>'
+    with col1:
+        for name in soviet[:2]:
+            if name in all_tales:
+                with st.container():
+                    st.markdown(f'<div class="tale-card">', unsafe_allow_html=True)
+                    cover_path = tales[name].get("cover", "")
+                    if cover_path and os.path.exists(cover_path):
+                        st.image(cover_path, width='stretch')
+                    else:
+                        st.image("https://via.placeholder.com/400x200/ffe6f0/ff69b4?text=✨+Сказка", width='stretch')
+                    st.markdown(f"### {name}")
+                    st.markdown(tales[name].get("description", ""))
+                    if st.button("✨ Начать", key=f"btn_{name}", width='stretch'):
+                        start_tale(name)
+                        st.rerun()
+                    st.markdown('</div>', unsafe_allow_html=True)
     
-    st.markdown(html, unsafe_allow_html=True)
-    
-    # Скрытые кнопки
-    for name in soviet:
-        if name in all_tales:
-            if st.button("🎯", key=f"btn_{name}"):
-                start_tale(name)
-                st.rerun()
+    with col2:
+        for name in soviet[2:4]:
+            if name in all_tales:
+                with st.container():
+                    st.markdown(f'<div class="tale-card">', unsafe_allow_html=True)
+                    cover_path = tales[name].get("cover", "")
+                    if cover_path and os.path.exists(cover_path):
+                        st.image(cover_path, width='stretch')
+                    else:
+                        st.image("https://via.placeholder.com/400x200/ffe6f0/ff69b4?text=✨+Сказка", width='stretch')
+                    st.markdown(f"### {name}")
+                    st.markdown(tales[name].get("description", ""))
+                    if st.button("✨ Начать", key=f"btn_{name}_2", width='stretch'):
+                        start_tale(name)
+                        st.rerun()
+                    st.markdown('</div>', unsafe_allow_html=True)
     
     # Новые сказки
     if new:
         st.markdown('<div class="section-title">🆕 Новые сказки</div>', unsafe_allow_html=True)
-        html = '<div class="row"><div class="column">'
-        for name in new:
-            if name in all_tales:
-                html += f'''
-                <div class="tale-card">
-                    {get_image_html(name)}
-                    <h3>{name}</h3>
-                    <p>{tales[name].get("description", "")}</p>
-                    <div class="start-btn" onclick="document.getElementById('btn_new_{name}').click()">✨ Начать</div>
-                </div>
-                '''
-        html += '</div><div class="column"></div></div>'
-        st.markdown(html, unsafe_allow_html=True)
-        
-        for name in new:
-            if name in all_tales:
-                if st.button("✨", key=f"btn_new_{name}"):
-                    start_tale(name)
-                    st.rerun()
+        col1, col2 = st.columns(2)
+        with col1:
+            for name in new:
+                if name in all_tales:
+                    with st.container():
+                        st.markdown(f'<div class="tale-card">', unsafe_allow_html=True)
+                        cover_path = tales[name].get("cover", "")
+                        if cover_path and os.path.exists(cover_path):
+                            st.image(cover_path, width='stretch')
+                        else:
+                            st.image("https://via.placeholder.com/400x200/ffe6f0/ff69b4?text=✨+Сказка", width='stretch')
+                        st.markdown(f"### {name}")
+                        st.markdown(tales[name].get("description", ""))
+                        if st.button("✨ Начать", key=f"btn_new_{name}", width='stretch'):
+                            start_tale(name)
+                            st.rerun()
+                        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("🌟 *Все сказки бесплатны. Если хотите поддержать проект, воспользуйтесь кнопкой в боковой панели.*")
 
 else:
-    # Сама сказка
+    # Отображение сказки
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
-    
-    current = st.session_state.scenes.get(st.session_state.scene_id)
-    if current:
-        if not current.get("options"):
-            # Концовка
-            if current.get("ending_type"):
-                ending_id = f"{current['ending_type']}_{current['ending_number']}"
-                if ending_id not in st.session_state.achieved_endings.get(st.session_state.selected_tale, set()):
-                    st.session_state.achieved_endings.setdefault(st.session_state.selected_tale, set()).add(ending_id)
+
+    current_scene = st.session_state.scenes.get(st.session_state.scene_id)
+
+    if current_scene:
+        if not current_scene.get("options"):
+            if current_scene.get("ending_type") and current_scene.get("ending_number"):
+                ending_type = current_scene["ending_type"]
+                ending_num = current_scene["ending_number"]
+                type_emoji = {"happy": "😊", "sad": "😢", "neutral": "😐", "secret": "🤫"}.get(ending_type, "🌟")
+                
+                tale = st.session_state.selected_tale
+                ending_id = f"{ending_type}_{ending_num}"
+                
+                if tale not in st.session_state.achieved_endings:
+                    st.session_state.achieved_endings[tale] = set()
+                if ending_id not in st.session_state.achieved_endings[tale]:
+                    st.session_state.achieved_endings[tale].add(ending_id)
                     st.rerun()
-                st.success(f"🎉 Концовка #{current['ending_number']} ({current['ending_type']})")
+                
+                st.markdown("---")
+                st.markdown(f"## {type_emoji} **Концовка #{ending_num}**")
+                st.markdown(f"**Тип:** {ending_type.capitalize()}")
+                
+                if ending_type == "happy":
+                    st.success("🎉 Поздравляем! Это счастливый конец!")
+                else:
+                    st.info("😕 Это не счастливый конец. Попробуй пройти сказку снова!")
+                
+                opened, total = get_ending_stats(tale)
+                st.markdown(f"*Всего в этой сказке **{total}** концовок. Ты нашёл уже **{opened}**.*")
             else:
-                st.success("🎉 Конец сказки!")
+                st.markdown("---")
+                st.markdown("🎉 **Конец сказки!**")
             
-            if st.button("🔄 Начать заново"):
-                start_tale(st.session_state.selected_tale)
-                st.rerun()
+            st.markdown("---")
+            col1, col2 = st.columns(2)
+            with col1:
+                if len(st.session_state.scene_history) > 1:
+                    if st.button("↩️ Вернуться назад", width='stretch'):
+                        go_back()
+            with col2:
+                if st.button("🔄 Начать заново", width='stretch'):
+                    start_tale(st.session_state.selected_tale)
+                    st.rerun()
         else:
-            for opt in current["options"]:
-                if st.button(opt["text"]):
+            st.markdown("### Твой выбор:")
+            for opt in current_scene["options"]:
+                if st.button(opt["text"], key=f"choice_{opt['next']}", width='stretch'):
                     handle_choice(opt["text"], opt["next"])
                     st.rerun()
             if len(st.session_state.scene_history) > 1:
-                if st.button("↩️ Назад"):
+                st.markdown("---")
+                if st.button("↩️ Назад", width='stretch'):
                     go_back()
+    else:
+        st.error("⚠️ Сцена не найдена. Вернитесь к выбору сказок.")
+        if st.button("⬅️ К выбору сказок", width='stretch'):
+            reset_to_main()
+            st.rerun()
