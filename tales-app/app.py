@@ -4,40 +4,150 @@ from tales_data import tales
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="centered")
 
-# --- Стили для выравнивания карточек на главном экране ---
+# --- Стили ---
 st.markdown("""
 <style>
-/* Все изображения в колонках (обложки) получают фиксированную высоту и красивое обрезание */
+/* Подключаем шрифты */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Open+Sans:wght@400;600&display=swap');
+
+/* Общий фон – старая бумага */
+.stApp {
+    background-color: #fef9e7;
+    background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cGF0aCBkPSJNMjAgMjBhMTAgMTAgMCAwIDEgMjAgMCAxMCAxMCAwIDAgMS0yMCAweiIgZmlsbD0iI2UwZDVjMCIgb3BhY2l0eT0iMC4yIi8+PC9zdmc+');
+    background-repeat: repeat;
+}
+
+/* Заголовки */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cormorant Garamond', serif;
+    color: #5d3a1a;
+    font-weight: 600;
+}
+
+/* Основной текст */
+p, li, .stMarkdown, .stText {
+    font-family: 'Open Sans', sans-serif;
+    color: #3e2c1b;
+}
+
+/* Боковая панель */
+.css-1d391kg, .css-1wrcr25 {
+    background-color: #f5e9d8 !important;
+}
+.sidebar-content {
+    background-color: #f5e9d8;
+}
+
+/* Кнопки */
+.stButton > button {
+    font-family: 'Open Sans', sans-serif;
+    background-color: #e6d5b8;
+    color: #3e2c1b;
+    border: 1px solid #b5926a;
+    border-radius: 30px;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.stButton > button:hover {
+    background-color: #d4b68a;
+    color: #2a1c0e;
+    border-color: #8b6b4f;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+/* Кнопки в сайдбаре (сменить сказку и т.д.) */
+.sidebar .stButton > button {
+    background-color: #cbb89e;
+    border-color: #9b7e62;
+}
+
+.sidebar .stButton > button:hover {
+    background-color: #b89e7c;
+}
+
+/* Карточки сказок на главной */
+div[data-testid="column"] > div {
+    background-color: #fffaf0;
+    border-radius: 20px !important;
+    padding: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transition: box-shadow 0.3s ease;
+    border: 1px solid #e9d9c4;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+div[data-testid="column"] > div:hover {
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+}
+
+/* Изображения обложек */
 div[data-testid="column"] img {
     height: 200px !important;
     width: 100% !important;
     object-fit: cover !important;
     border-radius: 12px !important;
     margin-bottom: 10px !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #d4b68a;
 }
 
-/* Сама колонка должна растягиваться, чтобы кнопка была внизу */
-div[data-testid="column"] > div {
-    display: flex !important;
-    flex-direction: column !important;
-    height: 100% !important;
-}
-
-/* Кнопка "Начать" прижимается к низу */
+/* Кнопка "Начать" прижата к низу карточки */
 div[data-testid="column"] .stButton {
-    margin-top: auto !important;
+    margin-top: auto;
 }
 
-/* Заголовок сказки и описание занимают оставшееся место */
-div[data-testid="column"] h4 {
-    margin-top: 0 !important;
-    margin-bottom: 5px !important;
+/* Сообщения чата */
+.stChatMessage {
+    background-color: #fffaf0 !important;
+    border-radius: 18px !important;
+    padding: 8px 16px !important;
+    border: 1px solid #e9d9c4;
+    margin-bottom: 8px;
 }
 
-div[data-testid="column"] p {
-    flex-grow: 1;
-    margin-bottom: 10px !important;
+.stChatMessage[data-testid="chatMessageUser"] {
+    background-color: #e6d5b8 !important;
+}
+
+/* Адаптация для мобильных */
+@media (max-width: 600px) {
+    div[data-testid="column"] {
+        width: 100% !important;
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
+    
+    div[data-testid="column"] img {
+        height: 150px !important;
+    }
+    
+    h1 {
+        font-size: 1.8rem;
+    }
+}
+
+/* Прогресс-бар */
+.stProgress > div > div {
+    background-color: #b5926a !important;
+}
+
+/* Ссылка доната */
+.stLinkButton a {
+    background-color: #d4b68a;
+    color: #2a1c0e;
+    border-radius: 30px;
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background-color 0.3s;
+}
+
+.stLinkButton a:hover {
+    background-color: #b89e7c;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -54,10 +164,9 @@ if "scenes" not in st.session_state:
 if "scene_history" not in st.session_state:
     st.session_state.scene_history = []
 if "achieved_endings" not in st.session_state:
-    st.session_state.achieved_endings = {}  # {tale_name: set(endings_ids)}
+    st.session_state.achieved_endings = {}
 
 def count_total_endings(tale_name):
-    """Подсчитывает количество концовок (сцен с options=[]) в сказке"""
     tale = tales.get(tale_name)
     if not tale:
         return 0
@@ -68,7 +177,6 @@ def count_total_endings(tale_name):
     return count
 
 def get_ending_stats(tale_name):
-    """Возвращает (количество открытых, всего)"""
     opened = len(st.session_state.achieved_endings.get(tale_name, set()))
     total = count_total_endings(tale_name)
     return opened, total
@@ -112,9 +220,9 @@ def reset_to_main():
     st.session_state.scenes = {}
     st.session_state.scene_history = []
 
-# --- Боковая панель ---
+# --- Боковая панель (с иконкой) ---
 with st.sidebar:
-    st.markdown("## 🌟 О проекте")
+    st.markdown("## 📖 О проекте")
     st.markdown(
         "Добро пожаловать в мир **интерактивных сказок**! "
         "Вы сами выбираете, как развернётся история. "
@@ -126,14 +234,13 @@ with st.sidebar:
     except AttributeError:
         st.markdown(
             '<a href="https://donate.stream/donate_69b56f4953f16" target="_blank">'
-            '<button style="background-color:#FF4B4B; color:white; padding:0.5rem 1rem; '
-            'border:none; border-radius:0.5rem; width:100%; font-size:1rem; '
-            'cursor:pointer;">💖 Поддержать донатом</button></a>',
+            '<button style="background-color:#d4b68a; color:#2a1c0e; padding:0.5rem 1rem; '
+            'border:none; border-radius:30px; width:100%; font-size:1rem; '
+            'cursor:pointer; font-weight:600;">💖 Поддержать донатом</button></a>',
             unsafe_allow_html=True
         )
     st.markdown("---")
     
-    # Статистика концовок для текущей сказки
     if st.session_state.selected_tale is not None:
         opened, total = get_ending_stats(st.session_state.selected_tale)
         st.markdown(f"### 📊 Прогресс")
@@ -183,7 +290,6 @@ else:
 
     if current_scene:
         if not current_scene.get("options"):
-            # Концовка
             if current_scene.get("ending_type") and current_scene.get("ending_number"):
                 ending_type = current_scene["ending_type"]
                 ending_num = current_scene["ending_number"]
