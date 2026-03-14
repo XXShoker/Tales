@@ -404,61 +404,62 @@ if st.session_state.selected_tale is None:
     # Категория 3: 16+ (для взрослых)
     adult_tales = ["Хроники разбитых часов: Детектив времени", "Мелодия дождя"]
     
-    # Отображаем категории
+    # Центрируем контент
+    st.markdown('<div style="max-width: 900px; margin: 0 auto;">', unsafe_allow_html=True)
+    
+    # Отображаем категории по одной карточке в столбик
     if classic_tales:
         st.markdown('<div class="section-header">📚 Классические сказки</div>', unsafe_allow_html=True)
-        col1, col2 = st.columns(2)
         classic_list = [t for t in classic_tales if t in all_tales]
-        for i, tale_name in enumerate(classic_list):
-            with col1 if i % 2 == 0 else col2:
-                with st.container():
-                    cover_path = tales[tale_name].get("cover", "")
-                    if cover_path and os.path.exists(cover_path):
-                        st.image(cover_path, use_container_width=True)
-                    else:
-                        st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
-                    st.markdown(f"### {tale_name}")
-                    st.markdown(tales[tale_name].get("description", ""))
-                    if st.button("✨ Начать", key=f"classic_{tale_name}", use_container_width=True):
-                        start_tale(tale_name)
-                        st.rerun()
+        for tale_name in classic_list:
+            with st.container():
+                cover_path = tales[tale_name].get("cover", "")
+                if cover_path and os.path.exists(cover_path):
+                    st.image(cover_path, use_container_width=True)
+                else:
+                    st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
+                st.markdown(f"### {tale_name}")
+                st.markdown(tales[tale_name].get("description", ""))
+                if st.button("✨ Начать", key=f"classic_{tale_name}", use_container_width=True):
+                    start_tale(tale_name)
+                    st.rerun()
+                st.markdown("<br>", unsafe_allow_html=True)  # отступ между карточками
     
     if adventure_tales:
         st.markdown('<div class="section-header">🧚 Приключения и фэнтези</div>', unsafe_allow_html=True)
-        col1, col2 = st.columns(2)
         adventure_list = [t for t in adventure_tales if t in all_tales]
-        for i, tale_name in enumerate(adventure_list):
-            with col1 if i % 2 == 0 else col2:
-                with st.container():
-                    cover_path = tales[tale_name].get("cover", "")
-                    if cover_path and os.path.exists(cover_path):
-                        st.image(cover_path, use_container_width=True)
-                    else:
-                        st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
-                    st.markdown(f"### {tale_name}")
-                    st.markdown(tales[tale_name].get("description", ""))
-                    if st.button("✨ Начать", key=f"adventure_{tale_name}", use_container_width=True):
-                        start_tale(tale_name)
-                        st.rerun()
+        for tale_name in adventure_list:
+            with st.container():
+                cover_path = tales[tale_name].get("cover", "")
+                if cover_path and os.path.exists(cover_path):
+                    st.image(cover_path, use_container_width=True)
+                else:
+                    st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
+                st.markdown(f"### {tale_name}")
+                st.markdown(tales[tale_name].get("description", ""))
+                if st.button("✨ Начать", key=f"adventure_{tale_name}", use_container_width=True):
+                    start_tale(tale_name)
+                    st.rerun()
+                st.markdown("<br>", unsafe_allow_html=True)
     
     if adult_tales:
         st.markdown('<div class="section-header">🔞 16+ Детективы и романтика</div>', unsafe_allow_html=True)
-        col1, col2 = st.columns(2)
         adult_list = [t for t in adult_tales if t in all_tales]
-        for i, tale_name in enumerate(adult_list):
-            with col1 if i % 2 == 0 else col2:
-                with st.container():
-                    cover_path = tales[tale_name].get("cover", "")
-                    if cover_path and os.path.exists(cover_path):
-                        st.image(cover_path, use_container_width=True)
-                    else:
-                        st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
-                    st.markdown(f"### {tale_name}")
-                    st.markdown(tales[tale_name].get("description", ""))
-                    if st.button("✨ Начать", key=f"adult_{tale_name}", use_container_width=True):
-                        start_tale(tale_name)
-                        st.rerun()
-
+        for tale_name in adult_list:
+            with st.container():
+                cover_path = tales[tale_name].get("cover", "")
+                if cover_path and os.path.exists(cover_path):
+                    st.image(cover_path, use_container_width=True)
+                else:
+                    st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
+                st.markdown(f"### {tale_name}")
+                st.markdown(tales[tale_name].get("description", ""))
+                if st.button("✨ Начать", key=f"adult_{tale_name}", use_container_width=True):
+                    start_tale(tale_name)
+                    st.rerun()
+                st.markdown("<br>", unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("---")
     st.markdown("🌟 *Все сказки бесплатны. Если хотите поддержать проект, воспользуйтесь кнопкой в боковой панели.*")
 
