@@ -102,7 +102,7 @@ def show_carousel(tales_list):
         display:flex;
         overflow-x:auto;
         gap:20px;
-        padding:20px 10px;
+        padding:20px;
         scroll-snap-type:x mandatory;
         font-family:sans-serif;
     }
@@ -117,13 +117,25 @@ def show_carousel(tales_list):
     }
 
     .card{
-        flex:0 0 240px;
+
+        flex:0 0 260px;
+
         background:#fffaf0;
+
         border-radius:18px;
+
         padding:12px;
+
         scroll-snap-align:start;
+
         box-shadow:0 4px 12px rgba(0,0,0,0.1);
+
         transition:0.2s;
+
+        display:flex;
+        flex-direction:column;
+
+        height:340px;
     }
 
     .card:hover{
@@ -131,9 +143,13 @@ def show_carousel(tales_list):
     }
 
     .card img{
+
         width:100%;
-        height:140px;
+
+        height:160px;
+
         object-fit:cover;
+
         border-radius:10px;
     }
 
@@ -144,20 +160,34 @@ def show_carousel(tales_list):
     }
 
     .card-desc{
+
         font-size:0.9rem;
-        height:55px;
+
+        margin-top:4px;
+
+        flex-grow:1;
+
         overflow:hidden;
     }
 
     .start-btn{
+
         display:block;
+
         margin-top:10px;
+
         text-align:center;
+
         background:#d4b68a;
+
         padding:8px;
+
         border-radius:12px;
+
         text-decoration:none;
+
         color:black;
+
         font-weight:600;
     }
 
@@ -175,23 +205,28 @@ def show_carousel(tales_list):
 
         cover = tale.get("cover","")
 
-        if not cover:
-            cover = "https://via.placeholder.com/240x150"
+        # IMPORTANT: для iframe нужно абсолютный путь
+        cover = "/" + cover
 
         desc = tale.get("description","")
 
         html += f"""
         <div class="card">
+
             <img src="{cover}">
+
             <div class="card-title">{tale_name}</div>
+
             <div class="card-desc">{desc}</div>
+
             <a class="start-btn" href="?tale={tale_name}">✨ Начать</a>
+
         </div>
         """
 
     html += "</div>"
 
-    components.html(html, height=320, scrolling=False)
+    components.html(html, height=420, scrolling=False)
 
 
 # -------------------------
