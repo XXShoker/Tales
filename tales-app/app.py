@@ -165,7 +165,6 @@ if "scene_history" not in st.session_state:
 if "achieved_endings" not in st.session_state:
     st.session_state.achieved_endings = {}  # {tale_name: set(endings_ids)}
 
-# --- ИСПРАВЛЕННАЯ функция подсчета концовок ---
 def count_total_endings(tale_name):
     """Подсчитывает количество концовок (сцен с options=[]) в сказке"""
     tale = tales.get(tale_name)
@@ -173,10 +172,8 @@ def count_total_endings(tale_name):
         return 0
     count = 0
     for scene_id, scene in tale["scenes"].items():
-        # Концовка - это сцена без options
         if scene.get("options") == []:
             count += 1
-    print(f"Сказка {tale_name}: найдено {count} концовок")  # Для отладки
     return count
 
 def get_ending_stats(tale_name):
@@ -264,7 +261,9 @@ with st.sidebar:
         st.markdown(f"### 📊 Прогресс")
         st.markdown(f"**{st.session_state.selected_tale}**")
         if total > 0:
-            st.progress(opened / total)
+            # ИСПРАВЛЕНИЕ: прогресс должен быть от 0 до 1
+            progress_value = min(opened / total, 1.0)
+            st.progress(progress_value)
         st.markdown(f"Найдено концовок: **{opened} / {total}**")
         st.markdown("---")
     
@@ -344,7 +343,9 @@ else:
                 ending_id = f"{ending_type}_{ending_num}"
                 if tale not in st.session_state.achieved_endings:
                     st.session_state.achieved_endings[tale] = set()
-                st.session_state.achieved_endings[tale].add(ending_id)
+                if ending_id not in st.session_state.achieved_endings[tale]:
+                    st.session_state.achieved_endings[tale].add(ending_id)
+                    st.rerun()
                 
                 # Показываем информацию о концовке
                 st.markdown("---")
@@ -363,12 +364,12 @@ else:
                 # Старая сказка без типов концовок
                 tale = st.session_state.selected_tale
                 # Создаем уникальный ID для концовки на основе текста
-                ending_id = f"end_{len(st.session_state.achieved_endings.get(tale, set())) + 1}_{hash(current_scene['text'][:50])}"
+                ending_id = f"end_{hash(current_scene['text'][:50])}"
                 if tale not in st.session_state.achieved_endings:
                     st.session_state.achieved_endings[tale] = set()
                 if ending_id not in st.session_state.achieved_endings[tale]:
                     st.session_state.achieved_endings[tale].add(ending_id)
-                    st.rerun()  # Важно: обновляем страницу для отображения нового счетчика
+                    st.rerun()
                 
                 st.markdown("---")
                 st.markdown("🎉 **Конец сказки!**")
