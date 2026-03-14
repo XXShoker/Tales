@@ -15,7 +15,7 @@ st.markdown("""
         background-color: #fef9e7;
     }
     
-    /* Заголовки - ТЁМНЫЕ И ЧИТАЕМЫЕ */
+    /* Заголовки - тёмные и читаемые */
     h1, h2, h3, h4, h5, h6 {
         font-family: 'Cormorant Garamond', serif;
         color: #2c1e0e !important;
@@ -29,7 +29,17 @@ st.markdown("""
         color: #2c1e0e !important;
     }
     
-    /* Текст - ТЁМНЫЙ */
+    /* Заголовки секций */
+    .section-header {
+        font-size: 2.2rem;
+        margin: 40px 0 20px 0;
+        padding-left: 15px;
+        border-left: 5px solid #b5926a;
+        color: #2c1e0e !important;
+        font-family: 'Cormorant Garamond', serif;
+    }
+    
+    /* Текст - тёмный */
     p, li, .stMarkdown, .stText, .stChatMessage p {
         font-family: 'Open Sans', sans-serif;
         color: #1a1309 !important;
@@ -69,7 +79,6 @@ st.markdown("""
         width: 100%;
         min-height: 60px;
         transition: all 0.2s ease;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     
     .stButton > button:hover {
@@ -79,7 +88,7 @@ st.markdown("""
         box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     }
     
-    /* КАРТОЧКИ СКАЗОК - 1000px */
+    /* КАРТОЧКИ - ФИКСИРОВАННАЯ ВЫСОТА 1000px */
     div[data-testid="column"] > div {
         background-color: #fffaf0;
         border-radius: 20px;
@@ -89,16 +98,9 @@ st.markdown("""
         height: 1000px !important;
         display: flex;
         flex-direction: column;
-        transition: all 0.3s ease;
     }
     
-    div[data-testid="column"] > div:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-        border-color: #d4b68a;
-    }
-    
-    /* Изображения - 500px */
+    /* Изображения - ФИКСИРОВАННАЯ ВЫСОТА 500px */
     div[data-testid="column"] img {
         width: 100%;
         height: 500px !important;
@@ -108,21 +110,19 @@ st.markdown("""
         margin-bottom: 20px;
     }
     
-    /* Заголовок сказки в карточке */
+    /* Заголовок сказки */
     div[data-testid="column"] h3 {
         font-size: 2rem;
         margin: 0 0 15px 0;
         color: #2c1e0e !important;
     }
     
-    /* Описание сказки в карточке */
+    /* Описание сказки */
     div[data-testid="column"] p {
         font-size: 1.1rem;
         margin: 0 0 20px 0;
         flex-grow: 1;
         color: #1a1309 !important;
-        overflow-y: auto;
-        max-height: 150px;
     }
     
     /* Кнопка в карточке */
@@ -149,41 +149,22 @@ st.markdown("""
         border-radius: 10px;
     }
     
-    /* Заголовки секций */
-    .section-header {
-        font-size: 2.2rem;
-        margin: 40px 0 20px 0;
-        padding-left: 15px;
-        border-left: 5px solid #b5926a;
-        background: linear-gradient(90deg, rgba(213, 182, 138, 0.1) 0%, rgba(255,255,255,0) 100%);
-        padding: 10px 20px;
-        color: #2c1e0e !important;
-    }
-    
-    /* Специальный заголовок для 16+ */
-    .section-header-adult {
-        font-size: 2.2rem;
-        margin: 40px 0 20px 0;
-        padding-left: 15px;
-        border-left: 5px solid #b22222;
-        background: linear-gradient(90deg, rgba(178, 34, 34, 0.1) 0%, rgba(255,255,255,0) 100%);
-        padding: 10px 20px;
-        color: #8b0000 !important;
-    }
-    
     /* Адаптация для мобильных */
     @media (max-width: 600px) {
         div[data-testid="column"] > div {
-            height: 800px;
+            height: 800px !important;
             padding: 20px;
         }
         div[data-testid="column"] img {
             height: 400px !important;
         }
+        div[data-testid="column"] h3 {
+            font-size: 1.5rem;
+        }
         h1 {
             font-size: 2rem;
         }
-        .section-header, .section-header-adult {
+        .section-header {
             font-size: 1.8rem;
         }
     }
@@ -210,7 +191,7 @@ def count_total_endings(tale_name):
         return 0
     count = 0
     for scene in tale["scenes"].values():
-        if scene.get("options") == [] and scene.get("ending_type"):
+        if scene.get("options") == []:
             count += 1
     return count
 
@@ -239,8 +220,6 @@ def handle_choice(choice_text, next_scene_id):
     next_scene = st.session_state.scenes.get(next_scene_id)
     if next_scene:
         st.session_state.messages.append({"role": "assistant", "content": next_scene["text"]})
-    else:
-        st.error(f"Сцена {next_scene_id} не найдена")
 
 def go_back():
     if len(st.session_state.scene_history) > 1:
@@ -281,158 +260,110 @@ st.title("📖 Интерактивные сказки")
 st.caption("Выбирайте свой путь в каждой истории!")
 
 if st.session_state.selected_tale is None:
-    # Получаем список всех сказок
+    # Определяем категории
     all_tales = list(tales.keys())
     
-    # Определяем категории
-    soviet_tales = ["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"]
-    new_tales = ["Путешествие в Волшебный лес"]
-    adult_tales = ["Хроники разбитых часов: Детектив времени"]
+    # Категория 1: Классические сказки (детские)
+    classic_tales = ["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"]
     
-    # --- Советские сказки ---
-    if any(t in all_tales for t in soviet_tales):
-        st.markdown('<div class="section-header">📚 Советские сказки</div>', unsafe_allow_html=True)
+    # Категория 2: Приключения и фэнтези
+    adventure_tales = ["Путешествие в Волшебный лес"]
+    
+    # Категория 3: 16+ (для взрослых)
+    adult_tales = ["Хроники разбитых часов: Детектив времени", "Мелодия дождя"]
+    
+    # Отображаем категории
+    if classic_tales:
+        st.markdown('<div class="section-header">📚 Классические сказки</div>', unsafe_allow_html=True)
         col1, col2 = st.columns(2)
-        
-        with col1:
-            # Колобок
-            if "Колобок" in all_tales:
+        classic_list = [t for t in classic_tales if t in all_tales]
+        for i, tale_name in enumerate(classic_list):
+            with col1 if i % 2 == 0 else col2:
                 with st.container():
-                    if os.path.exists("images/kolobok_cover.jpg"):
-                        st.image("images/kolobok_cover.jpg", use_container_width=True)
+                    cover_path = tales[tale_name].get("cover", "")
+                    if cover_path and os.path.exists(cover_path):
+                        st.image(cover_path, use_container_width=True)
                     else:
-                        st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨+Колобок", use_container_width=True)
-                    st.markdown("### Колобок")
-                    st.markdown(tales["Колобок"]["description"])
-                    if st.button("✨ Начать", key="start_kolobok", use_container_width=True):
-                        start_tale("Колобок")
-                        st.rerun()
-            
-            # Золотая рыбка
-            if "Золотая рыбка" in all_tales:
-                with st.container():
-                    if os.path.exists("images/rybka_cover.jpg"):
-                        st.image("images/rybka_cover.jpg", use_container_width=True)
-                    else:
-                        st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨+Золотая+рыбка", use_container_width=True)
-                    st.markdown("### Золотая рыбка")
-                    st.markdown(tales["Золотая рыбка"]["description"])
-                    if st.button("✨ Начать", key="start_rybka", use_container_width=True):
-                        start_tale("Золотая рыбка")
-                        st.rerun()
-        
-        with col2:
-            # Теремок
-            if "Теремок" in all_tales:
-                with st.container():
-                    if os.path.exists("images/teremok_cover.jpg"):
-                        st.image("images/teremok_cover.jpg", use_container_width=True)
-                    else:
-                        st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨+Теремок", use_container_width=True)
-                    st.markdown("### Теремок")
-                    st.markdown(tales["Теремок"]["description"])
-                    if st.button("✨ Начать", key="start_teremok", use_container_width=True):
-                        start_tale("Теремок")
-                        st.rerun()
-            
-            # Курочка Ряба
-            if "Курочка Ряба" in all_tales:
-                with st.container():
-                    if os.path.exists("images/ryaba_cover.jpg"):
-                        st.image("images/ryaba_cover.jpg", use_container_width=True)
-                    else:
-                        st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨+Курочка+Ряба", use_container_width=True)
-                    st.markdown("### Курочка Ряба")
-                    st.markdown(tales["Курочка Ряба"]["description"])
-                    if st.button("✨ Начать", key="start_ryaba", use_container_width=True):
-                        start_tale("Курочка Ряба")
+                        st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
+                    st.markdown(f"### {tale_name}")
+                    st.markdown(tales[tale_name].get("description", ""))
+                    if st.button("✨ Начать", key=f"classic_{tale_name}", use_container_width=True):
+                        start_tale(tale_name)
                         st.rerun()
     
-    # --- Новые сказки ---
-    if any(t in all_tales for t in new_tales):
-        st.markdown('<div class="section-header">🆕 Новые сказки</div>', unsafe_allow_html=True)
+    if adventure_tales:
+        st.markdown('<div class="section-header">🧚 Приключения и фэнтези</div>', unsafe_allow_html=True)
         col1, col2 = st.columns(2)
-        with col1:
-            if "Путешествие в Волшебный лес" in all_tales:
+        adventure_list = [t for t in adventure_tales if t in all_tales]
+        for i, tale_name in enumerate(adventure_list):
+            with col1 if i % 2 == 0 else col2:
                 with st.container():
-                    if os.path.exists("images/forest_cover.jpg"):
-                        st.image("images/forest_cover.jpg", use_container_width=True)
+                    cover_path = tales[tale_name].get("cover", "")
+                    if cover_path and os.path.exists(cover_path):
+                        st.image(cover_path, use_container_width=True)
                     else:
-                        st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨+Волшебный+лес", use_container_width=True)
-                    st.markdown("### Путешествие в Волшебный лес")
-                    st.markdown(tales["Путешествие в Волшебный лес"]["description"])
-                    if st.button("✨ Начать", key="start_forest", use_container_width=True):
-                        start_tale("Путешествие в Волшебный лес")
+                        st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
+                    st.markdown(f"### {tale_name}")
+                    st.markdown(tales[tale_name].get("description", ""))
+                    if st.button("✨ Начать", key=f"adventure_{tale_name}", use_container_width=True):
+                        start_tale(tale_name)
                         st.rerun()
     
-    # --- 16+ Детективы ---
-    if any(t in all_tales for t in adult_tales):
-        st.markdown('<div class="section-header-adult">🔞 16+ Детективы</div>', unsafe_allow_html=True)
+    if adult_tales:
+        st.markdown('<div class="section-header">🔞 16+ Детективы и романтика</div>', unsafe_allow_html=True)
         col1, col2 = st.columns(2)
-        with col1:
-            if "Хроники разбитых часов: Детектив времени" in all_tales:
+        adult_list = [t for t in adult_tales if t in all_tales]
+        for i, tale_name in enumerate(adult_list):
+            with col1 if i % 2 == 0 else col2:
                 with st.container():
-                    if os.path.exists("images/time_detective_cover.jpg"):
-                        st.image("images/time_detective_cover.jpg", use_container_width=True)
+                    cover_path = tales[tale_name].get("cover", "")
+                    if cover_path and os.path.exists(cover_path):
+                        st.image(cover_path, use_container_width=True)
                     else:
-                        st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=🔍+Детектив+времени", use_container_width=True)
-                    st.markdown("### Хроники разбитых часов")
-                    st.markdown(tales["Хроники разбитых часов: Детектив времени"]["description"])
-                    if st.button("🔍 Начать расследование", key="start_detective", use_container_width=True):
-                        start_tale("Хроники разбитых часов: Детектив времени")
+                        st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
+                    st.markdown(f"### {tale_name}")
+                    st.markdown(tales[tale_name].get("description", ""))
+                    if st.button("✨ Начать", key=f"adult_{tale_name}", use_container_width=True):
+                        start_tale(tale_name)
                         st.rerun()
 
     st.markdown("---")
     st.markdown("🌟 *Все сказки бесплатны. Если хотите поддержать проект, воспользуйтесь кнопкой в боковой панели.*")
 
 else:
-    # --- Отображение выбранной сказки ---
+    # Сама сказка
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
-
-    current_scene = st.session_state.scenes.get(st.session_state.scene_id)
-
-    if current_scene:
-        if not current_scene.get("options"):
-            # Это концовка
-            if current_scene.get("ending_type") and current_scene.get("ending_number"):
-                ending_id = f"{current_scene['ending_type']}_{current_scene['ending_number']}"
-                
-                if st.session_state.selected_tale not in st.session_state.achieved_endings:
-                    st.session_state.achieved_endings[st.session_state.selected_tale] = set()
-                
-                if ending_id not in st.session_state.achieved_endings[st.session_state.selected_tale]:
-                    st.session_state.achieved_endings[st.session_state.selected_tale].add(ending_id)
-                    st.rerun()
-                
-                # Определяем эмодзи для типа
-                type_emoji = {
-                    "happy": "😊",
-                    "sad": "😢",
-                    "neutral": "😐",
-                    "secret": "🤫",
-                    "cliffhanger": "😱"
-                }.get(current_scene["ending_type"], "🎉")
-                
-                st.markdown("---")
-                st.markdown(f"## {type_emoji} **Концовка #{current_scene['ending_number']}**")
-                st.markdown(f"**Тип:** {current_scene['ending_type'].capitalize()}")
-                
-                if current_scene["ending_type"] == "happy":
-                    st.success("🎉 Поздравляем! Это хороший конец!")
-                elif current_scene["ending_type"] == "sad":
-                    st.error("💔 Это грустный конец. Попробуй пройти иначе!")
-                elif current_scene["ending_type"] == "cliffhanger":
-                    st.warning("😱 Это открытый финал! Продолжение следует?")
-                else:
-                    st.info("🤔 Неоднозначный финал. Возможно, есть и другие пути...")
-                
-                opened, total = get_ending_stats(st.session_state.selected_tale)
-                st.markdown(f"*Всего в этой истории **{total}** концовок. Ты нашёл уже **{opened}**.*")
+    
+    current = st.session_state.scenes.get(st.session_state.scene_id)
+    if current:
+        if not current.get("options"):
+            if current.get("ending_type") and current.get("ending_number"):
+                ending_id = f"{current['ending_type']}_{current['ending_number']}"
             else:
-                st.markdown("---")
-                st.markdown("🎉 **Конец сказки!**")
+                ending_id = current["text"][:100]
+            
+            if st.session_state.selected_tale not in st.session_state.achieved_endings:
+                st.session_state.achieved_endings[st.session_state.selected_tale] = set()
+            
+            if ending_id not in st.session_state.achieved_endings[st.session_state.selected_tale]:
+                st.session_state.achieved_endings[st.session_state.selected_tale].add(ending_id)
+                st.rerun()
+            
+            st.markdown("---")
+            if current.get("ending_type"):
+                emoji = {"happy": "😊", "sad": "😢", "neutral": "😐", "secret": "🤫"}.get(current["ending_type"], "🎉")
+                st.markdown(f"## {emoji} **Концовка #{current['ending_number']}**")
+                if current["ending_type"] == "happy":
+                    st.success("🎉 Поздравляем! Это счастливый конец!")
+                else:
+                    st.info("😕 Это не счастливый конец. Попробуй пройти сказку снова!")
+            else:
+                st.markdown("## 🎉 **Конец сказки!**")
+            
+            opened, total = get_ending_stats(st.session_state.selected_tale)
+            st.markdown(f"*Всего в этой сказке **{total}** концовок. Ты нашёл уже **{opened}**.*")
             
             st.markdown("---")
             col1, col2 = st.columns(2)
@@ -445,18 +376,17 @@ else:
                     start_tale(st.session_state.selected_tale)
                     st.rerun()
         else:
-            # Обычная сцена с выбором
             st.markdown("### Твой выбор:")
-            for opt in current_scene["options"]:
-                if st.button(opt["text"], key=f"choice_{opt['next']}_{hash(opt['text'])}", use_container_width=True):
+            for opt in current["options"]:
+                if st.button(opt["text"], key=f"choice_{opt['next']}", use_container_width=True):
                     handle_choice(opt["text"], opt["next"])
                     st.rerun()
             if len(st.session_state.scene_history) > 1:
                 st.markdown("---")
-                if st.button("↩️ Назад к предыдущему выбору", use_container_width=True):
+                if st.button("↩️ Назад к выбору", use_container_width=True):
                     go_back()
     else:
-        st.error("⚠️ Сцена не найдена. Возможно, путь ведёт в никуда.")
+        st.error("⚠️ Сцена не найдена")
         if st.button("⬅️ К выбору сказок", use_container_width=True):
             reset_to_main()
             st.rerun()
