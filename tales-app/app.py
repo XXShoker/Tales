@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 from tales_data import tales
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="centered")
@@ -93,9 +94,10 @@ if st.session_state.selected_tale is None:
     for i, tale_name in enumerate(tale_names):
         with cols[i % 2]:
             with st.container(border=True):
-                # Отображаем обложку, если есть
-                if tales[tale_name].get("cover"):
-                    st.image(tales[tale_name]["cover"], width='stretch')
+                # Отображаем обложку, если файл существует
+                cover_path = tales[tale_name].get("cover")
+                if cover_path and os.path.exists(cover_path):
+                    st.image(cover_path, width='stretch')
                 else:
                     st.image("https://via.placeholder.com/400x200/ffe6f0/ff69b4?text=✨+Сказка", width='stretch')
                 st.markdown(f"#### {tale_name}")
@@ -115,8 +117,8 @@ else:
     current_scene = st.session_state.scenes.get(st.session_state.scene_id)
 
     if current_scene:
-        # --- Отображение картинки для текущей сцены (заглушка или локальная) ---
-        if current_scene.get("image"):
+        # --- Отображение картинки для текущей сцены (если есть локальный файл) ---
+        if current_scene.get("image") and os.path.exists(current_scene["image"]):
             st.image(current_scene["image"], width='stretch', caption="✨ Иллюстрация к сказке")
         else:
             st.image("https://via.placeholder.com/800x400/ffe6f0/ff69b4?text=✨+Представьте+сами", width='stretch')
