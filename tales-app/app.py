@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import streamlit.components.v1 as components
 from tales_data import tales
+import base64
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="centered")
 
