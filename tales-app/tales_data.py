@@ -1,261 +1,283 @@
 tales = {
     "Колобок": {
-        "description": "Помоги Колобку убежать от всех зверей или найди новый путь! Тебя ждут неожиданные встречи и настоящие друзья.",
-        "cover": "images/kolobok_cover.jpg",
-        "scenes": {
-            "start": {
-                "text": "🍞 Жили-были дедушка и бабушка. Испекла как-то бабушка вкусного, румяного Колобка и положила на окошко остывать. Лежит Колобок, на солнышке греется, по сторонам поглядывает. Скучно ему стало лежать! Спрыгнул он с окошка – шлёп! – на травку и покатился по дорожке. Катится-катится, песенку напевает, а навстречу ему – Заяц! Длинные уши, быстрые ноги, остановился и говорит: «Колобок, Колобок, какой ты румяный! А ну-ка, я тебя съем!»",
-                "prompt": "a round smiling bun on a windowsill, traditional Russian fairy tale style, bright colors, children's book illustration",
-                "options": [
-                    {"text": "Спеть песенку и укатиться дальше", "next": "meet_wolf"},
-                    {"text": "Позвать Зайца с собой путешествовать", "next": "friend_zaits"},
-                    {"text": "Испугаться и вернуться домой", "next": "home_end"},
-                    {"text": "Спросить у Зайца, где можно найти приключения", "next": "zaits_advice"}
-                ]
-            },
-            "zaits_advice": {
-                "text": "🐰 Заяц удивился: «Приключения? Ой, я сам боюсь приключений! Но говорят, за тем лесом есть речка, а в речке живёт чудо-юдо рыба-кит. Она всё на свете знает! Только будь осторожен!»",
-                "prompt": "a hare talking to a bun in a sunny forest, pointing towards a river, fairy tale illustration",
-                "options": [
-                    {"text": "Покатиться к речке", "next": "river"},
-                    {"text": "Не рисковать, катиться дальше по тропинке", "next": "meet_wolf"}
-                ]
-            },
-            "river": {
-                "text": "🌊 Колобок докатился до реки. Вода прозрачная, блестит на солнце. Видит – на берегу сидит огромный Кит и плачет горькими слезами: буль-буль!",
-                "prompt": "a sad giant whale on a riverbank, a small bun nearby, fairy tale style, colorful",
-                "options": [
-                    {"text": "Спросить, почему плачешь", "next": "whale_sad"},
-                    {"text": "Испугаться и убежать обратно", "next": "meet_wolf"}
-                ]
-            },
-            "whale_sad": {
-                "text": "🐋 Кит всхлипнул: «Я проглотил солнышко! Оно упало с неба, я его и проглотил по глупости. Теперь мне жарко, а в лесу темно! Помоги мне его выпустить, тогда я помогу тебе переправиться через реку». Колобок задумался.",
-                "prompt": "a whale with a sun inside its mouth, a bun looking thoughtful, fantasy scene",
-                "options": [
-                    {"text": "Попробовать пощекотать кита", "next": "tickle_whale"},
-                    {"text": "Спеть весёлую песню, чтобы кит рассмеялся", "next": "sing_whale"},
-                    {"text": "Отказаться и искать другой путь", "next": "meet_wolf"}
-                ]
-            },
-            "tickle_whale": {
-                "text": "😄 Колобок подкатился поближе и давай щекотать кита: щекотно-щекотно! Кит затрясся, захохотал – ха-ха-ха! – и выплюнул солнце! Солнышко поднялось в небо, засияло, и сразу стало светло и тепло. Кит обрадовался и переправил Колобка на другой берег. «Спасибо, маленький!»",
-                "prompt": "a laughing whale spitting out the sun, a bun on the shore, bright sunny landscape",
-                "options": [
-                    {"text": "Исследовать лес", "next": "forest"},
-                    {"text": "Вернуться обратно (скучно)", "next": "meet_wolf"}
-                ]
-            },
-            "sing_whale": {
-                "text": "🎵 Колобок запел свою любимую песенку: «Я Колобок, Колобок, я от бабушки ушёл, я от дедушки ушёл...» Кит заслушался, улыбнулся, а потом как расхохочется! От смеха солнце вылетело и поднялось на небо. «Вот это песенка! – сказал кит. – Садись на меня, перевезу». И Колобок оказался в новом лесу.",
-                "prompt": "a whale laughing with the sun rising, a bun singing on its back, magical illustration",
-                "options": [
-                    {"text": "Пойти на свет костра", "next": "campfire"},
-                    {"text": "Пойти вглубь леса", "next": "deep_forest"}
-                ]
-            },
-            "forest": {
-                "text": "🌲 В лесу темно и прохладно, пахнет грибами и ягодами. Вдруг из кустов выходит Лиса – рыжая, пушистая, хвост метёлкой. «Ах, какой аппетитный Колобок!» – облизнулась она.",
-                "prompt": "a fox peeking from bushes looking at a bun, dark forest atmosphere, fairy tale",
-                "options": [
-                    {"text": "Попытаться убежать", "next": "run_forest"},
-                    {"text": "Позвать на помощь", "next": "help_forest"},
-                    {"text": "Заговорить с Лисой", "next": "talk_fox_forest"}
-                ]
-            },
-            "campfire": {
-                "text": "🔥 У костра сидят лесные звери: Медведь, Волк и Ёжик. Они жарят грибы на палочках, и аромат стоит такой, что слюнки текут. Медведь заметил Колобка: «О, ещё один путешественник! Иди к нам, места хватит!»",
-                "prompt": "a campfire with bear, wolf, hedgehog roasting mushrooms, a bun approaching, night scene",
-                "options": [
-                    {"text": "Попроситься к костру", "next": "join_campfire"},
-                    {"text": "Подкрасться и стащить гриб", "next": "steal_mushroom"},
-                    {"text": "Испугаться и убежать", "next": "run_away_end"}
-                ]
-            },
-            "join_campfire": {
-                "text": "🐻🐺🦔 Колобок подкатился к костру. Медведь дал ему грибок, Ёжик подвинулся. «Ты откуда?» – спрашивают. Колобок рассказал свою историю. Волк покачал головой: «Опасно одному. Оставайся с нами – мы лес охраняем, никого в обиду не даём!»",
-                "prompt": "forest animals sitting around a campfire, a bun joining them, friendly atmosphere",
-                "options": [
-                    {"text": "Согласиться стать лесным стражем", "next": "guard_end"},
-                    {"text": "Отказаться и пойти дальше", "next": "deep_forest"}
-                ]
-            },
-            "guard_end": {
-                "text": "🌟 Так Колобок и остался в лесу. Теперь он вместе с Медведем, Волком и Ёжиком сторожит покой. А по вечерам все собираются у костра, и Колобок поёт им песенки. Счастливый конец! 🌳✨",
-                "prompt": "a bun singing by a campfire surrounded by happy forest animals, starry night, celebration",
-                "options": []
-            },
-            "steal_mushroom": {
-                "text": "🍄 Колобок подкатился поближе, улучил момент и схватил гриб! Да покатился прочь. Но Ёжик быстрее! Догнал его и кольнул иголками – ой-ой-ой! Колобок сдулся и больше не мог катиться. Пришлось ему остаться у ёжика, чинить иголки. Грустный конец.",
-                "prompt": "a bun trying to steal a mushroom from a hedgehog, hedgehog pricks it, sad scene",
-                "options": []
-            },
-            "deep_forest": {
-                "text": "🌑 Колобок закатился в самую чащу. Ветки скрипят, совы ухают – страшно! И вдруг его окружает целая стая лисят: «Попался! Наш ужин!»",
-                "prompt": "a bun surrounded by many little foxes in a dark forest, suspenseful, fairy tale",
-                "options": [
-                    {"text": "Сдаться и спеть песенку", "next": "sing_fox"},
-                    {"text": "Попытаться обмануть", "next": "trick_fox"}
-                ]
-            },
-            "sing_fox": {
-                "text": "🎶 Колобок запел, да так звонко и весело, что лисята сами начали подпевать и пританцовывать. Тут и Лиса-мама пришла, послушала и говорит: «Не будем мы тебя есть, оставайся у нас, будешь лисят музыке учить!» Колобок согласился. Теперь у него целый хор!",
-                "prompt": "a bun singing with a group of dancing foxes, happy scene, forest glade",
-                "options": []
-            },
-            "trick_fox": {
-                "text": "🦊 Колобок сказал: «А я знаю, где клад зарыт! Хотите покажу?» Лисята разинули рты, а Колобок – шмыг! – под корягу и укатился далеко-далеко. Выкатился к деревне, где его подобрала маленькая девочка и принесла домой. Теперь Колобок – любимая игрушка малыша.",
-                "prompt": "a bun rolling away from foxes, towards a village with a little girl, escape scene",
-                "options": []
-            },
-            "friend_zaits": {
-                "text": "🐰 Заяц ушами захлопал: «Путешествовать? А это интересно! Давай вместе!» И покатились они вдвоём по тропинке. Вдруг навстречу – Волк, зубами щёлк! «Ага, завтрак сам идёт!»",
-                "prompt": "a bun and a hare walking together, a wolf appears on the path, tense moment",
-                "options": [
-                    {"text": "Предложить Волку дружбу", "next": "friend_pack"},
-                    {"text": "Обмануть Волка и убежать", "next": "run_wolf_with_friend"}
-                ]
-            },
-            "friend_pack": {
-                "text": "🐺 «Не ешь нас, – сказал Колобок, – мы путешествуем, ищем друзей! Хочешь с нами?» Волк удивился: «Друзей? А что это такое?» – «Это когда вместе весело!» Волк подумал и согласился. Пошли дальше втроём. Вскоре встретили Медведя, который нёс бочонок мёда. «Мед, кто хочет?» – заревел он.",
-                "prompt": "a bun, a hare, and a wolf walking together, meeting a bear with a honey barrel, friendly",
-                "options": [
-                    {"text": "Пойти пить чай с мёдом", "next": "bear_tea"},
-                    {"text": "Продолжить путь без Медведя", "next": "fox_meet_with_friends"}
-                ]
-            },
-            "bear_tea": {
-                "text": "🍯 Медведь оказался гостеприимным. Разлил чай по кружкам, достал сушки. За чаем рассказал: «Есть в нашем лесу волшебное озеро. Кто в нём искупается – становится самым добрым. Только путь туда через тёмную чащу». Друзья переглянулись.",
-                "prompt": "animals having tea with a bear in a cozy forest den, honey and cookies, magical atmosphere",
-                "options": [
-                    {"text": "Отправиться к озеру всей компанией", "next": "lake_journey"},
-                    {"text": "Остаться у Медведя", "next": "stay_bear_end"}
-                ]
-            },
-            "stay_bear_end": {
-                "text": "🏡 Решили не рисковать и остались у Медведя. Построили большой дом, позвали других зверей. Теперь у них целая деревня, где все дружат и помогают друг другу. А Колобок – главный запевала на праздниках.",
-                "prompt": "a cozy animal village in the forest, a bun singing, animals dancing, happy scene",
-                "options": []
-            },
-            "lake_journey": {
-                "text": "🥾 Пошли они к озеру. Идут через чащу, а навстречу – Лиса. «Куда путь держите? Я тут все тропы знаю, могу проводить!» – ласково говорит, а сама глаза хитро щурит.",
-                "prompt": "a group of animals (bun, hare, wolf, bear) in a dark forest, meeting a sly fox",
-                "options": [
-                    {"text": "Довериться Лисе", "next": "trust_fox_lake"},
-                    {"text": "Поблагодарить, но пойти своей дорогой", "next": "own_way_lake"}
-                ]
-            },
-            "trust_fox_lake": {
-                "text": "🦊 Лиса завела их в болото, а сама прыг в кусты и была такова. Друзья чуть не увязли, но выбрались и поняли, что озеро – это просто большая лужа. Но они не расстроились: ведь они вместе, и это главное. Вернулись к Медведю и устроили пир.",
-                "prompt": "animals stuck in a swamp, looking disappointed, then returning to the bear's den",
-                "options": []
-            },
-            "own_way_lake": {
-                "text": "💧 Не послушали Лису и вышли к настоящему озеру. Вода в нём голубая-голубая. Искупались все по очереди, и сразу стали добрее. Волк перестал охотиться, Медведь поделился мёдом, а Заяц больше не боялся. Жили они долго и счастливо.",
-                "prompt": "animals bathing in a magical blue lake, glowing water, happy and kind expressions",
-                "options": []
-            },
-            "run_wolf_with_friend": {
-                "text": "🏃 Колобок с Зайцем притворились, что согласны, а сами – прыг в кусты! Волк за ними, да потерял след. Решили друзья спрятаться в норе, а там – Барсук. «Кто такие?» – спрашивает.",
-                "prompt": "a bun and a hare hiding in a badger's burrow, the badger looking curious",
-                "options": [
-                    {"text": "Спрятаться в норе", "next": "hole"},
-                    {"text": "Попросить помощи у людей", "next": "people"}
-                ]
-            },
-            "hole": {
-                "text": "🦡 Барсук пустил их, но сказал: «Расскажете сказку – будете моими гостями». Колобок рассказал про свои приключения. Барсук так смеялся, что угостил их орехами и ягодами. Волк прошёл мимо, не заметил. А Колобок с Зайцем решили остаться у Барсука – уж очень уютно!",
-                "prompt": "a badger offering nuts and berries to a bun and a hare in a cozy burrow, laughing",
-                "options": [
-                    {"text": "Остаться у Барсука", "next": "badger_end"},
-                    {"text": "Продолжить путь", "next": "forest"}
-                ]
-            },
-            "badger_end": {
-                "text": "🌰 Так и зажили они втроём. Барсук научил их грибы собирать, Заяц огород вскопал, Колобок песни поёт. Хорошая жизнь!",
-                "prompt": "a badger, a hare, and a bun gardening and singing, peaceful forest home",
-                "options": []
-            },
-            "people": {
-                "text": "🏡 Побежали они к людям, в деревню. Там дети как раз играли. Увидели Зайца и Колобка – обрадовались! Взяли их к себе. Теперь Колобок живёт в тёплом доме, и дети каждый день с ним играют. Заяц тоже доволен.",
-                "prompt": "children playing with a bun and a hare in a sunny village, joyful scene",
-                "options": []
-            },
-            "meet_wolf": {
-                "text": "🐺 Катится Колобок, песенку поёт, а навстречу Волк – серый, зубастый: «Колобок, Колобок, я тебя съем!»",
-                "prompt": "a wolf on a forest path facing a bun, tense moment, fairy tale",
-                "options": [
-                    {"text": "Спеть песенку и укатиться", "next": "meet_bear"},
-                    {"text": "Позвать Волка в компанию", "next": "friend_pack"},
-                    {"text": "Испугаться и вернуться к Зайцу", "next": "friend_zaits"}
-                ]
-            },
-            "meet_bear": {
-                "text": "🐻 Укатился Колобок от Волка и покатился дальше. А навстречу Медведь – косолапый, огромный: «Колобок, Колобок, я тебя съем!»",
-                "prompt": "a bear towering over a bun on a forest path, the bun looks small",
-                "options": [
-                    {"text": "Спеть песенку", "next": "meet_fox"},
-                    {"text": "Позвать Медведя в компанию", "next": "bear_tea"},
-                    {"text": "Предложить мёд (откуда у Колобка мёд?)", "next": "magic_meet_bear"}
-                ]
-            },
-            "magic_meet_bear": {
-                "text": "🍯 Колобок вспомнил, что бабушка положила ему в кармашек баночку мёда – на всякий случай. Достал, протянул Медведю. Тот обрадовался: «О, мёд! Давай дружить!» И пошли они вместе. Вскоре вышли на опушку, а там Лиса сидит, хвостом метёт.",
-                "prompt": "a bun offering honey to a bear, they become friends, a fox watching from afar",
-                "options": [
-                    {"text": "Довериться Лисе", "next": "fox_trick"},
-                    {"text": "Попросить Медведя остаться", "next": "bear_stay"}
-                ]
-            },
-            "bear_stay": {
-                "text": "🐻🍓 Медведь остался с Колобком. Лиса увидела медведя – и бежать! Не стала связываться. А Колобок с медведем нашли полянку, полную малины. Так и живут – малину едят, мёдом запивают.",
-                "prompt": "a bear and a bun on a raspberry patch, eating happily, the fox running away",
-                "options": []
-            },
-            "fox_trick": {
-                "text": "🦊 Лиса притворилась доброй: «Идите за мной, я знаю самую лучшую полянку». Сама думала Колобка съесть. Но Колобок заметил, как она облизывается, и шепнул Медведю. Тот как рявкнет! Лиса испугалась и убежала. Колобок спасён!",
-                "prompt": "a fox leading a bear and a bun, the bun looks suspicious, then the bear roars",
-                "options": [
-                    {"text": "Катиться домой", "next": "home_end"},
-                    {"text": "Искать друзей в лесу", "next": "forest"}
-                ]
-            },
-            "meet_fox": {
-                "text": "🦊 Катится Колобок, а навстречу Лиса – рыжая, пушистая, голос сладкий: «Колобок, Колобок, спой мне песенку!»",
-                "prompt": "a fox sitting prettily, asking a bun to sing, forest path",
-                "options": [
-                    {"text": "Сесть Лисе на нос и запеть", "next": "fox_eat"},
-                    {"text": "Предложить Лисе подружиться", "next": "fox_friend"},
-                    {"text": "Попытаться обмануть Лису", "next": "fox_trick_end"}
-                ]
-            },
-            "fox_eat": {
-                "text": "😢 Колобок поверил Лисе, сел к ней на нос и запел. А Лиса – ам! – и съела его. Очень грустный конец.",
-                "prompt": "a fox eating a bun, sad scene, dark colors",
-                "options": []
-            },
-            "fox_friend": {
-                "text": "🦊🍞 «Давай лучше дружить, – сказал Колобок. – Я буду петь, а ты слушать, и никто никого не ест». Лиса задумалась: «А это интересно... Давай попробуем!» И стали они неразлучными друзьями. Вместе путешествуют, песни поют.",
-                "prompt": "a fox and a bun walking together, singing, friendship, forest background",
-                "options": []
-            },
-            "fox_trick_end": {
-                "text": "🎵 Колобок говорит: «У меня есть волшебная песенка, которая делает всех добрее. Спеть?» Лиса обрадовалась: «Спой!» А Колобок запел, да так громко, что прибежали другие звери. Лиса смутилась и убежала. Колобок цел и невредим.",
-                "prompt": "a bun singing loudly, forest animals gathering, fox looking embarrassed and running",
-                "options": []
-            },
-            "home_end": {
-                "text": "🏠 Колобок устал от приключений и покатился домой. Бабушка с дедушкой обрадовались, обняли его и больше никогда не оставляли на окошке одного. Теперь они всегда гуляют вместе.",
-                "prompt": "a bun being hugged by grandparents in front of a cozy house, happy family",
-                "options": []
-            },
-            "run_away_end": {
-                "text": "😟 Колобок так испугался, что закатился в глубокую нору и просидел там до вечера. А когда вылез, никого не было. Стало ему грустно, и он вернулся домой. Дома лучше!",
-                "prompt": "a bun hiding in a dark hole, then coming out to an empty forest, sad but then going home",
-                "options": []
-            }
+    "description": "Помоги Колобку убежать от всех зверей или найди новый путь!",
+    "cover": "images/kolobok_cover.jpg",
+    "scenes": {
+        "start": {
+            "text": "Жили-были дедушка и бабушка...",
+            "options": [
+                {"text": "Спеть песенку и укатиться дальше", "next": "meet_wolf"},
+                {"text": "Позвать Зайца с собой путешествовать", "next": "friend_zaits"},
+                {"text": "Испугаться и вернуться домой", "next": "home_end"},
+                {"text": "Спросить у Зайца, где можно найти приключения", "next": "zaits_advice"}
+            ]
+        },
+        "zaits_advice": {
+            "text": "🐰 Заяц удивился: «Приключения? Ой, я сам боюсь приключений! Но говорят, за тем лесом есть речка, а в речке живёт чудо-юдо рыба-кит...»",
+            "options": [
+                {"text": "Покатиться к речке", "next": "river"},
+                {"text": "Не рисковать, катиться дальше по тропинке", "next": "meet_wolf"}
+            ]
+        },
+        "river": {
+            "text": "🌊 Колобок докатился до реки...",
+            "options": [
+                {"text": "Спросить, почему плачешь", "next": "whale_sad"},
+                {"text": "Испугаться и убежать обратно", "next": "meet_wolf"}
+            ]
+        },
+        "whale_sad": {
+            "text": "🐋 Кит всхлипнул: «Я проглотил солнышко!...»",
+            "options": [
+                {"text": "Попробовать пощекотать кита", "next": "tickle_whale"},
+                {"text": "Спеть весёлую песню", "next": "sing_whale"},
+                {"text": "Отказаться и искать другой путь", "next": "meet_wolf"}
+            ]
+        },
+        "tickle_whale": {
+            "text": "😄 Колобок подкатился поближе и давай щекотать кита...",
+            "options": [
+                {"text": "Исследовать лес", "next": "forest"},
+                {"text": "Вернуться обратно", "next": "meet_wolf"}
+            ]
+        },
+        "sing_whale": {
+            "text": "🎵 Колобок запел свою любимую песенку...",
+            "options": [
+                {"text": "Пойти на свет костра", "next": "campfire"},
+                {"text": "Пойти вглубь леса", "next": "deep_forest"}
+            ]
+        },
+        "forest": {
+            "text": "🌲 В лесу темно и прохладно, пахнет грибами и ягодами. Вдруг из кустов выходит Лиса – рыжая, пушистая, хвост метёлкой. «Ах, какой аппетитный Колобок!» – облизнулась она.",
+            "options": [
+                {"text": "Попытаться убежать", "next": "run_forest"},
+                {"text": "Позвать на помощь", "next": "help_forest"},
+                {"text": "Заговорить с Лисой", "next": "talk_fox_forest"}
+            ]
+        },
+        # --- ИСПРАВЛЕННЫЕ СЦЕНЫ ---
+        "run_forest": {
+            "text": "🏃 Колобок покатился со всех ног! Лиса погналась за ним, но Колобок был слишком быстрым. Он закатился в густые заросли и спрятался там, пока Лиса не ушла. 'Фух, еле унес ноги!' – подумал Колобок и покатился дальше, к дому.",
+            "options": [
+                {"text": "Вернуться домой", "next": "home_end"},
+                {"text": "Продолжить путешествие", "next": "meet_wolf"}
+            ]
+        },
+        "help_forest": {
+            "text": "📢 Колобок закричал: 'Помогите! Лиса хочет меня съесть!' Из леса выбежал Ёжик и свернулся клубком прямо под ногами у Лисы. Лиса уколола лапу и убежала. 'Спасибо, Ёжик!' – поблагодарил Колобок. 'Не за что, – ответил Ёжик. – Будь осторожен в лесу!'",
+            "options": [
+                {"text": "Продолжить путь с Ёжиком", "next": "hedgehog_friend"},
+                {"text": "Попрощаться и идти дальше", "next": "meet_wolf"}
+            ]
+        },
+        "hedgehog_friend": {
+            "text": "🦔 Колобок и Ёжик подружились и пошли вместе. Ёжик показал Колобку самые вкусные грибные места. Теперь у Колобка есть надёжный друг в лесу!",
+            "ending_type": "happy",
+            "ending_number": 1,
+            "options": []
+        },
+        "talk_fox_forest": {
+            "text": "🦊 Колобок решил не убегать, а поговорить: 'Здравствуй, Лиса! А хочешь, я расскажу тебе, где растёт самая сладкая малина?' Лиса удивилась: 'Малина? Это интересно...' Пока Лиса думала, Колобок тихонько укатился. Хитрость удалась!",
+            "options": [
+                {"text": "Катиться дальше", "next": "meet_wolf"},
+                {"text": "Вернуться домой", "next": "home_end"}
+            ]
+        },
+        "campfire": {
+            "text": "🔥 У костра сидят лесные звери: Медведь, Волк и Ёжик...",
+            "options": [
+                {"text": "Попроситься к костру", "next": "join_campfire"},
+                {"text": "Подкрасться и стащить гриб", "next": "steal_mushroom"},
+                {"text": "Испугаться и убежать", "next": "run_away_end"}
+            ]
+        },
+        "join_campfire": {
+            "text": "🐻🐺🦔 Колобок подкатился к костру...",
+            "options": [
+                {"text": "Согласиться стать лесным стражем", "next": "guard_end"},
+                {"text": "Отказаться и пойти дальше", "next": "deep_forest"}
+            ]
+        },
+        "guard_end": {
+            "text": "🌟 Так Колобок и остался в лесу...",
+            "ending_type": "happy",
+            "ending_number": 2,
+            "options": []
+        },
+        "steal_mushroom": {
+            "text": "🍄 Колобок подкатился поближе, улучил момент и схватил гриб...",
+            "ending_type": "sad",
+            "ending_number": 1,
+            "options": []
+        },
+        "deep_forest": {
+            "text": "🌑 Колобок закатился в самую чащу...",
+            "options": [
+                {"text": "Сдаться и спеть песенку", "next": "sing_fox"},
+                {"text": "Попытаться обмануть", "next": "trick_fox"}
+            ]
+        },
+        "sing_fox": {
+            "text": "🎶 Колобок запел, да так звонко...",
+            "ending_type": "happy",
+            "ending_number": 3,
+            "options": []
+        },
+        "trick_fox": {
+            "text": "🦊 Колобок сказал: «А я знаю, где клад зарыт!...»",
+            "ending_type": "happy",
+            "ending_number": 4,
+            "options": []
+        },
+        "friend_zaits": {
+            "text": "🐰 Заяц ушами захлопал: «Путешествовать? А это интересно!...»",
+            "options": [
+                {"text": "Предложить Волку дружбу", "next": "friend_pack"},
+                {"text": "Обмануть Волка и убежать", "next": "run_wolf_with_friend"}
+            ]
+        },
+        "friend_pack": {
+            "text": "🐺 «Не ешь нас, – сказал Колобок, – мы путешествуем, ищем друзей!...»",
+            "options": [
+                {"text": "Пойти пить чай с мёдом", "next": "bear_tea"},
+                {"text": "Продолжить путь без Медведя", "next": "fox_meet_with_friends"}
+            ]
+        },
+        "bear_tea": {
+            "text": "🍯 Медведь оказался гостеприимным...",
+            "options": [
+                {"text": "Отправиться к озеру всей компанией", "next": "lake_journey"},
+                {"text": "Остаться у Медведя", "next": "stay_bear_end"}
+            ]
+        },
+        "stay_bear_end": {
+            "text": "🏡 Решили не рисковать и остались у Медведя...",
+            "ending_type": "happy",
+            "ending_number": 5,
+            "options": []
+        },
+        "lake_journey": {
+            "text": "🥾 Пошли они к озеру...",
+            "options": [
+                {"text": "Довериться Лисе", "next": "trust_fox_lake"},
+                {"text": "Пойти своей дорогой", "next": "own_way_lake"}
+            ]
+        },
+        "trust_fox_lake": {
+            "text": "🦊 Лиса завела их в болото...",
+            "ending_type": "neutral",
+            "ending_number": 1,
+            "options": []
+        },
+        "own_way_lake": {
+            "text": "💧 Не послушали Лису и вышли к настоящему озеру...",
+            "ending_type": "happy",
+            "ending_number": 6,
+            "options": []
+        },
+        "run_wolf_with_friend": {
+            "text": "🏃 Колобок с Зайцем притворились, что согласны...",
+            "options": [
+                {"text": "Спрятаться в норе", "next": "hole"},
+                {"text": "Попросить помощи у людей", "next": "people"}
+            ]
+        },
+        "hole": {
+            "text": "🦡 Барсук пустил их...",
+            "options": [
+                {"text": "Остаться у Барсука", "next": "badger_end"},
+                {"text": "Продолжить путь", "next": "forest"}
+            ]
+        },
+        "badger_end": {
+            "text": "🌰 Так и зажили они втроём...",
+            "ending_type": "happy",
+            "ending_number": 7,
+            "options": []
+        },
+        "people": {
+            "text": "🏡 Побежали они к людям, в деревню...",
+            "ending_type": "happy",
+            "ending_number": 8,
+            "options": []
+        },
+        "meet_wolf": {
+            "text": "🐺 Катится Колобок, а навстречу Волк...",
+            "options": [
+                {"text": "Спеть песенку и укатиться", "next": "meet_bear"},
+                {"text": "Позвать Волка в компанию", "next": "friend_pack"},
+                {"text": "Испугаться и вернуться к Зайцу", "next": "friend_zaits"}
+            ]
+        },
+        "meet_bear": {
+            "text": "🐻 Укатился Колобок от Волка и покатился дальше. А навстречу Медведь...",
+            "options": [
+                {"text": "Спеть песенку", "next": "meet_fox"},
+                {"text": "Позвать Медведя в компанию", "next": "bear_tea"},
+                {"text": "Предложить мёд", "next": "magic_meet_bear"}
+            ]
+        },
+        "magic_meet_bear": {
+            "text": "🍯 Колобок вспомнил, что бабушка положила ему в кармашек баночку мёда...",
+            "options": [
+                {"text": "Довериться Лисе", "next": "fox_trick"},
+                {"text": "Попросить Медведя остаться", "next": "bear_stay"}
+            ]
+        },
+        "bear_stay": {
+            "text": "🐻🍓 Медведь остался с Колобком...",
+            "ending_type": "happy",
+            "ending_number": 9,
+            "options": []
+        },
+        "fox_trick": {
+            "text": "🦊 Лиса притворилась доброй...",
+            "options": [
+                {"text": "Катиться домой", "next": "home_end"},
+                {"text": "Искать друзей в лесу", "next": "forest"}
+            ]
+        },
+        "meet_fox": {
+            "text": "🦊 Катится Колобок, а навстречу Лиса...",
+            "options": [
+                {"text": "Сесть Лисе на нос и запеть", "next": "fox_eat"},
+                {"text": "Предложить Лисе подружиться", "next": "fox_friend"},
+                {"text": "Попытаться обмануть Лису", "next": "fox_trick_end"}
+            ]
+        },
+        "fox_eat": {
+            "text": "😢 Колобок поверил Лисе, сел к ней на нос и запел. А Лиса – ам! – и съела его.",
+            "ending_type": "sad",
+            "ending_number": 2,
+            "options": []
+        },
+        "fox_friend": {
+            "text": "🦊🍞 «Давай лучше дружить, – сказал Колобок...",
+            "ending_type": "happy",
+            "ending_number": 10,
+            "options": []
+        },
+        "fox_trick_end": {
+            "text": "🎵 Колобок говорит: «У меня есть волшебная песенка...»",
+            "ending_type": "happy",
+            "ending_number": 11,
+            "options": []
+        },
+        "home_end": {
+            "text": "🏠 Колобок вернулся домой...",
+            "ending_type": "neutral",
+            "ending_number": 2,
+            "options": []
+        },
+        "run_away_end": {
+            "text": "😟 Колобок так испугался, что закатился в глубокую нору...",
+            "ending_type": "neutral",
+            "ending_number": 3,
+            "options": []
         }
-    },
+    }
+},
     "Теремок": {
         "description": "Построй свой теремок и реши, кого пускать, а кого нет. Сможешь ли ты создать уютный дом для всех?",
         "cover": "images/teremok_cover.jpg",
