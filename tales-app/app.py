@@ -45,7 +45,6 @@ def start_tale(tale_name):
         st.session_state.scenes = tale_data["scenes"]
         first_scene = st.session_state.scenes["start"]
         st.session_state.messages.append({"role": "assistant", "content": first_scene["text"]})
-    # Инициализируем множество для этой сказки, если ещё нет
     if tale_name not in st.session_state.achieved_endings:
         st.session_state.achieved_endings[tale_name] = set()
 
@@ -77,7 +76,6 @@ def reset_to_main():
 
 # --- Боковая панель ---
 with st.sidebar:
-    st.image("https://via.placeholder.com/150x100/ffe6f0/ff69b4?text=📚", width='stretch')
     st.markdown("## 🌟 О проекте")
     st.markdown(
         "Добро пожаловать в мир **интерактивных сказок**! "
@@ -85,7 +83,6 @@ with st.sidebar:
         "Все сказки абсолютно бесплатны."
     )
     st.markdown("---")
-    # Кнопка доната с актуальной ссылкой
     try:
         st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", width='stretch')
     except AttributeError:
@@ -120,7 +117,6 @@ st.title("📖 Интерактивные сказки")
 st.caption("Выбирайте свой путь в каждой истории!")
 
 if st.session_state.selected_tale is None:
-    # Экран выбора сказки с обложками
     st.markdown("### Выберите сказку для чтения")
     tale_names = list(tales.keys())
     cols = st.columns(2)
@@ -141,7 +137,6 @@ if st.session_state.selected_tale is None:
     st.markdown("---")
     st.markdown("🌟 *Все сказки бесплатны. Если хотите поддержать проект, воспользуйтесь кнопкой в боковой панели.*")
 else:
-    # Отображаем историю сообщений
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
@@ -149,13 +144,11 @@ else:
     current_scene = st.session_state.scenes.get(st.session_state.scene_id)
 
     if current_scene:
-        # Если это концовка (нет options)
         if not current_scene.get("options"):
-            # Проверяем, есть ли ending_type и ending_number
+            # Концовка
             if current_scene.get("ending_type") and current_scene.get("ending_number"):
                 ending_type = current_scene["ending_type"]
                 ending_num = current_scene["ending_number"]
-                # Определяем эмодзи для типа
                 type_emoji = {
                     "happy": "😊",
                     "sad": "😢",
@@ -163,7 +156,6 @@ else:
                     "secret": "🤫"
                 }.get(ending_type, "🌟")
                 
-                # Запоминаем, что концовка открыта
                 tale = st.session_state.selected_tale
                 ending_id = f"{ending_type}_{ending_num}"
                 if tale not in st.session_state.achieved_endings:
@@ -174,21 +166,17 @@ else:
                 st.markdown(f"## {type_emoji} **Концовка #{ending_num}**")
                 st.markdown(f"**Тип:** {ending_type.capitalize()}")
                 
-                # --- Дополнительное сообщение в зависимости от типа ---
                 if ending_type == "happy":
                     st.success("🎉 Поздравляем! Это счастливый конец!")
                 else:
                     st.info("😕 Это не счастливый конец. Попробуй пройти сказку снова, возможно, ты найдёшь счастливый конец!")
                 
-                # Показываем общее количество концовок в этой сказке
                 opened, total = get_ending_stats(tale)
                 st.markdown(f"*Всего в этой сказке **{total}** концовок. Ты нашёл уже **{opened}**.*")
             else:
-                # Старая сказка без типов концовок
                 st.markdown("---")
                 st.markdown("🎉 **Конец сказки!**")
             
-            # Кнопки после концовки
             st.markdown("---")
             if len(st.session_state.scene_history) > 1:
                 if st.button("↩️ Вернуться к предыдущему выбору", width='stretch'):
@@ -197,7 +185,6 @@ else:
                 start_tale(st.session_state.selected_tale)
                 st.rerun()
         else:
-            # Обычная сцена с вариантами
             st.markdown("### Твой выбор:")
             for opt in current_scene["options"]:
                 if st.button(opt["text"], key=f"choice_{opt['next']}", width='stretch'):
