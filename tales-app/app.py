@@ -1,4 +1,5 @@
 import streamlit as st
+import urllib.parse
 from tales_data import tales
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="centered")
@@ -13,7 +14,7 @@ if "messages" not in st.session_state:
 if "scenes" not in st.session_state:
     st.session_state.scenes = {}
 if "scene_history" not in st.session_state:
-    st.session_state.scene_history = []  # стек посещённых сцен
+    st.session_state.scene_history = []
 
 # --- Функции ---
 def start_tale(tale_name):
@@ -38,15 +39,12 @@ def handle_choice(choice_text, next_scene_id):
         st.error(f"Сцена {next_scene_id} не найдена")
 
 def go_back():
-    """Возврат на предыдущую сцену"""
     if len(st.session_state.scene_history) > 1:
-        # Убираем текущую сцену
         st.session_state.scene_history.pop()
         st.session_state.scene_id = st.session_state.scene_history[-1]
-        # Удаляем два последних сообщения (выбор игрока и ответ сказки)
         if len(st.session_state.messages) >= 2:
-            st.session_state.messages.pop()  # ответ ассистента
-            st.session_state.messages.pop()  # выбор пользователя
+            st.session_state.messages.pop()
+            st.session_state.messages.pop()
         st.rerun()
 
 def reset_to_main():
@@ -55,6 +53,14 @@ def reset_to_main():
     st.session_state.messages = []
     st.session_state.scenes = {}
     st.session_state.scene_history = []
+
+def get_image_url(prompt):
+    """Возвращает URL для генерации изображения через Pollinations.ai"""
+    if not prompt:
+        return None
+    encoded_prompt = urllib.parse.quote(prompt)
+    # Можно добавить параметры: width, height, model и др.
+    return f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=512&nologo=true"
 
 # --- Боковая панель ---
 with st.sidebar:
@@ -98,6 +104,8 @@ if st.session_state.selected_tale is None:
     for i, tale_name in enumerate(tale_names):
         with cols[i % 2]:
             with st.container(border=True):
+                # Можно добавить превью, если есть, но сейчас генерируем на лету
+                # Для простоты показываем только текст
                 st.markdown(f"#### {tale_name}")
                 if tales[tale_name].get("description"):
                     st.markdown(tales[tale_name]["description"])
@@ -115,19 +123,26 @@ else:
     current_scene = st.session_state.scenes.get(st.session_state.scene_id)
 
     if current_scene:
+        # Генерация и отображение картинки для текущей сцены
+        if current_scene.get("prompt"):
+            image_url = get_image_url(current_scene["prompt"])
+            # Добавляем уникальный ключ для возможности обновления
+            st.image(image_url, use_container_width=True, caption="✨ Волшебная иллюстрация")
+            # Кнопка для перегенерации картинки (если не понравилась)
+            if st.button("🔄 Другая картинка", key="regenerate_image"):
+                st.rerun()  # просто перезапустит, чтобы получить новый URL (Pollinations каждый раз генерирует новую)
+        
         if current_scene.get("options"):
             st.markdown("### Твой выбор:")
             for opt in current_scene["options"]:
                 if st.button(opt["text"], key=f"choice_{opt['next']}", use_container_width=True):
                     handle_choice(opt["text"], opt["next"])
                     st.rerun()
-            # Кнопка "Назад", если не первый шаг
             if len(st.session_state.scene_history) > 1:
                 st.markdown("---")
                 if st.button("↩️ Назад к предыдущему выбору", use_container_width=True):
                     go_back()
         else:
-            # Конец сказки
             st.markdown("---")
             st.markdown("🎉 **Конец сказки!**")
             if len(st.session_state.scene_history) > 1:
