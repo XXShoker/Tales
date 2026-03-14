@@ -1,6 +1,7 @@
 import streamlit as st
-import urllib.parse
 import requests
+from io import BytesIO
+from PIL import Image
 from tales_data import tales
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="centered")
@@ -17,7 +18,48 @@ if "scenes" not in st.session_state:
 if "scene_history" not in st.session_state:
     st.session_state.scene_history = []
 
-# --- Функции ---
+# --- Получение API-ключа из секретов ---
+DEEPAI_KEY = st.secrets.get("DEEPAI_KEY", None)
+if DEEPAI_KEY is None:
+    st.error("❌ API-ключ DeepAI не найден. Добавьте DEEPAI_KEY в секреты приложения.")
+    st.stop()
+
+# --- Функция генерации изображения через DeepAI ---
+@st.cache_data(ttl=3600)  # Кэшируем на 1 час
+def generate_image_deepai(prompt):
+    """
+    Отправляет запрос к DeepAI API и возвращает PIL Image или None.
+    """
+    url = "https://api.deepai.org/api/text2img"
+    headers = {"api-key": DEEPAI_KEY}
+    data = {"text": prompt, "grid_size": "1"}
+    
+    try:
+        # Шаг 1: получаем URL сгенерированного изображения
+        response = requests.post(url, headers=headers, data=data, timeout=30)
+        if response.status_code != 200:
+            st.warning(f"Ошибка DeepAI: {response.status_code} - {response.text}")
+            return None
+        
+        result = response.json()
+        image_url = result.get("output_url")
+        if not image_url:
+            st.warning("API не вернул URL изображения")
+            return None
+        
+        # Шаг 2: скачиваем изображение по полученному URL
+        img_response = requests.get(image_url, timeout=15)
+        if img_response.status_code != 200:
+            st.warning("Не удалось скачать изображение")
+            return None
+        
+        image = Image.open(BytesIO(img_response.content))
+        return image
+    except Exception as e:
+        st.warning(f"Ошибка при генерации: {e}")
+        return None
+
+# --- Основные функции приложения (без изменений) ---
 def start_tale(tale_name):
     st.session_state.selected_tale = tale_name
     st.session_state.scene_id = "start"
@@ -55,25 +97,6 @@ def reset_to_main():
     st.session_state.scenes = {}
     st.session_state.scene_history = []
 
-def get_image_url(prompt):
-    """Возвращает URL для генерации изображения через Pollinations.ai"""
-    if not prompt:
-        return None
-    encoded_prompt = urllib.parse.quote(prompt)
-    return f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=512&nologo=true"
-
-@st.cache_data(ttl=600)  # Кэшируем результат на 10 минут
-def check_image_available(url):
-    """Проверяет, доступно ли изображение по URL (делает HEAD-запрос)"""
-    if not url:
-        return False
-    try:
-        response = requests.head(url, timeout=5, allow_redirects=True)
-        content_type = response.headers.get('Content-Type', '')
-        return response.status_code == 200 and content_type.startswith('image/')
-    except requests.RequestException:
-        return False
-
 # --- Боковая панель ---
 with st.sidebar:
     st.image("https://via.placeholder.com/150x100/ffe6f0/ff69b4?text=📚", width='stretch')
@@ -88,7 +111,6 @@ with st.sidebar:
     try:
         st.link_button("💖 Поддержать донатом", "https://donate.stream/your-link", width='stretch')
     except AttributeError:
-        # Для старых версий Streamlit
         st.markdown(
             '<a href="https://donate.stream/your-link" target="_blank">'
             '<button style="background-color:#FF4B4B; color:white; padding:0.5rem 1rem; '
@@ -134,21 +156,19 @@ else:
     current_scene = st.session_state.scenes.get(st.session_state.scene_id)
 
     if current_scene:
-        # --- Отображение изображения ---
+        # --- Генерация изображения через DeepAI ---
         if current_scene.get("prompt"):
-            image_url = get_image_url(current_scene["prompt"])
-            # Проверяем доступность изображения
-            if check_image_available(image_url):
-                st.image(image_url, width='stretch', caption="✨ Волшебная иллюстрация")
+            with st.spinner("🎨 Волшебная картинка создаётся..."):
+                image = generate_image_deepai(current_scene["prompt"])
+            
+            if image:
+                st.image(image, width='stretch', caption="✨ Волшебная иллюстрация")
                 if st.button("🔄 Другая картинка", key="regenerate_image"):
                     st.rerun()
             else:
-                # Если не удалось загрузить – показываем заглушку
                 st.image("https://via.placeholder.com/800x400/ffe6f0/ff69b4?text=✨+Представьте+сами", width='stretch')
-                # Можно добавить пояснение
-                st.caption("🌟 Сервис генерации временно недоступен, но вы можете представить эту сцену сами!")
+                st.caption("🌟 Не удалось сгенерировать картинку, но вы можете представить эту сцену сами!")
         else:
-            # Если промпт не задан – заглушка
             st.image("https://via.placeholder.com/800x400/ffe6f0/ff69b4?text=✨+Вообразите+эту+сцену", width='stretch')
 
         # Кнопки выбора или конец сказки
