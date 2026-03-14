@@ -65,59 +65,88 @@ p, li, .stMarkdown, .stText {
     background-color: #b89e7c;
 }
 
-/* ===== КАРТОЧКИ СКАЗОК ===== */
-/* Контейнер, который содержит карточку (колонка) */
-div[data-testid="column"] {
-    display: flex;
-    flex-direction: column;
+/* ===== КАРУСЕЛЬ СО СКАЗКАМИ ===== */
+/* Контейнер для горизонтальной прокрутки */
+.scroll-container {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding: 10px 0;
+    margin-bottom: 20px;
+    scrollbar-width: thin;
+    scrollbar-color: #b5926a #f5e9d8;
 }
 
-/* Сам элемент с рамкой (st.container с border=True) */
-div[data-testid="column"] > div:has(> div) {
+.scroll-container::-webkit-scrollbar {
+    height: 8px;
+}
+.scroll-container::-webkit-scrollbar-track {
+    background: #f5e9d8;
+    border-radius: 10px;
+}
+.scroll-container::-webkit-scrollbar-thumb {
+    background: #b5926a;
+    border-radius: 10px;
+}
+
+/* Карточка сказки */
+.tale-card {
+    display: inline-block;
+    width: 240px;
+    margin-right: 20px;
+    vertical-align: top;
+    white-space: normal;
     background-color: #fffaf0;
-    border-radius: 20px !important;
+    border-radius: 20px;
     padding: 15px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    transition: box-shadow 0.3s ease;
     border: 1px solid #e9d9c4;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+    transition: box-shadow 0.3s ease;
 }
 
-/* Изображение */
-div[data-testid="column"] img {
-    height: 200px !important;
-    width: 100% !important;
-    object-fit: cover !important;
-    border-radius: 12px !important;
-    margin-bottom: 10px !important;
+.tale-card:hover {
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+}
+
+/* Изображение в карточке */
+.tale-card img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 12px;
     border: 1px solid #d4b68a;
+    margin-bottom: 10px;
 }
 
-/* Заголовок сказки (h4) */
-div[data-testid="column"] h4 {
-    margin: 0 0 5px 0 !important;
+/* Заголовок сказки */
+.tale-card h4 {
+    margin: 0 0 5px 0;
     font-size: 1.2rem;
-    line-height: 1.3;
+    white-space: normal;
 }
 
-/* Описание – все параграфы внутри карточки, кроме заголовка и кнопки */
-div[data-testid="column"] p:not(.stButton p) {
-    flex: 1 1 auto;
-    margin: 0 0 10px 0 !important;
+/* Описание */
+.tale-card p {
     font-size: 0.9rem;
     line-height: 1.4;
+    margin: 0 0 10px 0;
+    white-space: normal;
+    height: 60px; /* фиксированная высота для двух-трёх строк */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
 }
 
-/* Контейнер кнопки (сама кнопка) */
-div[data-testid="column"] .stButton {
-    margin-top: auto !important;
+/* Кнопка внутри карточки */
+.tale-card .stButton {
     width: 100%;
 }
 
-div[data-testid="column"] .stButton button {
+.tale-card .stButton button {
     width: 100%;
+    padding: 0.4rem;
+    font-size: 0.9rem;
 }
 
 /* Сообщения чата */
@@ -135,16 +164,12 @@ div[data-testid="column"] .stButton button {
 
 /* Адаптация для мобильных */
 @media (max-width: 600px) {
-    div[data-testid="column"] {
-        width: 100% !important;
-        flex: 0 0 100% !important;
-        max-width: 100% !important;
+    .tale-card {
+        width: 200px;
     }
-    
-    div[data-testid="column"] img {
-        height: 150px !important;
+    .tale-card img {
+        height: 120px;
     }
-    
     h1 {
         font-size: 1.8rem;
     }
@@ -189,7 +214,6 @@ if "achieved_endings" not in st.session_state:
     st.session_state.achieved_endings = {}  # {tale_name: set(endings_ids)}
 
 def count_total_endings(tale_name):
-    """Подсчитывает количество концовок (сцен с options=[]) в сказке"""
     tale = tales.get(tale_name)
     if not tale:
         return 0
@@ -200,7 +224,6 @@ def count_total_endings(tale_name):
     return count
 
 def get_ending_stats(tale_name):
-    """Возвращает (количество открытых, всего)"""
     opened = len(st.session_state.achieved_endings.get(tale_name, set()))
     total = count_total_endings(tale_name)
     return opened, total
@@ -286,26 +309,51 @@ st.title("📖 Интерактивные сказки")
 st.caption("Выбирайте свой путь в каждой истории!")
 
 if st.session_state.selected_tale is None:
-    st.markdown("### Выберите сказку для чтения")
-    tale_names = list(tales.keys())
-    cols = st.columns(2)
-    for i, tale_name in enumerate(tale_names):
-        with cols[i % 2]:
-            with st.container(border=True):
-                cover_path = tales[tale_name].get("cover", "")
-                if cover_path and os.path.exists(cover_path):
-                    st.image(cover_path, width='stretch')
-                else:
-                    st.image("https://via.placeholder.com/400x200/ffe6f0/ff69b4?text=✨+Сказка", width='stretch')
-                st.markdown(f"#### {tale_name}")
-                if tales[tale_name].get("description"):
-                    st.markdown(tales[tale_name]["description"])
-                if st.button(f"✨ Начать", key=f"choose_{tale_name}", width='stretch'):
-                    start_tale(tale_name)
-                    st.rerun()
+    # Определяем списки сказок
+    all_tales = list(tales.keys())
+    soviet_tales = ["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"]
+    new_tales = ["Путешествие в Волшебный лес"]
+
+    # Функция для отрисовки карточки сказки
+    def render_tale_card(tale_name):
+        cover_path = tales[tale_name].get("cover", "")
+        if cover_path and os.path.exists(cover_path):
+            st.image(cover_path)
+        else:
+            st.image("https://via.placeholder.com/240x150/ffe6f0/ff69b4?text=✨+Сказка")
+        st.markdown(f"#### {tale_name}")
+        if tales[tale_name].get("description"):
+            st.markdown(tales[tale_name]["description"])
+        if st.button(f"✨ Начать", key=f"choose_{tale_name}"):
+            start_tale(tale_name)
+            st.rerun()
+
+    # Секция "Советские сказки"
+    st.markdown("## 📚 Советские сказки")
+    with st.container():
+        st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
+        for tale_name in soviet_tales:
+            if tale_name in all_tales:
+                st.markdown('<div class="tale-card">', unsafe_allow_html=True)
+                render_tale_card(tale_name)
+                st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    # Секция "Новые сказки"
+    st.markdown("## 🆕 Новые сказки")
+    with st.container():
+        st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
+        for tale_name in new_tales:
+            if tale_name in all_tales:
+                st.markdown('<div class="tale-card">', unsafe_allow_html=True)
+                render_tale_card(tale_name)
+                st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
     st.markdown("---")
     st.markdown("🌟 *Все сказки бесплатны. Если хотите поддержать проект, воспользуйтесь кнопкой в боковой панели.*")
 else:
+    # Отображаем историю сообщений (без изменений)
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
