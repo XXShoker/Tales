@@ -53,6 +53,28 @@ st.markdown("""
         transform: translateY(-2px);
     }
     
+    /* Кнопка доната - ИСПРАВЛЕНО */
+    .stLinkButton a {
+        background-color: #d4b68a !important;
+        color: #2a1c0e !important;
+        font-weight: 600 !important;
+        border-radius: 30px !important;
+        padding: 0.5rem 1rem !important;
+        text-decoration: none !important;
+        border: 1px solid #b5926a !important;
+        transition: all 0.3s ease !important;
+        display: inline-block !important;
+        width: 100% !important;
+        text-align: center !important;
+    }
+    
+    .stLinkButton a:hover {
+        background-color: #b89e7c !important;
+        color: #2a1c0e !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+    }
+    
     /* Карточки сказок */
     div[data-testid="column"] > div {
         background-color: #fffaf0;
@@ -151,7 +173,9 @@ def count_total_endings(tale_name):
     count = 0
     for scene_id, scene in tale["scenes"].items():
         if scene.get("options") == []:
-            count += 1
+            # Проверяем, есть ли у сцены ending_type (новая сказка) или это просто конец
+            if scene.get("ending_type") or True:
+                count += 1
     return count
 
 def get_ending_stats(tale_name):
@@ -208,16 +232,29 @@ with st.sidebar:
         "Все сказки абсолютно бесплатны."
     )
     st.markdown("---")
-    try:
-        st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", use_container_width=True)
-    except AttributeError:
-        st.markdown(
-            '<a href="https://donate.stream/donate_69b56f4953f16" target="_blank">'
-            '<button style="background-color:#d4b68a; color:#2a1c0e; padding:0.5rem 1rem; '
-            'border:none; border-radius:30px; width:100%; font-size:1rem; '
-            'cursor:pointer; font-weight:600;">💖 Поддержать донатом</button></a>',
-            unsafe_allow_html=True
-        )
+    
+    # Кнопка доната - улучшенная версия
+    st.markdown("""
+    <a href="https://donate.stream/donate_69b56f4953f16" target="_blank" style="
+        background-color: #d4b68a;
+        color: #2a1c0e !important;
+        font-weight: 600;
+        border-radius: 30px;
+        padding: 0.5rem 1rem;
+        text-decoration: none;
+        border: 1px solid #b5926a;
+        transition: all 0.3s ease;
+        display: inline-block;
+        width: 100%;
+        text-align: center;
+        margin: 0.5rem 0;
+        font-family: 'Open Sans', sans-serif;
+    " onmouseover="this.style.backgroundColor='#b89e7c'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)';" 
+       onmouseout="this.style.backgroundColor='#d4b68a'; this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+        💖 Поддержать донатом
+    </a>
+    """, unsafe_allow_html=True)
+    
     st.markdown("---")
     
     # Статистика концовок для текущей сказки
@@ -322,9 +359,18 @@ else:
                 opened, total = get_ending_stats(tale)
                 st.markdown(f"*Всего в этой сказке **{total}** концовок. Ты нашёл уже **{opened}**.*")
             else:
-                # Старая сказка без типов концовок
+                # Старая сказка без типов концовок - ТОЖЕ СЧИТАЕМ
+                tale = st.session_state.selected_tale
+                ending_id = f"end_{len(st.session_state.achieved_endings.get(tale, set())) + 1}"
+                if tale not in st.session_state.achieved_endings:
+                    st.session_state.achieved_endings[tale] = set()
+                st.session_state.achieved_endings[tale].add(ending_id)
+                
                 st.markdown("---")
                 st.markdown("🎉 **Конец сказки!**")
+                
+                opened, total = get_ending_stats(tale)
+                st.markdown(f"*Всего в этой сказке **{total}** концовок. Ты нашёл уже **{opened}**.*")
             
             # Кнопки после концовки
             st.markdown("---")
