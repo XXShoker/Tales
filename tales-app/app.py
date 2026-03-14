@@ -66,40 +66,48 @@ p, li, .stMarkdown, .stText {
 }
 
 /* --- Карусель (горизонтальная прокрутка) --- */
-.carousel-container {
-    display: flex;
-    flex-wrap: nowrap;
+.scrollable-container {
     overflow-x: auto;
-    gap: 20px;
-    padding: 10px 0;
+    white-space: nowrap;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
     scrollbar-width: thin;
     scrollbar-color: #b5926a #f5e9d8;
 }
 
-.carousel-container::-webkit-scrollbar {
+.scrollable-container::-webkit-scrollbar {
     height: 8px;
 }
 
-.carousel-container::-webkit-scrollbar-track {
+.scrollable-container::-webkit-scrollbar-track {
     background: #f5e9d8;
     border-radius: 10px;
 }
 
-.carousel-container::-webkit-scrollbar-thumb {
+.scrollable-container::-webkit-scrollbar-thumb {
     background: #b5926a;
     border-radius: 10px;
 }
 
-/* Карточка сказки */
+/* Колонки внутри карусели */
+.scrollable-container [data-testid="column"] {
+    display: inline-block;
+    float: none;
+    white-space: normal;
+    width: 260px !important;
+    margin-right: 20px;
+    vertical-align: top;
+}
+
+/* Карточка сказки (внутри колонки) */
 .carousel-card {
-    flex: 0 0 auto;
-    width: 240px;
     background-color: #fffaf0;
     border-radius: 20px;
     padding: 15px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     border: 1px solid #e9d9c4;
     transition: box-shadow 0.3s ease;
+    height: 100%;
     display: flex;
     flex-direction: column;
 }
@@ -108,7 +116,6 @@ p, li, .stMarkdown, .stText {
     box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
 
-/* Изображение */
 .carousel-card img {
     width: 100%;
     height: 150px;
@@ -118,14 +125,12 @@ p, li, .stMarkdown, .stText {
     margin-bottom: 10px;
 }
 
-/* Заголовок */
 .carousel-card h4 {
     margin: 0 0 5px 0;
     font-size: 1.2rem;
     white-space: normal;
 }
 
-/* Описание */
 .carousel-card p {
     font-size: 0.9rem;
     line-height: 1.4;
@@ -139,7 +144,6 @@ p, li, .stMarkdown, .stText {
     -webkit-box-orient: vertical;
 }
 
-/* Кнопка */
 .carousel-card .stButton {
     width: 100%;
     margin-top: auto;
@@ -166,8 +170,8 @@ p, li, .stMarkdown, .stText {
 
 /* Адаптация для мобильных */
 @media (max-width: 600px) {
-    .carousel-card {
-        width: 200px;
+    .scrollable-container [data-testid="column"] {
+        width: 200px !important;
     }
     .carousel-card img {
         height: 120px;
@@ -182,7 +186,7 @@ p, li, .stMarkdown, .stText {
     background-color: #b5926a !important;
 }
 
-/* Ссылка доната (fallback для старых версий) */
+/* Ссылка доната (fallback) */
 .stLinkButton a, a button {
     background-color: #d4b68a;
     color: #2a1c0e;
@@ -213,7 +217,7 @@ if "scenes" not in st.session_state:
 if "scene_history" not in st.session_state:
     st.session_state.scene_history = []
 if "achieved_endings" not in st.session_state:
-    st.session_state.achieved_endings = {}  # {tale_name: set(endings_ids)}
+    st.session_state.achieved_endings = {}
 
 def count_total_endings(tale_name):
     tale = tales.get(tale_name)
@@ -316,13 +320,12 @@ if st.session_state.selected_tale is None:
     soviet_tales = ["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"]
     new_tales = ["Путешествие в Волшебный лес"]
 
-    # Функция для отображения одной карточки
     def show_tale_card(tale_name):
         cover_path = tales[tale_name].get("cover", "")
         if cover_path and os.path.exists(cover_path):
-            st.image(cover_path, width=240)
+            st.image(cover_path, use_container_width=True)
         else:
-            st.image("https://via.placeholder.com/240x150/ffe6f0/ff69b4?text=✨+Сказка", width=240)
+            st.image("https://via.placeholder.com/240x150/ffe6f0/ff69b4?text=✨+Сказка", use_container_width=True)
         st.markdown(f"#### {tale_name}")
         if tales[tale_name].get("description"):
             st.markdown(tales[tale_name]["description"])
@@ -332,28 +335,33 @@ if st.session_state.selected_tale is None:
 
     # Секция "Советские сказки"
     st.markdown("## 📚 Советские сказки")
-    st.markdown('<div class="carousel-container">', unsafe_allow_html=True)
-    for tale_name in soviet_tales:
+    st.markdown('<div class="scrollable-container">', unsafe_allow_html=True)
+    cols = st.columns(len(soviet_tales))
+    for i, tale_name in enumerate(soviet_tales):
         if tale_name in all_tales:
-            st.markdown('<div class="carousel-card">', unsafe_allow_html=True)
-            show_tale_card(tale_name)
-            st.markdown('</div>', unsafe_allow_html=True)
+            with cols[i]:
+                st.markdown('<div class="carousel-card">', unsafe_allow_html=True)
+                show_tale_card(tale_name)
+                st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
     # Секция "Новые сказки"
     st.markdown("## 🆕 Новые сказки")
-    st.markdown('<div class="carousel-container">', unsafe_allow_html=True)
-    for tale_name in new_tales:
+    st.markdown('<div class="scrollable-container">', unsafe_allow_html=True)
+    cols = st.columns(len(new_tales))
+    for i, tale_name in enumerate(new_tales):
         if tale_name in all_tales:
-            st.markdown('<div class="carousel-card">', unsafe_allow_html=True)
-            show_tale_card(tale_name)
-            st.markdown('</div>', unsafe_allow_html=True)
+            with cols[i]:
+                st.markdown('<div class="carousel-card">', unsafe_allow_html=True)
+                show_tale_card(tale_name)
+                st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("---")
     st.markdown("🌟 *Все сказки бесплатны. Если хотите поддержать проект, воспользуйтесь кнопкой в боковой панели.*")
+
 else:
-    # --- Отображение сказки (история сообщений) ---
+    # Отображение сказки (история сообщений)
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
@@ -362,7 +370,6 @@ else:
 
     if current_scene:
         if not current_scene.get("options"):
-            # Концовка
             if current_scene.get("ending_type") and current_scene.get("ending_number"):
                 ending_type = current_scene["ending_type"]
                 ending_num = current_scene["ending_number"]
