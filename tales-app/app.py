@@ -18,6 +18,8 @@ if "scenes" not in st.session_state:
     st.session_state.scenes = {}
 if "scene_history" not in st.session_state:
     st.session_state.scene_history = []
+if "image_counter" not in st.session_state:
+    st.session_state.image_counter = 0  # для перегенерации
 
 # --- Проверка токена Replicate ---
 REPLICATE_API_TOKEN = st.secrets.get("REPLICATE_API_TOKEN", None)
@@ -25,18 +27,12 @@ if REPLICATE_API_TOKEN is None:
     st.error("❌ API-токен Replicate не найден. Добавьте REPLICATE_API_TOKEN в секреты приложения.")
     st.stop()
 
-# Настраиваем клиент Replicate
 replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
 
 # --- Функция генерации изображения через Replicate ---
-@st.cache_data(ttl=3600)  # Кэшируем на 1 час
-def generate_image_replicate(prompt):
-    """
-    Генерирует изображение через модель Stable Diffusion 3.5 на Replicate.
-    Возвращает PIL Image или None при ошибке.
-    """
+@st.cache_data(ttl=3600)
+def generate_image_replicate(prompt, counter):
     try:
-        # Используем модель stability-ai/stable-diffusion-3.5-large
         output = replicate_client.run(
             "stability-ai/stable-diffusion-3.5-large",
             input={
@@ -49,14 +45,11 @@ def generate_image_replicate(prompt):
                 "negative_prompt": "ugly, blurry, low quality, bad anatomy, child drawing, cartoon"
             }
         )
-        # Replicate возвращает список URL изображений
         if output and isinstance(output, list) and len(output) > 0:
             image_url = output[0]
-            # Скачиваем изображение
             img_response = requests.get(image_url, timeout=15)
             if img_response.status_code == 200:
-                image = Image.open(BytesIO(img_response.content))
-                return image
+                return Image.open(BytesIO(img_response.content))
             else:
                 st.warning("Не удалось скачать изображение")
                 return None
@@ -67,7 +60,7 @@ def generate_image_replicate(prompt):
         st.warning(f"Ошибка при генерации: {e}")
         return None
 
-# --- Основные функции приложения ---
+# --- Основные функции приложения (без изменений) ---
 def start_tale(tale_name):
     st.session_state.selected_tale = tale_name
     st.session_state.scene_id = "start"
@@ -105,7 +98,7 @@ def reset_to_main():
     st.session_state.scenes = {}
     st.session_state.scene_history = []
 
-# --- Боковая панель ---
+# --- Боковая панель (без изменений) ---
 with st.sidebar:
     st.image("https://via.placeholder.com/150x100/ffe6f0/ff69b4?text=📚", width='stretch')
     st.markdown("## 🌟 О проекте")
@@ -115,7 +108,6 @@ with st.sidebar:
         "Все сказки абсолютно бесплатны."
     )
     st.markdown("---")
-    # Кнопка доната (замените ссылку на свою)
     try:
         st.link_button("💖 Поддержать донатом", "https://donate.stream/your-link", width='stretch')
     except AttributeError:
@@ -140,7 +132,6 @@ st.title("📖 Интерактивные сказки")
 st.caption("Выбирайте свой путь в каждой истории!")
 
 if st.session_state.selected_tale is None:
-    # Экран выбора сказки
     st.markdown("### Выберите сказку для чтения")
     tale_names = list(tales.keys())
     cols = st.columns(2)
@@ -156,7 +147,6 @@ if st.session_state.selected_tale is None:
     st.markdown("---")
     st.markdown("🌟 *Все сказки бесплатны. Если хотите поддержать проект, воспользуйтесь кнопкой в боковой панели.*")
 else:
-    # Отображаем историю сообщений
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
@@ -164,23 +154,22 @@ else:
     current_scene = st.session_state.scenes.get(st.session_state.scene_id)
 
     if current_scene:
-        # --- Генерация изображения через Replicate ---
+        # --- Генерация изображения с учётом счётчика ---
         if current_scene.get("prompt"):
             with st.spinner("🎨 Волшебная картинка создаётся..."):
-                image = generate_image_replicate(current_scene["prompt"])
+                image = generate_image_replicate(current_scene["prompt"], st.session_state.image_counter)
             
             if image:
                 st.image(image, width='stretch', caption="✨ Волшебная иллюстрация")
-                if st.button("🔄 Другая картинка", key="regenerate_image"):
+                if st.button("🔄 Другая картинка"):
+                    st.session_state.image_counter += 1
                     st.rerun()
             else:
                 st.image("https://via.placeholder.com/800x400/ffe6f0/ff69b4?text=✨+Представьте+сами", width='stretch')
                 st.caption("🌟 Не удалось сгенерировать картинку, но вы можете представить эту сцену сами!")
         else:
-            # Если промпт не задан – заглушка
             st.image("https://via.placeholder.com/800x400/ffe6f0/ff69b4?text=✨+Вообразите+эту+сцену", width='stretch')
 
-        # Кнопки выбора или конец сказки
         if current_scene.get("options"):
             st.markdown("### Твой выбор:")
             for opt in current_scene["options"]:
