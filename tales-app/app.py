@@ -1,4 +1,3 @@
-```python
 import streamlit as st
 import os
 from tales_data import tales
@@ -340,4 +339,3 @@ else:
             if st.button("⬅️ Назад"):
 
                 go_back()
-```
