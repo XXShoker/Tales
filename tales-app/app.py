@@ -87,15 +87,13 @@ st.title("📖 Интерактивные сказки")
 st.caption("Выбирайте свой путь в каждой истории!")
 
 if st.session_state.selected_tale is None:
-    # Экран выбора сказки с обложками
     st.markdown("### Выберите сказку для чтения")
     tale_names = list(tales.keys())
     cols = st.columns(2)
     for i, tale_name in enumerate(tale_names):
         with cols[i % 2]:
             with st.container(border=True):
-                # Отображаем обложку, если файл существует
-                cover_path = tales[tale_name].get("cover")
+                cover_path = tales[tale_name].get("cover", "")
                 if cover_path and os.path.exists(cover_path):
                     st.image(cover_path, width='stretch')
                 else:
@@ -109,7 +107,6 @@ if st.session_state.selected_tale is None:
     st.markdown("---")
     st.markdown("🌟 *Все сказки бесплатны. Если хотите поддержать проект, воспользуйтесь кнопкой в боковой панели.*")
 else:
-    # Отображаем историю сообщений
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
@@ -117,14 +114,13 @@ else:
     current_scene = st.session_state.scenes.get(st.session_state.scene_id)
 
     if current_scene:
-        # --- Отображение картинки для текущей сцены (если есть локальный файл) ---
-        if current_scene.get("image") and os.path.exists(current_scene["image"]):
-            st.image(current_scene["image"], width='stretch', caption="✨ Иллюстрация к сказке")
+        scene_image = current_scene.get("image", "")
+        if scene_image and os.path.exists(scene_image):
+            st.image(scene_image, width='stretch', caption="✨ Иллюстрация к сказке")
         else:
             st.image("https://via.placeholder.com/800x400/ffe6f0/ff69b4?text=✨+Представьте+сами", width='stretch')
             st.caption("🌟 Вы можете представить эту сцену сами, а позже мы добавим картинки!")
 
-        # Кнопки выбора или конец сказки
         if current_scene.get("options"):
             st.markdown("### Твой выбор:")
             for opt in current_scene["options"]:
