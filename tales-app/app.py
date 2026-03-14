@@ -1,6 +1,5 @@
 import streamlit as st
 import os
-import base64
 from tales_data import tales
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="centered")
@@ -61,7 +60,7 @@ def go_back():
         st.session_state.scene_id = st.session_state.scene_history[-1]
         st.session_state.messages.pop()
         st.session_state.messages.pop()
-        st.rerun()
+        st.experimental_rerun()
 
 def reset():
     st.session_state.selected_tale = None
@@ -91,9 +90,9 @@ def show_carousel(tales_list):
 # -------------------------
 # HANDLE URL PARAMS
 # -------------------------
-params = st.experimental_get_query_params()
+params = st.query_params
 if "tale" in params:
-    selected = params["tale"][0]
+    selected = params["tale"][0]  # берем первый элемент списка
     if selected in tales:
         start_tale(selected)
 
