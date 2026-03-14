@@ -1,5 +1,6 @@
 import streamlit as st
 import urllib.parse
+import requests
 from tales_data import tales
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="centered")
@@ -61,6 +62,18 @@ def get_image_url(prompt):
     encoded_prompt = urllib.parse.quote(prompt)
     return f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=512&nologo=true"
 
+@st.cache_data(ttl=600)  # Кэшируем результат на 10 минут
+def check_image_available(url):
+    """Проверяет, доступно ли изображение по URL (делает HEAD-запрос)"""
+    if not url:
+        return False
+    try:
+        response = requests.head(url, timeout=5, allow_redirects=True)
+        content_type = response.headers.get('Content-Type', '')
+        return response.status_code == 200 and content_type.startswith('image/')
+    except requests.RequestException:
+        return False
+
 # --- Боковая панель ---
 with st.sidebar:
     st.image("https://via.placeholder.com/150x100/ffe6f0/ff69b4?text=📚", width='stretch')
@@ -121,14 +134,19 @@ else:
     current_scene = st.session_state.scenes.get(st.session_state.scene_id)
 
     if current_scene:
-        # Отображение картинки (с запасным вариантом)
+        # --- Отображение изображения ---
         if current_scene.get("prompt"):
             image_url = get_image_url(current_scene["prompt"])
-            try:
+            # Проверяем доступность изображения
+            if check_image_available(image_url):
                 st.image(image_url, width='stretch', caption="✨ Волшебная иллюстрация")
-            except Exception:
-                # Если не удалось загрузить (например, сервис недоступен) – показываем заглушку
+                if st.button("🔄 Другая картинка", key="regenerate_image"):
+                    st.rerun()
+            else:
+                # Если не удалось загрузить – показываем заглушку
                 st.image("https://via.placeholder.com/800x400/ffe6f0/ff69b4?text=✨+Представьте+сами", width='stretch')
+                # Можно добавить пояснение
+                st.caption("🌟 Сервис генерации временно недоступен, но вы можете представить эту сцену сами!")
         else:
             # Если промпт не задан – заглушка
             st.image("https://via.placeholder.com/800x400/ffe6f0/ff69b4?text=✨+Вообразите+эту+сцену", width='stretch')
