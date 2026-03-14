@@ -55,7 +55,7 @@ def reset():
     st.session_state.scene_history = []
 
 # -------------------------
-# CAROUSEL HTML
+# CAROUSEL HTML + кнопки Streamlit
 # -------------------------
 def image_to_base64(path):
     try:
@@ -114,21 +114,11 @@ def show_carousel(tales_list):
         flex-grow:1;
         overflow:hidden;
     }
-    .start-btn{
-        display:block;
-        margin-top:10px;
-        text-align:center;
-        background:#d4b68a;
-        padding:8px;
-        border-radius:12px;
-        text-decoration:none;
-        color:black;
-        font-weight:600;
-    }
     </style>
     <div class="carousel">
     """
-    for tale_name in tales_list:
+    # добавим карточки с id для кнопок Streamlit
+    for i, tale_name in enumerate(tales_list):
         if tale_name not in tales:
             continue
         tale = tales[tale_name]
@@ -147,11 +137,17 @@ def show_carousel(tales_list):
             {img_html}
             <div class="card-title">{tale_name}</div>
             <div class="card-desc">{desc}</div>
-            <a class="start-btn" href="?tale={tale_name}">✨ Начать</a>
+            <div id="btn-{i}"></div>
         </div>
         """
     html += "</div>"
     components.html(html, height=420, scrolling=False)
+
+    # Отображаем кнопки Streamlit отдельно (связь с карточками)
+    for i, tale_name in enumerate(tales_list):
+        if st.button(f"✨ Начать {tale_name}", key=f"start-{tale_name}"):
+            start_tale(tale_name)
+            st.experimental_rerun()
 
 # -------------------------
 # HANDLE URL PARAMS
@@ -181,27 +177,17 @@ with st.sidebar:
 # -------------------------
 st.title("📖 Интерактивные сказки")
 
-# Показываем карусель только если сказка ещё не выбрана
 if st.session_state.selected_tale is None:
     st.markdown("## 📚 Советские сказки")
-    show_carousel([
-        "Колобок",
-        "Теремок",
-        "Золотая рыбка",
-        "Курочка Ряба"
-    ])
+    show_carousel(["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"])
     st.markdown("## 🆕 Новые сказки")
-    show_carousel([
-        "Путешествие в Волшебный лес"
-    ])
+    show_carousel(["Путешествие в Волшебный лес"])
 else:
-    # Показываем историю чата
+    # история чата
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
-
     scene = st.session_state.scenes[st.session_state.scene_id]
-
     if not scene.get("options"):
         st.success("🎉 Конец сказки!")
         if st.button("🔄 Начать заново"):
