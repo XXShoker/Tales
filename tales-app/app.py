@@ -1,5 +1,7 @@
 import streamlit as st
 import os
+import base64
+import streamlit.components.v1 as components
 from tales_data import tales
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="centered")
@@ -9,16 +11,12 @@ st.set_page_config(page_title="Интерактивные сказки", page_ic
 # -------------------------
 if "selected_tale" not in st.session_state:
     st.session_state.selected_tale = None
-
 if "scene_id" not in st.session_state:
     st.session_state.scene_id = "start"
-
 if "messages" not in st.session_state:
     st.session_state.messages = []
-
 if "scenes" not in st.session_state:
     st.session_state.scenes = {}
-
 if "scene_history" not in st.session_state:
     st.session_state.scene_history = []
 
@@ -69,30 +67,111 @@ def reset():
     st.session_state.scene_history = []
 
 # -------------------------
-# CAROUSEL через Streamlit
+# CAROUSEL HTML
 # -------------------------
+def image_to_base64(path):
+    try:
+        with open(path, "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except:
+        return None
+
 def show_carousel(tales_list):
-    cols = st.columns(len(tales_list))
-    for i, tale_name in enumerate(tales_list):
-        with cols[i]:
-            tale = tales[tale_name]
-            cover_path = tale.get("cover", "")
-            if cover_path and os.path.exists(cover_path):
-                st.image(cover_path, width=240)
-            else:
-                st.image("https://via.placeholder.com/240x160", width=240)
-            st.subheader(tale_name)
-            st.write(tale.get("description", ""))
-            if st.button(f"✨ Начать {tale_name}", key=tale_name):
-                start_tale(tale_name)
-                st.experimental_rerun()
+    html = """
+    <style>
+    .carousel{
+        display:flex;
+        overflow-x:auto;
+        gap:20px;
+        padding:20px;
+        scroll-snap-type:x mandatory;
+        font-family:sans-serif;
+    }
+    .carousel::-webkit-scrollbar{
+        height:8px;
+    }
+    .carousel::-webkit-scrollbar-thumb{
+        background:#b5926a;
+        border-radius:10px;
+    }
+    .card{
+        flex:0 0 260px;
+        background:#fffaf0;
+        border-radius:18px;
+        padding:12px;
+        scroll-snap-align:start;
+        box-shadow:0 4px 12px rgba(0,0,0,0.1);
+        transition:0.2s;
+        display:flex;
+        flex-direction:column;
+        height:340px;
+    }
+    .card:hover{
+        transform:scale(1.05);
+    }
+    .card img{
+        width:100%;
+        height:160px;
+        object-fit:cover;
+        border-radius:10px;
+    }
+    .card-title{
+        font-weight:700;
+        margin-top:8px;
+        font-size:1.1rem;
+    }
+    .card-desc{
+        font-size:0.9rem;
+        margin-top:4px;
+        flex-grow:1;
+        overflow:hidden;
+    }
+    .start-btn{
+        display:block;
+        margin-top:10px;
+        text-align:center;
+        background:#d4b68a;
+        padding:8px;
+        border-radius:12px;
+        text-decoration:none;
+        color:black;
+        font-weight:600;
+    }
+    </style>
+    <div class="carousel">
+    """
+
+    for tale_name in tales_list:
+        if tale_name not in tales:
+            continue
+        tale = tales[tale_name]
+        cover_path = tale.get("cover","")
+        img_html = ""
+        if cover_path and os.path.exists(cover_path):
+            img_base64 = image_to_base64(cover_path)
+            ext = os.path.splitext(cover_path)[1].lower()
+            mime = "image/jpeg" if ext in [".jpg",".jpeg"] else "image/png"
+            img_html = f'<img src="data:{mime};base64,{img_base64}">'
+        else:
+            img_html = '<img src="https://via.placeholder.com/240x160">'
+        desc = tale.get("description","")
+        html += f"""
+        <div class="card">
+            {img_html}
+            <div class="card-title">{tale_name}</div>
+            <div class="card-desc">{desc}</div>
+            <a class="start-btn" href="?tale={tale_name}">✨ Начать</a>
+        </div>
+        """
+    html += "</div>"
+    components.html(html, height=420, scrolling=False)
 
 # -------------------------
 # HANDLE URL PARAMS
 # -------------------------
 params = st.query_params
 if "tale" in params:
-    selected = params["tale"][0]  # берем первый элемент списка
+    selected = params["tale"][0]
     if selected in tales:
         start_tale(selected)
 
@@ -130,7 +209,7 @@ if st.session_state.selected_tale is None:
     ])
 
 else:
-    # Показываем историю чата
+    # История чата
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
