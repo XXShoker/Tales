@@ -97,7 +97,6 @@ if st.session_state.selected_tale is None:
                 if tales[tale_name].get("cover"):
                     st.image(tales[tale_name]["cover"], width='stretch')
                 else:
-                    # Заглушка, если обложки нет
                     st.image("https://via.placeholder.com/400x200/ffe6f0/ff69b4?text=✨+Сказка", width='stretch')
                 st.markdown(f"#### {tale_name}")
                 if tales[tale_name].get("description"):
