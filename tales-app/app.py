@@ -99,16 +99,13 @@ st.markdown("""
         box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     }
     
-    /* КАРТОЧКИ - фиксированная высота */
-    .tale-card {
+    /* КАРТОЧКИ - используем Streamlit container вместо HTML div */
+    div[data-testid="stVerticalBlock"] > div {
         background-color: #fffaf0;
         border-radius: 20px;
         padding: 25px;
         border: 2px solid #e9d9c4;
         box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        height: 1000px;
-        display: flex;
-        flex-direction: column;
         margin-bottom: 30px;
         width: 100%;
         max-width: 800px;
@@ -117,7 +114,7 @@ st.markdown("""
     }
     
     /* Изображения */
-    .tale-card img {
+    div[data-testid="stVerticalBlock"] img {
         width: 100%;
         height: 500px;
         object-fit: cover;
@@ -127,23 +124,22 @@ st.markdown("""
     }
     
     /* Заголовок сказки */
-    .tale-card h3 {
+    div[data-testid="stVerticalBlock"] h3 {
         font-size: 2rem;
         margin: 0 0 15px 0;
         color: #2c1e0e !important;
     }
     
     /* Описание сказки */
-    .tale-card p {
+    div[data-testid="stVerticalBlock"] p {
         font-size: 1.1rem;
         margin: 0 0 20px 0;
-        flex-grow: 1;
         color: #1a1309 !important;
     }
     
     /* Кнопка в карточке */
-    .tale-card .stButton {
-        margin-top: auto;
+    div[data-testid="stVerticalBlock"] .stButton {
+        margin-top: 20px;
     }
     
     /* Центрирование контейнера */
@@ -198,17 +194,13 @@ st.markdown("""
     
     /* Адаптация для мобильных */
     @media (max-width: 600px) {
-        .tale-card {
-            height: 800px;
-            padding: 15px;
-        }
-        .tale-card img {
+        div[data-testid="stVerticalBlock"] img {
             height: 350px;
         }
-        .tale-card h3 {
+        div[data-testid="stVerticalBlock"] h3 {
             font-size: 1.5rem;
         }
-        .tale-card p {
+        div[data-testid="stVerticalBlock"] p {
             font-size: 0.95rem;
         }
         h1 {
@@ -356,52 +348,49 @@ if st.session_state.selected_tale is None:
         st.markdown('<div class="section-header">📚 Классические сказки</div>', unsafe_allow_html=True)
         classic_list = [t for t in classic_tales if t in all_tales]
         for tale_name in classic_list:
-            st.markdown(f'<div class="tale-card">', unsafe_allow_html=True)
-            cover_path = tales[tale_name].get("cover", "")
-            if cover_path and os.path.exists(cover_path):
-                st.image(cover_path, use_container_width=True)
-            else:
-                st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
-            st.markdown(f"### {tale_name}")
-            st.markdown(tales[tale_name].get("description", ""))
-            if st.button("✨ Начать", key=f"classic_{tale_name}", use_container_width=True):
-                start_tale(tale_name)
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+            with st.container():
+                cover_path = tales[tale_name].get("cover", "")
+                if cover_path and os.path.exists(cover_path):
+                    st.image(cover_path, use_container_width=True)
+                else:
+                    st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
+                st.markdown(f"### {tale_name}")
+                st.markdown(tales[tale_name].get("description", ""))
+                if st.button("✨ Начать", key=f"classic_{tale_name}", use_container_width=True):
+                    start_tale(tale_name)
+                    st.rerun()
     
     if adventure_tales:
         st.markdown('<div class="section-header">🧚 Приключения и фэнтези</div>', unsafe_allow_html=True)
         adventure_list = [t for t in adventure_tales if t in all_tales]
         for tale_name in adventure_list:
-            st.markdown(f'<div class="tale-card">', unsafe_allow_html=True)
-            cover_path = tales[tale_name].get("cover", "")
-            if cover_path and os.path.exists(cover_path):
-                st.image(cover_path, use_container_width=True)
-            else:
-                st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
-            st.markdown(f"### {tale_name}")
-            st.markdown(tales[tale_name].get("description", ""))
-            if st.button("✨ Начать", key=f"adventure_{tale_name}", use_container_width=True):
-                start_tale(tale_name)
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+            with st.container():
+                cover_path = tales[tale_name].get("cover", "")
+                if cover_path and os.path.exists(cover_path):
+                    st.image(cover_path, use_container_width=True)
+                else:
+                    st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
+                st.markdown(f"### {tale_name}")
+                st.markdown(tales[tale_name].get("description", ""))
+                if st.button("✨ Начать", key=f"adventure_{tale_name}", use_container_width=True):
+                    start_tale(tale_name)
+                    st.rerun()
     
     if adult_tales:
         st.markdown('<div class="section-header">🔞 16+ Детективы и романтика</div>', unsafe_allow_html=True)
         adult_list = [t for t in adult_tales if t in all_tales]
         for tale_name in adult_list:
-            st.markdown(f'<div class="tale-card">', unsafe_allow_html=True)
-            cover_path = tales[tale_name].get("cover", "")
-            if cover_path and os.path.exists(cover_path):
-                st.image(cover_path, use_container_width=True)
-            else:
-                st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
-            st.markdown(f"### {tale_name}")
-            st.markdown(tales[tale_name].get("description", ""))
-            if st.button("✨ Начать", key=f"adult_{tale_name}", use_container_width=True):
-                start_tale(tale_name)
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+            with st.container():
+                cover_path = tales[tale_name].get("cover", "")
+                if cover_path and os.path.exists(cover_path):
+                    st.image(cover_path, use_container_width=True)
+                else:
+                    st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
+                st.markdown(f"### {tale_name}")
+                st.markdown(tales[tale_name].get("description", ""))
+                if st.button("✨ Начать", key=f"adult_{tale_name}", use_container_width=True):
+                    start_tale(tale_name)
+                    st.rerun()
 
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("---")
