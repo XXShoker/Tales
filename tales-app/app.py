@@ -1,4 +1,5 @@
 import streamlit as st
+import replicate
 import requests
 from io import BytesIO
 from PIL import Image
@@ -18,48 +19,55 @@ if "scenes" not in st.session_state:
 if "scene_history" not in st.session_state:
     st.session_state.scene_history = []
 
-# --- Получение API-ключа из секретов ---
-DEEPAI_KEY = st.secrets.get("DEEPAI_KEY", None)
-if DEEPAI_KEY is None:
-    st.error("❌ API-ключ DeepAI не найден. Добавьте DEEPAI_KEY в секреты приложения.")
+# --- Проверка токена Replicate ---
+REPLICATE_API_TOKEN = st.secrets.get("REPLICATE_API_TOKEN", None)
+if REPLICATE_API_TOKEN is None:
+    st.error("❌ API-токен Replicate не найден. Добавьте REPLICATE_API_TOKEN в секреты приложения.")
     st.stop()
 
-# --- Функция генерации изображения через DeepAI ---
+# Настраиваем клиент Replicate
+replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
+
+# --- Функция генерации изображения через Replicate ---
 @st.cache_data(ttl=3600)  # Кэшируем на 1 час
-def generate_image_deepai(prompt):
+def generate_image_replicate(prompt):
     """
-    Отправляет запрос к DeepAI API и возвращает PIL Image или None.
+    Генерирует изображение через модель Stable Diffusion 3.5 на Replicate.
+    Возвращает PIL Image или None при ошибке.
     """
-    url = "https://api.deepai.org/api/text2img"
-    headers = {"api-key": DEEPAI_KEY}
-    data = {"text": prompt, "grid_size": "1"}
-    
     try:
-        # Шаг 1: получаем URL сгенерированного изображения
-        response = requests.post(url, headers=headers, data=data, timeout=30)
-        if response.status_code != 200:
-            st.warning(f"Ошибка DeepAI: {response.status_code} - {response.text}")
+        # Используем модель stability-ai/stable-diffusion-3.5-large
+        output = replicate_client.run(
+            "stability-ai/stable-diffusion-3.5-large",
+            input={
+                "prompt": prompt,
+                "width": 1024,
+                "height": 512,
+                "num_outputs": 1,
+                "guidance_scale": 7.5,
+                "num_inference_steps": 25,
+                "negative_prompt": "ugly, blurry, low quality, bad anatomy, child drawing, cartoon"
+            }
+        )
+        # Replicate возвращает список URL изображений
+        if output and isinstance(output, list) and len(output) > 0:
+            image_url = output[0]
+            # Скачиваем изображение
+            img_response = requests.get(image_url, timeout=15)
+            if img_response.status_code == 200:
+                image = Image.open(BytesIO(img_response.content))
+                return image
+            else:
+                st.warning("Не удалось скачать изображение")
+                return None
+        else:
+            st.warning("Replicate не вернул изображение")
             return None
-        
-        result = response.json()
-        image_url = result.get("output_url")
-        if not image_url:
-            st.warning("API не вернул URL изображения")
-            return None
-        
-        # Шаг 2: скачиваем изображение по полученному URL
-        img_response = requests.get(image_url, timeout=15)
-        if img_response.status_code != 200:
-            st.warning("Не удалось скачать изображение")
-            return None
-        
-        image = Image.open(BytesIO(img_response.content))
-        return image
     except Exception as e:
         st.warning(f"Ошибка при генерации: {e}")
         return None
 
-# --- Основные функции приложения (без изменений) ---
+# --- Основные функции приложения ---
 def start_tale(tale_name):
     st.session_state.selected_tale = tale_name
     st.session_state.scene_id = "start"
@@ -156,10 +164,10 @@ else:
     current_scene = st.session_state.scenes.get(st.session_state.scene_id)
 
     if current_scene:
-        # --- Генерация изображения через DeepAI ---
+        # --- Генерация изображения через Replicate ---
         if current_scene.get("prompt"):
             with st.spinner("🎨 Волшебная картинка создаётся..."):
-                image = generate_image_deepai(current_scene["prompt"])
+                image = generate_image_replicate(current_scene["prompt"])
             
             if image:
                 st.image(image, width='stretch', caption="✨ Волшебная иллюстрация")
@@ -169,6 +177,7 @@ else:
                 st.image("https://via.placeholder.com/800x400/ffe6f0/ff69b4?text=✨+Представьте+сами", width='stretch')
                 st.caption("🌟 Не удалось сгенерировать картинку, но вы можете представить эту сцену сами!")
         else:
+            # Если промпт не задан – заглушка
             st.image("https://via.placeholder.com/800x400/ffe6f0/ff69b4?text=✨+Вообразите+эту+сцену", width='stretch')
 
         # Кнопки выбора или конец сказки
