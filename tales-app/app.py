@@ -92,7 +92,7 @@ st.markdown("""
         padding: 30px;
         border: 2px solid #e9d9c4;
         box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        height: 1000px;
+        height: 800px;
         width: 100%;
         display: flex;
         flex-direction: column;
