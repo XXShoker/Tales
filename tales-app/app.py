@@ -4,7 +4,45 @@ from tales_data import tales
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="centered")
 
-# --- Инициализация состояния ---
+# --- Стили для выравнивания карточек на главном экране ---
+st.markdown("""
+<style>
+/* Все изображения в колонках (обложки) получают фиксированную высоту и красивое обрезание */
+div[data-testid="column"] img {
+    height: 200px !important;
+    width: 100% !important;
+    object-fit: cover !important;
+    border-radius: 12px !important;
+    margin-bottom: 10px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Сама колонка должна растягиваться, чтобы кнопка была внизу */
+div[data-testid="column"] > div {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+}
+
+/* Кнопка "Начать" прижимается к низу */
+div[data-testid="column"] .stButton {
+    margin-top: auto !important;
+}
+
+/* Заголовок сказки и описание занимают оставшееся место */
+div[data-testid="column"] h4 {
+    margin-top: 0 !important;
+    margin-bottom: 5px !important;
+}
+
+div[data-testid="column"] p {
+    flex-grow: 1;
+    margin-bottom: 10px !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# --- Инициализация состояния (без изменений) ---
 if "selected_tale" not in st.session_state:
     st.session_state.selected_tale = None
 if "scene_id" not in st.session_state:
