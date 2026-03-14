@@ -86,6 +86,24 @@ with st.sidebar:
 st.title("📖 Интерактивные сказки")
 st.caption("Выбирайте свой путь в каждой истории!")
 
+# --- ОТЛАДКА ФАЙЛОВ (только для администратора) ---
+with st.expander("🔧 Отладка файлов (только для разработчика)"):
+    st.write("**Содержимое папки images:**")
+    if os.path.exists("images"):
+        files = os.listdir("images")
+        st.write(files)
+    else:
+        st.error("Папка images не найдена!")
+    
+    st.write("**Проверка обложек:**")
+    for tale_name in tales.keys():
+        cover_path = tales[tale_name].get("cover", "")
+        if cover_path:
+            exists = os.path.exists(cover_path)
+            st.write(f"{tale_name}: {cover_path} – {'✅' if exists else '❌'}")
+        else:
+            st.write(f"{tale_name}: обложка не указана")
+
 if st.session_state.selected_tale is None:
     st.markdown("### Выберите сказку для чтения")
     tale_names = list(tales.keys())
