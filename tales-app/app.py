@@ -71,22 +71,22 @@ st.markdown("""
         transition: all 0.2s ease;
     }
     
-    /* КАРТОЧКИ - ФИКСИРОВАННАЯ ВЫСОТА 1000px */
+    /* КАРТОЧКИ - ФИКСИРОВАННАЯ ВЫСОТА 600px */
     div[data-testid="column"] > div {
         background-color: #fffaf0;
         border-radius: 20px;
         padding: 25px;
         border: 2px solid #e9d9c4;
         box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        height: 1000px !important;
+        height: 600px !important;
         display: flex;
         flex-direction: column;
     }
     
-    /* Изображения - ФИКСИРОВАННАЯ ВЫСОТА 500px */
+    /* Изображения - ФИКСИРОВАННАЯ ВЫСОТА 300px */
     div[data-testid="column"] img {
         width: 100%;
-        height: 500px !important;
+        height: 300px !important;
         object-fit: cover;
         border-radius: 15px;
         border: 2px solid #d4b68a;
