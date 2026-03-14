@@ -55,7 +55,7 @@ def reset():
     st.session_state.scene_history = []
 
 # -------------------------
-# CAROUSEL HTML + кнопки Streamlit
+# CAROUSEL HTML
 # -------------------------
 def image_to_base64(path):
     try:
@@ -117,7 +117,6 @@ def show_carousel(tales_list):
     </style>
     <div class="carousel">
     """
-    # добавим карточки с id для кнопок Streamlit
     for i, tale_name in enumerate(tales_list):
         if tale_name not in tales:
             continue
@@ -137,17 +136,17 @@ def show_carousel(tales_list):
             {img_html}
             <div class="card-title">{tale_name}</div>
             <div class="card-desc">{desc}</div>
-            <div id="btn-{i}"></div>
         </div>
         """
     html += "</div>"
     components.html(html, height=420, scrolling=False)
 
-    # Отображаем кнопки Streamlit отдельно (связь с карточками)
-    for i, tale_name in enumerate(tales_list):
+    # возвращаем выбранную сказку через Streamlit кнопки
+    selected = None
+    for tale_name in tales_list:
         if st.button(f"✨ Начать {tale_name}", key=f"start-{tale_name}"):
-            start_tale(tale_name)
-            st.experimental_rerun()
+            selected = tale_name
+    return selected
 
 # -------------------------
 # HANDLE URL PARAMS
@@ -179,9 +178,17 @@ st.title("📖 Интерактивные сказки")
 
 if st.session_state.selected_tale is None:
     st.markdown("## 📚 Советские сказки")
-    show_carousel(["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"])
+    selected = show_carousel(["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"])
+    if selected:
+        start_tale(selected)
+        st.experimental_rerun()
+
     st.markdown("## 🆕 Новые сказки")
-    show_carousel(["Путешествие в Волшебный лес"])
+    selected_new = show_carousel(["Путешествие в Волшебный лес"])
+    if selected_new:
+        start_tale(selected_new)
+        st.experimental_rerun()
+
 else:
     # история чата
     for msg in st.session_state.messages:
