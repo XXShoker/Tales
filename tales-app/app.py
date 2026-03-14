@@ -67,11 +67,12 @@ p, li, .stMarkdown, .stText {
 
 /* --- Карусель (горизонтальная прокрутка) --- */
 .scrollable-container {
-    display: flex;
-    overflow-x: auto;
-    gap: 20px;
-    padding-bottom: 10px;
-    margin-bottom: 20px;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    gap: 20px !important;
+    padding-bottom: 10px !important;
+    margin-bottom: 20px !important;
     scrollbar-width: thin;
     scrollbar-color: #b5926a #f5e9d8;
 }
@@ -92,8 +93,11 @@ p, li, .stMarkdown, .stText {
 
 /* Колонки внутри карусели (flex-элементы) */
 .scrollable-container [data-testid="column"] {
-    flex: 0 0 auto;
-    width: 260px;
+    flex: 0 0 auto !important;
+    width: 260px !important;
+    min-width: 260px !important;
+    max-width: 260px !important;
+    margin: 0 !important;
 }
 
 /* Карточка сказки (внутри колонки) */
@@ -107,6 +111,7 @@ p, li, .stMarkdown, .stText {
     height: 100%;
     display: flex;
     flex-direction: column;
+    min-height: 0; /* Важно для корректной работы flex внутри */
 }
 
 .carousel-card:hover {
@@ -120,12 +125,14 @@ p, li, .stMarkdown, .stText {
     border-radius: 12px;
     border: 1px solid #d4b68a;
     margin-bottom: 10px;
+    flex-shrink: 0;
 }
 
 .carousel-card h4 {
     margin: 0 0 5px 0;
     font-size: 1.2rem;
     white-space: normal;
+    flex-shrink: 0;
 }
 
 .carousel-card p {
@@ -133,17 +140,19 @@ p, li, .stMarkdown, .stText {
     line-height: 1.4;
     margin: 0 0 10px 0;
     white-space: normal;
-    flex: 1;
+    flex: 1 1 auto; /* Занимает всё доступное место, прижимая кнопку вниз */
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
+    min-height: 0; /* Разрешает сжатие */
 }
 
 .carousel-card .stButton {
     width: 100%;
     margin-top: auto;
+    flex-shrink: 0;
 }
 
 .carousel-card .stButton button {
@@ -169,6 +178,8 @@ p, li, .stMarkdown, .stText {
 @media (max-width: 600px) {
     .scrollable-container [data-testid="column"] {
         width: 200px !important;
+        min-width: 200px !important;
+        max-width: 200px !important;
     }
     .carousel-card img {
         height: 120px;
