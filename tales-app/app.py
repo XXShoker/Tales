@@ -3,7 +3,7 @@ from tales_data import tales
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="centered")
 
-# --- Инициализация состояния (без изменений) ---
+# --- Инициализация состояния ---
 if "selected_tale" not in st.session_state:
     st.session_state.selected_tale = None
 if "scene_id" not in st.session_state:
@@ -52,7 +52,7 @@ def reset_to_main():
     st.session_state.scenes = {}
     st.session_state.scene_history = []
 
-# --- Боковая панель (без изменений) ---
+# --- Боковая панель ---
 with st.sidebar:
     st.image("https://via.placeholder.com/150x100/ffe6f0/ff69b4?text=📚", width='stretch')
     st.markdown("## 🌟 О проекте")
@@ -86,12 +86,19 @@ st.title("📖 Интерактивные сказки")
 st.caption("Выбирайте свой путь в каждой истории!")
 
 if st.session_state.selected_tale is None:
+    # Экран выбора сказки с обложками
     st.markdown("### Выберите сказку для чтения")
     tale_names = list(tales.keys())
     cols = st.columns(2)
     for i, tale_name in enumerate(tale_names):
         with cols[i % 2]:
             with st.container(border=True):
+                # Отображаем обложку, если есть
+                if tales[tale_name].get("cover"):
+                    st.image(tales[tale_name]["cover"], width='stretch')
+                else:
+                    # Заглушка, если обложки нет
+                    st.image("https://via.placeholder.com/400x200/ffe6f0/ff69b4?text=✨+Сказка", width='stretch')
                 st.markdown(f"#### {tale_name}")
                 if tales[tale_name].get("description"):
                     st.markdown(tales[tale_name]["description"])
@@ -101,6 +108,7 @@ if st.session_state.selected_tale is None:
     st.markdown("---")
     st.markdown("🌟 *Все сказки бесплатны. Если хотите поддержать проект, воспользуйтесь кнопкой в боковой панели.*")
 else:
+    # Отображаем историю сообщений
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
@@ -108,12 +116,14 @@ else:
     current_scene = st.session_state.scenes.get(st.session_state.scene_id)
 
     if current_scene:
-        # --- Отображаем локальную картинку (если есть) ---
+        # --- Отображение картинки для текущей сцены (заглушка или локальная) ---
         if current_scene.get("image"):
             st.image(current_scene["image"], width='stretch', caption="✨ Иллюстрация к сказке")
         else:
             st.image("https://via.placeholder.com/800x400/ffe6f0/ff69b4?text=✨+Представьте+сами", width='stretch')
+            st.caption("🌟 Вы можете представить эту сцену сами, а позже мы добавим картинки!")
 
+        # Кнопки выбора или конец сказки
         if current_scene.get("options"):
             st.markdown("### Твой выбор:")
             for opt in current_scene["options"]:
