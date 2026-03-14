@@ -15,6 +15,27 @@ if "scenes" not in st.session_state:
     st.session_state.scenes = {}
 if "scene_history" not in st.session_state:
     st.session_state.scene_history = []
+if "achieved_endings" not in st.session_state:
+    st.session_state.achieved_endings = {}  # {tale_name: set(endings_ids)}
+if "total_endings" not in st.session_state:
+    st.session_state.total_endings = {}     # {tale_name: count} (можно вычислить, но проще захардкодить или подсчитать)
+
+def count_total_endings(tale_name):
+    """Подсчитывает количество концовок (сцен с options=[]) в сказке"""
+    tale = tales.get(tale_name)
+    if not tale:
+        return 0
+    count = 0
+    for scene_id, scene in tale["scenes"].items():
+        if scene.get("options") == []:
+            count += 1
+    return count
+
+def get_ending_stats(tale_name):
+    """Возвращает (количество открытых, всего)"""
+    opened = len(st.session_state.achieved_endings.get(tale_name, set()))
+    total = count_total_endings(tale_name)
+    return opened, total
 
 def start_tale(tale_name):
     st.session_state.selected_tale = tale_name
@@ -26,6 +47,9 @@ def start_tale(tale_name):
         st.session_state.scenes = tale_data["scenes"]
         first_scene = st.session_state.scenes["start"]
         st.session_state.messages.append({"role": "assistant", "content": first_scene["text"]})
+    # Инициализируем множество для этой сказки, если ещё нет
+    if tale_name not in st.session_state.achieved_endings:
+        st.session_state.achieved_endings[tale_name] = set()
 
 def handle_choice(choice_text, next_scene_id):
     st.session_state.messages.append({"role": "user", "content": choice_text})
@@ -47,6 +71,7 @@ def go_back():
         st.rerun()
 
 def reset_to_main():
+    # При выходе не сбрасываем achieved_endings – они сохраняются между сессиями
     st.session_state.selected_tale = None
     st.session_state.scene_id = "start"
     st.session_state.messages = []
@@ -74,6 +99,16 @@ with st.sidebar:
             unsafe_allow_html=True
         )
     st.markdown("---")
+    
+    # Статистика концовок для текущей сказки
+    if st.session_state.selected_tale is not None:
+        opened, total = get_ending_stats(st.session_state.selected_tale)
+        st.markdown(f"### 📊 Прогресс")
+        st.markdown(f"**{st.session_state.selected_tale}**")
+        st.progress(opened / total if total > 0 else 0)
+        st.markdown(f"Найдено концовок: **{opened} / {total}**")
+        st.markdown("---")
+    
     if st.session_state.selected_tale is not None:
         if st.button("🔄 Сменить сказку", width='stretch'):
             reset_to_main()
@@ -108,7 +143,7 @@ if st.session_state.selected_tale is None:
     st.markdown("---")
     st.markdown("🌟 *Все сказки бесплатны. Если хотите поддержать проект, воспользуйтесь кнопкой в боковой панели.*")
 else:
-    # Отображаем историю сообщений (только текст)
+    # Отображаем историю сообщений
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
@@ -116,8 +151,42 @@ else:
     current_scene = st.session_state.scenes.get(st.session_state.scene_id)
 
     if current_scene:
-        # Кнопки выбора или конец сказки (без картинок)
-        if current_scene.get("options"):
+        # Если это концовка (нет options)
+        if not current_scene.get("options"):
+            # Проверяем, есть ли ending_type и ending_number
+            if current_scene.get("ending_type") and current_scene.get("ending_number"):
+                ending_type = current_scene["ending_type"]
+                ending_num = current_scene["ending_number"]
+                # Определяем эмодзи для типа
+                type_emoji = {
+                    "happy": "😊",
+                    "sad": "😢",
+                    "neutral": "😐",
+                    "secret": "🤫"
+                }.get(ending_type, "🌟")
+                
+                # Запоминаем, что концовка открыта
+                tale = st.session_state.selected_tale
+                ending_id = f"{ending_type}_{ending_num}"
+                if tale not in st.session_state.achieved_endings:
+                    st.session_state.achieved_endings[tale] = set()
+                st.session_state.achieved_endings[tale].add(ending_id)
+                
+                st.markdown("---")
+                st.markdown(f"## {type_emoji} **Концовка #{ending_num}**")
+                st.markdown(f"**Тип:** {ending_type.capitalize()}")
+                
+            # Кнопки после концовки
+            st.markdown("---")
+            st.markdown("🎉 **Конец сказки!**")
+            if len(st.session_state.scene_history) > 1:
+                if st.button("↩️ Вернуться к предыдущему выбору", width='stretch'):
+                    go_back()
+            if st.button("🔄 Начать эту сказку заново", width='stretch'):
+                start_tale(st.session_state.selected_tale)
+                st.rerun()
+        else:
+            # Обычная сцена с вариантами
             st.markdown("### Твой выбор:")
             for opt in current_scene["options"]:
                 if st.button(opt["text"], key=f"choice_{opt['next']}", width='stretch'):
@@ -127,15 +196,6 @@ else:
                 st.markdown("---")
                 if st.button("↩️ Назад к предыдущему выбору", width='stretch'):
                     go_back()
-        else:
-            st.markdown("---")
-            st.markdown("🎉 **Конец сказки!**")
-            if len(st.session_state.scene_history) > 1:
-                if st.button("↩️ Вернуться к предыдущему выбору", width='stretch'):
-                    go_back()
-            if st.button("🔄 Начать эту сказку заново", width='stretch'):
-                start_tale(st.session_state.selected_tale)
-                st.rerun()
     else:
         st.error("⚠️ Сцена не найдена. Вернитесь к выбору сказок.")
         if st.button("⬅️ К выбору сказок", width='stretch'):
