@@ -55,11 +55,9 @@ def reset_to_main():
     st.session_state.scene_history = []
 
 def get_image_url(prompt):
-    """Возвращает URL для генерации изображения через Pollinations.ai"""
     if not prompt:
         return None
     encoded_prompt = urllib.parse.quote(prompt)
-    # Можно добавить параметры: width, height, model и др.
     return f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=512&nologo=true"
 
 # --- Боковая панель ---
@@ -104,8 +102,6 @@ if st.session_state.selected_tale is None:
     for i, tale_name in enumerate(tale_names):
         with cols[i % 2]:
             with st.container(border=True):
-                # Можно добавить превью, если есть, но сейчас генерируем на лету
-                # Для простоты показываем только текст
                 st.markdown(f"#### {tale_name}")
                 if tales[tale_name].get("description"):
                     st.markdown(tales[tale_name]["description"])
@@ -123,15 +119,29 @@ else:
     current_scene = st.session_state.scenes.get(st.session_state.scene_id)
 
     if current_scene:
-        # Генерация и отображение картинки для текущей сцены
+        # --- Блок отладки картинок ---
+        st.markdown("---")
+        st.subheader("🔍 Отладка изображения")
         if current_scene.get("prompt"):
+            st.write(f"**Промпт:** {current_scene['prompt']}")
             image_url = get_image_url(current_scene["prompt"])
-            # Добавляем уникальный ключ для возможности обновления
-            st.image(image_url, use_container_width=True, caption="✨ Волшебная иллюстрация")
-            # Кнопка для перегенерации картинки (если не понравилась)
+            st.write(f"**Сгенерированный URL:** {image_url}")
+            # Пробуем открыть ссылку в новой вкладке (инструкция)
+            st.markdown(f"[Открыть URL в браузере]({image_url})")
+            # Отображаем картинку
+            try:
+                st.image(image_url, use_container_width=True, caption="✨ Волшебная иллюстрация")
+            except Exception as e:
+                st.error(f"Ошибка загрузки изображения: {e}")
             if st.button("🔄 Другая картинка", key="regenerate_image"):
-                st.rerun()  # просто перезапустит, чтобы получить новый URL (Pollinations каждый раз генерирует новую)
-        
+                st.rerun()
+        else:
+            st.warning("⚠️ Для этой сцены не задан промпт. Добавьте поле 'prompt' в tales_data.py.")
+            # Можно показать заглушку
+            st.image("https://via.placeholder.com/800x400/ffe6f0/ff69b4?text=✨+Представьте+сами", use_container_width=True)
+        st.markdown("---")
+
+        # Основные кнопки выбора
         if current_scene.get("options"):
             st.markdown("### Твой выбор:")
             for opt in current_scene["options"]:
