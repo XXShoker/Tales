@@ -55,6 +55,7 @@ def reset_to_main():
     st.session_state.scene_history = []
 
 def get_image_url(prompt):
+    """Возвращает URL для генерации изображения через Pollinations.ai"""
     if not prompt:
         return None
     encoded_prompt = urllib.parse.quote(prompt)
@@ -62,7 +63,7 @@ def get_image_url(prompt):
 
 # --- Боковая панель ---
 with st.sidebar:
-    st.image("https://via.placeholder.com/150x100/ffe6f0/ff69b4?text=📚", use_container_width=True)
+    st.image("https://via.placeholder.com/150x100/ffe6f0/ff69b4?text=📚", width='stretch')
     st.markdown("## 🌟 О проекте")
     st.markdown(
         "Добро пожаловать в мир **интерактивных сказок**! "
@@ -70,10 +71,11 @@ with st.sidebar:
         "Все сказки абсолютно бесплатны."
     )
     st.markdown("---")
-    # Кнопка доната
+    # Кнопка доната (замените ссылку на свою)
     try:
-        st.link_button("💖 Поддержать донатом", "https://donate.stream/your-link", use_container_width=True)
+        st.link_button("💖 Поддержать донатом", "https://donate.stream/your-link", width='stretch')
     except AttributeError:
+        # Для старых версий Streamlit
         st.markdown(
             '<a href="https://donate.stream/your-link" target="_blank">'
             '<button style="background-color:#FF4B4B; color:white; padding:0.5rem 1rem; '
@@ -83,10 +85,10 @@ with st.sidebar:
         )
     st.markdown("---")
     if st.session_state.selected_tale is not None:
-        if st.button("🔄 Сменить сказку", use_container_width=True):
+        if st.button("🔄 Сменить сказку", width='stretch'):
             reset_to_main()
             st.rerun()
-        if st.button("❌ Завершить и выйти", use_container_width=True):
+        if st.button("❌ Завершить и выйти", width='stretch'):
             reset_to_main()
             st.rerun()
 
@@ -105,7 +107,7 @@ if st.session_state.selected_tale is None:
                 st.markdown(f"#### {tale_name}")
                 if tales[tale_name].get("description"):
                     st.markdown(tales[tale_name]["description"])
-                if st.button(f"✨ Начать", key=f"choose_{tale_name}", use_container_width=True):
+                if st.button(f"✨ Начать", key=f"choose_{tale_name}", width='stretch'):
                     start_tale(tale_name)
                     st.rerun()
     st.markdown("---")
@@ -119,50 +121,40 @@ else:
     current_scene = st.session_state.scenes.get(st.session_state.scene_id)
 
     if current_scene:
-        # --- Блок отладки картинок ---
-        st.markdown("---")
-        st.subheader("🔍 Отладка изображения")
+        # Отображение картинки (с запасным вариантом)
         if current_scene.get("prompt"):
-            st.write(f"**Промпт:** {current_scene['prompt']}")
             image_url = get_image_url(current_scene["prompt"])
-            st.write(f"**Сгенерированный URL:** {image_url}")
-            # Пробуем открыть ссылку в новой вкладке (инструкция)
-            st.markdown(f"[Открыть URL в браузере]({image_url})")
-            # Отображаем картинку
             try:
-                st.image(image_url, use_container_width=True, caption="✨ Волшебная иллюстрация")
-            except Exception as e:
-                st.error(f"Ошибка загрузки изображения: {e}")
-            if st.button("🔄 Другая картинка", key="regenerate_image"):
-                st.rerun()
+                st.image(image_url, width='stretch', caption="✨ Волшебная иллюстрация")
+            except Exception:
+                # Если не удалось загрузить (например, сервис недоступен) – показываем заглушку
+                st.image("https://via.placeholder.com/800x400/ffe6f0/ff69b4?text=✨+Представьте+сами", width='stretch')
         else:
-            st.warning("⚠️ Для этой сцены не задан промпт. Добавьте поле 'prompt' в tales_data.py.")
-            # Можно показать заглушку
-            st.image("https://via.placeholder.com/800x400/ffe6f0/ff69b4?text=✨+Представьте+сами", use_container_width=True)
-        st.markdown("---")
+            # Если промпт не задан – заглушка
+            st.image("https://via.placeholder.com/800x400/ffe6f0/ff69b4?text=✨+Вообразите+эту+сцену", width='stretch')
 
-        # Основные кнопки выбора
+        # Кнопки выбора или конец сказки
         if current_scene.get("options"):
             st.markdown("### Твой выбор:")
             for opt in current_scene["options"]:
-                if st.button(opt["text"], key=f"choice_{opt['next']}", use_container_width=True):
+                if st.button(opt["text"], key=f"choice_{opt['next']}", width='stretch'):
                     handle_choice(opt["text"], opt["next"])
                     st.rerun()
             if len(st.session_state.scene_history) > 1:
                 st.markdown("---")
-                if st.button("↩️ Назад к предыдущему выбору", use_container_width=True):
+                if st.button("↩️ Назад к предыдущему выбору", width='stretch'):
                     go_back()
         else:
             st.markdown("---")
             st.markdown("🎉 **Конец сказки!**")
             if len(st.session_state.scene_history) > 1:
-                if st.button("↩️ Вернуться к предыдущему выбору", use_container_width=True):
+                if st.button("↩️ Вернуться к предыдущему выбору", width='stretch'):
                     go_back()
-            if st.button("🔄 Начать эту сказку заново", use_container_width=True):
+            if st.button("🔄 Начать эту сказку заново", width='stretch'):
                 start_tale(st.session_state.selected_tale)
                 st.rerun()
     else:
         st.error("⚠️ Сцена не найдена. Вернитесь к выбору сказок.")
-        if st.button("⬅️ К выбору сказок"):
+        if st.button("⬅️ К выбору сказок", width='stretch'):
             reset_to_main()
             st.rerun()
