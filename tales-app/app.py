@@ -105,7 +105,7 @@ st.markdown("""
     
     .tale-card img {
         width: 100%;
-        height: 350px;  /* Увеличено для пропорциональности */
+        height: 700px;  /* Увеличено для пропорциональности */
         object-fit: cover;
         border-radius: 15px;
         border: 2px solid #d4b68a;
