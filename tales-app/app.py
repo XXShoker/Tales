@@ -29,6 +29,7 @@ st.markdown("""
         border-bottom: 3px solid #d4b68a;
         padding-bottom: 15px;
         margin-bottom: 30px;
+        color: #5d3a1a !important;  /* Тёмно-коричневый цвет, видно на светлом фоне */
     }
     
     /* Текст */
@@ -82,15 +83,15 @@ st.markdown("""
         padding: 10px 20px;
     }
     
-    /* Карточки сказок */
+    /* Карточки сказок - УВЕЛИЧЕНА ВЫСОТА */
     .tale-card {
         background: white;
         border-radius: 20px;
-        padding: 20px;
+        padding: 25px;
         box-shadow: 0 10px 25px rgba(93, 58, 26, 0.1);
         border: 2px solid #e9d9c4;
         transition: all 0.3s ease;
-        height: 100%;
+        height: 600px;  /* Увеличено в 2 раза */
         display: flex;
         flex-direction: column;
         backdrop-filter: blur(5px);
@@ -104,11 +105,11 @@ st.markdown("""
     
     .tale-card img {
         width: 100%;
-        height: 220px;
+        height: 350px;  /* Увеличено для пропорциональности */
         object-fit: cover;
         border-radius: 15px;
         border: 2px solid #d4b68a;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
         transition: all 0.3s ease;
     }
     
@@ -117,16 +118,17 @@ st.markdown("""
     }
     
     .tale-card h3 {
-        font-size: 1.8rem;
-        margin: 0 0 10px 0;
+        font-size: 2rem;  /* Увеличен */
+        margin: 0 0 15px 0;
         color: #5d3a1a;
     }
     
     .tale-card p {
-        font-size: 1rem;
-        margin: 0 0 20px 0;
+        font-size: 1.1rem;  /* Увеличен */
+        margin: 0 0 25px 0;
         flex-grow: 1;
         color: #3e2c1b;
+        line-height: 1.5;
     }
     
     /* Кнопка "Начать" - УЛУЧШЕНО */
@@ -135,8 +137,8 @@ st.markdown("""
         color: #2a1c0e;
         border: 2px solid #b5926a;
         border-radius: 40px;
-        padding: 12px 24px;
-        font-size: 1.2rem;
+        padding: 15px 30px;  /* Увеличен padding */
+        font-size: 1.3rem;  /* Увеличен */
         font-weight: 700;
         cursor: pointer;
         transition: all 0.3s ease;
@@ -188,8 +190,14 @@ st.markdown("""
         .section-header {
             font-size: 1.8rem;
         }
+        .tale-card {
+            height: 500px;
+        }
         .tale-card h3 {
             font-size: 1.5rem;
+        }
+        .tale-card img {
+            height: 250px;
         }
     }
 </style>
@@ -279,7 +287,7 @@ def get_image_html(tale_name):
                 return f'<img src="data:image/jpeg;base64,{img_data}" alt="{tale_name}">'
         except:
             pass
-    return f'<img src="https://via.placeholder.com/400x220/ffe6f0/ff69b4?text=✨+{tale_name}" alt="{tale_name}">'
+    return f'<img src="https://via.placeholder.com/400x350/ffe6f0/ff69b4?text=✨+{tale_name}" alt="{tale_name}">'
 
 # --- Боковая панель ---
 with st.sidebar:
@@ -291,7 +299,7 @@ with st.sidebar:
     )
     st.markdown("---")
     
-    # Кнопка доната - ТЕПЕРЬ ВИДНА
+    # Кнопка доната
     st.markdown("""
     <a href="https://donate.stream/donate_69b56f4953f16" target="_blank" class="donate-button">
         💖 Поддержать донатом
