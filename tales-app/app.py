@@ -1,4 +1,3 @@
-```python
 import streamlit as st
 import os
 import streamlit.components.v1 as components
@@ -294,4 +293,3 @@ else:
 
             if st.button("⬅️ Назад"):
                 go_back()
-```
