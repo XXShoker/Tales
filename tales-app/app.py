@@ -4,430 +4,380 @@ from tales_data import tales
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="centered")
 
-# --- Стили ---
+# --- СТИЛИ ---
 st.markdown("""
 <style>
-/* Подключаем шрифты */
+
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Open+Sans:wght@400;600&display=swap');
 
-/* Общий фон – старая бумага */
 .stApp {
     background-color: #fef9e7;
-    background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgdmlld0JveD0iMCAwIDQwIDQwIj48cGF0aCBkPSJNMjAgMjBhMTAgMTAgMCAwIDEgMjAgMCAxMCAxMCAwIDAgMS0yMCAweiIgZmlsbD0iI2UwZDVjMCIgb3BhY2l0eT0iMC4yIi8+PC9zdmc+');
-    background-repeat: repeat;
 }
 
-/* Заголовки */
-h1, h2, h3, h4, h5, h6 {
-    font-family: 'Cormorant Garamond', serif;
-    color: #5d3a1a;
-    font-weight: 600;
+/* заголовки */
+
+h1,h2,h3,h4{
+font-family:'Cormorant Garamond',serif;
+color:#5d3a1a;
 }
 
-/* Основной текст */
-p, li, .stMarkdown, .stText {
-    font-family: 'Open Sans', sans-serif;
-    color: #3e2c1b;
+p{
+font-family:'Open Sans',sans-serif;
 }
 
-/* Боковая панель */
-.css-1d391kg, .css-1wrcr25, section[data-testid="stSidebar"] {
-    background-color: #f5e9d8 !important;
+/* карточки */
+
+.carousel-wrapper{
+position:relative;
 }
 
-/* Кнопки */
-.stButton > button {
-    font-family: 'Open Sans', sans-serif;
-    background-color: #e6d5b8;
-    color: #3e2c1b;
-    border: 1px solid #b5926a;
-    border-radius: 30px;
-    padding: 0.5rem 1rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+.carousel-container{
+display:flex;
+overflow-x:auto;
+gap:20px;
+padding:10px 40px;
+scroll-behavior:smooth;
+scroll-snap-type:x mandatory;
 }
 
-.stButton > button:hover {
-    background-color: #d4b68a;
-    color: #2a1c0e;
-    border-color: #8b6b4f;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    transform: translateY(-2px);
+.carousel-container::-webkit-scrollbar{
+display:none;
 }
 
-/* Кнопки в сайдбаре */
-.sidebar .stButton > button {
-    background-color: #cbb89e;
-    border-color: #9b7e62;
+.carousel-item{
+flex:0 0 260px;
+scroll-snap-align:start;
 }
 
-.sidebar .stButton > button:hover {
-    background-color: #b89e7c;
+.carousel-card{
+
+background:#fffaf0;
+border-radius:20px;
+padding:15px;
+
+height:340px;
+
+display:flex;
+flex-direction:column;
+
+border:1px solid #e9d9c4;
+
+transition:0.2s;
 }
 
-/* --- Карусель (горизонтальная прокрутка) --- */
-.scrollable-container {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    gap: 20px !important;
-    padding-bottom: 10px !important;
-    margin-bottom: 20px !important;
-    scrollbar-width: thin;
-    scrollbar-color: #b5926a #f5e9d8;
+.carousel-card:hover{
+
+transform:scale(1.05);
+
+box-shadow:0 10px 25px rgba(0,0,0,0.15);
+
 }
 
-.scrollable-container::-webkit-scrollbar {
-    height: 8px;
+.carousel-card img{
+
+width:100%;
+
+height:150px;
+
+object-fit:cover;
+
+border-radius:12px;
+
+margin-bottom:10px;
+
 }
 
-.scrollable-container::-webkit-scrollbar-track {
-    background: #f5e9d8;
-    border-radius: 10px;
+.carousel-card p{
+
+height:60px;
+
+overflow:hidden;
+
+display:-webkit-box;
+
+-webkit-line-clamp:3;
+
+-webkit-box-orient:vertical;
+
 }
 
-.scrollable-container::-webkit-scrollbar-thumb {
-    background: #b5926a;
-    border-radius: 10px;
+.carousel-card .stButton{
+
+margin-top:auto;
+
 }
 
-/* Колонки внутри карусели (flex-элементы) */
-.scrollable-container [data-testid="column"] {
-    flex: 0 0 auto !important;
-    width: 260px !important;
-    min-width: 260px !important;
-    max-width: 260px !important;
-    margin: 0 !important;
+.carousel-card button{
+
+width:100%;
+
 }
 
-/* Карточка сказки (внутри колонки) */
-.carousel-card {
-    background-color: #fffaf0;
-    border-radius: 20px;
-    padding: 15px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    border: 1px solid #e9d9c4;
-    transition: box-shadow 0.3s ease;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    min-height: 0; /* Важно для корректной работы flex внутри */
+/* стрелки */
+
+.carousel-arrow{
+
+position:absolute;
+
+top:40%;
+
+transform:translateY(-50%);
+
+z-index:10;
+
+background:rgba(0,0,0,0.5);
+
+color:white;
+
+border-radius:50%;
+
+border:none;
+
+width:36px;
+
+height:36px;
+
+cursor:pointer;
+
 }
 
-.carousel-card:hover {
-    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+.carousel-arrow:hover{
+
+background:rgba(0,0,0,0.8);
+
 }
 
-.carousel-card img {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-    border-radius: 12px;
-    border: 1px solid #d4b68a;
-    margin-bottom: 10px;
-    flex-shrink: 0;
+.carousel-left{
+left:0;
 }
 
-.carousel-card h4 {
-    margin: 0 0 5px 0;
-    font-size: 1.2rem;
-    white-space: normal;
-    flex-shrink: 0;
+.carousel-right{
+right:0;
 }
 
-.carousel-card p {
-    font-size: 0.9rem;
-    line-height: 1.4;
-    margin: 0 0 10px 0;
-    white-space: normal;
-    flex: 1 1 auto; /* Занимает всё доступное место, прижимая кнопку вниз */
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    min-height: 0; /* Разрешает сжатие */
-}
-
-.carousel-card .stButton {
-    width: 100%;
-    margin-top: auto;
-    flex-shrink: 0;
-}
-
-.carousel-card .stButton button {
-    width: 100%;
-    padding: 0.4rem;
-    font-size: 0.9rem;
-}
-
-/* Сообщения чата */
-.stChatMessage {
-    background-color: #fffaf0 !important;
-    border-radius: 18px !important;
-    padding: 8px 16px !important;
-    border: 1px solid #e9d9c4;
-    margin-bottom: 8px;
-}
-
-.stChatMessage[data-testid="chatMessageUser"] {
-    background-color: #e6d5b8 !important;
-}
-
-/* Адаптация для мобильных */
-@media (max-width: 600px) {
-    .scrollable-container [data-testid="column"] {
-        width: 200px !important;
-        min-width: 200px !important;
-        max-width: 200px !important;
-    }
-    .carousel-card img {
-        height: 120px;
-    }
-    h1 {
-        font-size: 1.8rem;
-    }
-}
-
-/* Прогресс-бар */
-.stProgress > div > div {
-    background-color: #b5926a !important;
-}
-
-/* Ссылка доната (fallback) */
-.stLinkButton a, a button {
-    background-color: #d4b68a;
-    color: #2a1c0e;
-    border-radius: 30px;
-    padding: 0.5rem 1rem;
-    text-decoration: none;
-    font-weight: 600;
-    transition: background-color 0.3s;
-    border: none;
-    cursor: pointer;
-}
-
-.stLinkButton a:hover, a button:hover {
-    background-color: #b89e7c;
-}
 </style>
 """, unsafe_allow_html=True)
 
-# --- Инициализация состояния ---
+# JS для стрелок
+st.markdown("""
+<script>
+function scrollCarousel(id, offset) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.scrollBy({
+            left: offset,
+            behavior: 'smooth'
+        });
+    }
+}
+</script>
+""", unsafe_allow_html=True)
+
+
+# --- STATE ---
 if "selected_tale" not in st.session_state:
-    st.session_state.selected_tale = None
+    st.session_state.selected_tale=None
+
 if "scene_id" not in st.session_state:
-    st.session_state.scene_id = "start"
+    st.session_state.scene_id="start"
+
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state.messages=[]
+
 if "scenes" not in st.session_state:
-    st.session_state.scenes = {}
+    st.session_state.scenes={}
+
 if "scene_history" not in st.session_state:
-    st.session_state.scene_history = []
-if "achieved_endings" not in st.session_state:
-    st.session_state.achieved_endings = {}
+    st.session_state.scene_history=[]
 
-def count_total_endings(tale_name):
-    tale = tales.get(tale_name)
-    if not tale:
-        return 0
-    count = 0
-    for scene_id, scene in tale["scenes"].items():
-        if scene.get("options") == []:
-            count += 1
-    return count
 
-def get_ending_stats(tale_name):
-    opened = len(st.session_state.achieved_endings.get(tale_name, set()))
-    total = count_total_endings(tale_name)
-    return opened, total
+# --- ФУНКЦИИ ---
 
 def start_tale(tale_name):
-    st.session_state.selected_tale = tale_name
-    st.session_state.scene_id = "start"
-    st.session_state.messages = []
-    st.session_state.scene_history = ["start"]
-    tale_data = tales.get(tale_name)
-    if tale_data:
-        st.session_state.scenes = tale_data["scenes"]
-        first_scene = st.session_state.scenes["start"]
-        st.session_state.messages.append({"role": "assistant", "content": first_scene["text"]})
-    if tale_name not in st.session_state.achieved_endings:
-        st.session_state.achieved_endings[tale_name] = set()
 
-def handle_choice(choice_text, next_scene_id):
-    st.session_state.messages.append({"role": "user", "content": choice_text})
-    st.session_state.scene_id = next_scene_id
-    st.session_state.scene_history.append(next_scene_id)
-    next_scene = st.session_state.scenes.get(next_scene_id)
-    if next_scene:
-        st.session_state.messages.append({"role": "assistant", "content": next_scene["text"]})
-    else:
-        st.error(f"Сцена {next_scene_id} не найдена")
+    st.session_state.selected_tale=tale_name
+    st.session_state.scene_id="start"
+    st.session_state.messages=[]
+    st.session_state.scene_history=["start"]
+
+    tale=tales[tale_name]
+
+    st.session_state.scenes=tale["scenes"]
+
+    first_scene=tale["scenes"]["start"]
+
+    st.session_state.messages.append(
+        {"role":"assistant","content":first_scene["text"]}
+    )
+
+
+def handle_choice(text,next_scene):
+
+    st.session_state.messages.append(
+        {"role":"user","content":text}
+    )
+
+    st.session_state.scene_id=next_scene
+
+    st.session_state.scene_history.append(next_scene)
+
+    scene=st.session_state.scenes[next_scene]
+
+    st.session_state.messages.append(
+        {"role":"assistant","content":scene["text"]}
+    )
+
 
 def go_back():
-    if len(st.session_state.scene_history) > 1:
+
+    if len(st.session_state.scene_history)>1:
+
         st.session_state.scene_history.pop()
-        st.session_state.scene_id = st.session_state.scene_history[-1]
-        if len(st.session_state.messages) >= 2:
-            st.session_state.messages.pop()
-            st.session_state.messages.pop()
+
+        st.session_state.scene_id=st.session_state.scene_history[-1]
+
+        st.session_state.messages.pop()
+        st.session_state.messages.pop()
+
         st.rerun()
 
-def reset_to_main():
-    st.session_state.selected_tale = None
-    st.session_state.scene_id = "start"
-    st.session_state.messages = []
-    st.session_state.scenes = {}
-    st.session_state.scene_history = []
 
-# --- Боковая панель ---
+def reset():
+
+    st.session_state.selected_tale=None
+    st.session_state.messages=[]
+    st.session_state.scenes={}
+    st.session_state.scene_history=[]
+
+
+# --- КАРУСЕЛЬ ---
+
+def show_carousel(tales_list,key):
+
+    st.markdown(f"""
+<div class="carousel-wrapper">
+<button class="carousel-arrow carousel-left" onclick="scrollCarousel('{key}',-300)">‹</button>
+<div id="{key}" class="carousel-container">
+""",unsafe_allow_html=True)
+
+    for tale_name in tales_list:
+
+        if tale_name in tales:
+
+            st.markdown('<div class="carousel-item">',unsafe_allow_html=True)
+            st.markdown('<div class="carousel-card">',unsafe_allow_html=True)
+
+            cover=tales[tale_name].get("cover","")
+
+            if cover and os.path.exists(cover):
+                st.image(cover,use_container_width=True)
+            else:
+                st.image("https://via.placeholder.com/240x150",use_container_width=True)
+
+            st.markdown(f"#### {tale_name}")
+
+            if tales[tale_name].get("description"):
+                st.markdown(tales[tale_name]["description"])
+
+            if st.button("✨ Начать",key=f"{key}_{tale_name}"):
+
+                start_tale(tale_name)
+
+                st.rerun()
+
+            st.markdown("</div>",unsafe_allow_html=True)
+            st.markdown("</div>",unsafe_allow_html=True)
+
+    st.markdown(f"""
+</div>
+<button class="carousel-arrow carousel-right" onclick="scrollCarousel('{key}',300)">›</button>
+</div>
+""",unsafe_allow_html=True)
+
+
+
+# --- SIDEBAR ---
+
 with st.sidebar:
+
     st.markdown("## 📖 О проекте")
+
     st.markdown(
-        "Добро пожаловать в мир **интерактивных сказок**! "
-        "Вы сами выбираете, как развернётся история. "
-        "Все сказки абсолютно бесплатны."
+    "Интерактивные сказки где ребёнок сам выбирает путь истории."
     )
+
     st.markdown("---")
-    try:
-        st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", use_container_width=True)
-    except AttributeError:
-        st.markdown(
-            '<a href="https://donate.stream/donate_69b56f4953f16" target="_blank">'
-            '<button style="background-color:#d4b68a; color:#2a1c0e; padding:0.5rem 1rem; '
-            'border:none; border-radius:30px; width:100%; font-size:1rem; '
-            'cursor:pointer; font-weight:600;">💖 Поддержать донатом</button></a>',
-            unsafe_allow_html=True
-        )
+
+    st.link_button(
+        "💖 Поддержать проект",
+        "https://donate.stream/donate_69b56f4953f16",
+        use_container_width=True
+    )
+
     st.markdown("---")
-    
-    if st.session_state.selected_tale is not None:
-        opened, total = get_ending_stats(st.session_state.selected_tale)
-        st.markdown(f"### 📊 Прогресс")
-        st.markdown(f"**{st.session_state.selected_tale}**")
-        st.progress(opened / total if total > 0 else 0)
-        st.markdown(f"Найдено концовок: **{opened} / {total}**")
-        st.markdown("---")
-    
-    if st.session_state.selected_tale is not None:
-        if st.button("🔄 Сменить сказку", use_container_width=True):
-            reset_to_main()
-            st.rerun()
-        if st.button("❌ Завершить и выйти", use_container_width=True):
-            reset_to_main()
+
+    if st.session_state.selected_tale:
+
+        if st.button("🔄 Сменить сказку",use_container_width=True):
+
+            reset()
+
             st.rerun()
 
-# --- Основная область ---
+
+# --- MAIN ---
+
 st.title("📖 Интерактивные сказки")
-st.caption("Выбирайте свой путь в каждой истории!")
+st.caption("Выбирай свой путь в каждой истории")
 
 if st.session_state.selected_tale is None:
-    # Определяем группы сказок
-    all_tales = list(tales.keys())
-    soviet_tales = ["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"]
-    new_tales = ["Путешествие в Волшебный лес"]
 
-    def show_tale_card(tale_name):
-        cover_path = tales[tale_name].get("cover", "")
-        if cover_path and os.path.exists(cover_path):
-            st.image(cover_path, use_container_width=True)
-        else:
-            st.image("https://via.placeholder.com/240x150/ffe6f0/ff69b4?text=✨+Сказка", use_container_width=True)
-        st.markdown(f"#### {tale_name}")
-        if tales[tale_name].get("description"):
-            st.markdown(tales[tale_name]["description"])
-        if st.button(f"✨ Начать", key=f"choose_{tale_name}", use_container_width=True):
-            start_tale(tale_name)
-            st.rerun()
-
-    # Секция "Советские сказки"
     st.markdown("## 📚 Советские сказки")
-    st.markdown('<div class="scrollable-container">', unsafe_allow_html=True)
-    cols = st.columns(len(soviet_tales))
-    for i, tale_name in enumerate(soviet_tales):
-        if tale_name in all_tales:
-            with cols[i]:
-                st.markdown('<div class="carousel-card">', unsafe_allow_html=True)
-                show_tale_card(tale_name)
-                st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
-    # Секция "Новые сказки"
+    show_carousel(
+        ["Колобок","Теремок","Золотая рыбка","Курочка Ряба"],
+        "soviet"
+    )
+
     st.markdown("## 🆕 Новые сказки")
-    st.markdown('<div class="scrollable-container">', unsafe_allow_html=True)
-    cols = st.columns(len(new_tales))
-    for i, tale_name in enumerate(new_tales):
-        if tale_name in all_tales:
-            with cols[i]:
-                st.markdown('<div class="carousel-card">', unsafe_allow_html=True)
-                show_tale_card(tale_name)
-                st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("---")
-    st.markdown("🌟 *Все сказки бесплатны. Если хотите поддержать проект, воспользуйтесь кнопкой в боковой панели.*")
+    show_carousel(
+        ["Путешествие в Волшебный лес"],
+        "new"
+    )
 
 else:
-    # Отображение сказки (история сообщений)
+
     for msg in st.session_state.messages:
+
         with st.chat_message(msg["role"]):
+
             st.write(msg["content"])
 
-    current_scene = st.session_state.scenes.get(st.session_state.scene_id)
+    scene=st.session_state.scenes[st.session_state.scene_id]
 
-    if current_scene:
-        if not current_scene.get("options"):
-            if current_scene.get("ending_type") and current_scene.get("ending_number"):
-                ending_type = current_scene["ending_type"]
-                ending_num = current_scene["ending_number"]
-                type_emoji = {
-                    "happy": "😊",
-                    "sad": "😢",
-                    "neutral": "😐",
-                    "secret": "🤫"
-                }.get(ending_type, "🌟")
-                
-                tale = st.session_state.selected_tale
-                ending_id = f"{ending_type}_{ending_num}"
-                if tale not in st.session_state.achieved_endings:
-                    st.session_state.achieved_endings[tale] = set()
-                st.session_state.achieved_endings[tale].add(ending_id)
-                
-                st.markdown("---")
-                st.markdown(f"## {type_emoji} **Концовка #{ending_num}**")
-                st.markdown(f"**Тип:** {ending_type.capitalize()}")
-                
-                if ending_type == "happy":
-                    st.success("🎉 Поздравляем! Это счастливый конец!")
-                else:
-                    st.info("😕 Это не счастливый конец. Попробуй пройти сказку снова, возможно, ты найдёшь счастливый конец!")
-                
-                opened, total = get_ending_stats(tale)
-                st.markdown(f"*Всего в этой сказке **{total}** концовок. Ты нашёл уже **{opened}**.*")
-            else:
-                st.markdown("---")
-                st.markdown("🎉 **Конец сказки!**")
-            
-            st.markdown("---")
-            if len(st.session_state.scene_history) > 1:
-                if st.button("↩️ Вернуться к предыдущему выбору", use_container_width=True):
-                    go_back()
-            if st.button("🔄 Начать эту сказку заново", use_container_width=True):
-                start_tale(st.session_state.selected_tale)
-                st.rerun()
-        else:
-            st.markdown("### Твой выбор:")
-            for opt in current_scene["options"]:
-                if st.button(opt["text"], key=f"choice_{opt['next']}", use_container_width=True):
-                    handle_choice(opt["text"], opt["next"])
-                    st.rerun()
-            if len(st.session_state.scene_history) > 1:
-                st.markdown("---")
-                if st.button("↩️ Назад к предыдущему выбору", use_container_width=True):
-                    go_back()
-    else:
-        st.error("⚠️ Сцена не найдена. Вернитесь к выбору сказок.")
-        if st.button("⬅️ К выбору сказок", use_container_width=True):
-            reset_to_main()
+    if not scene.get("options"):
+
+        st.success("🎉 Конец сказки!")
+
+        if st.button("🔄 Начать заново"):
+            start_tale(st.session_state.selected_tale)
             st.rerun()
+
+    else:
+
+        st.markdown("### Твой выбор")
+
+        for opt in scene["options"]:
+
+            if st.button(opt["text"]):
+
+                handle_choice(opt["text"],opt["next"])
+
+                st.rerun()
+
+        if len(st.session_state.scene_history)>1:
+
+            if st.button("⬅️ Назад"):
+
+                go_back()
