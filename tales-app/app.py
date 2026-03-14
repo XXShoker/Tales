@@ -1,13 +1,9 @@
 import streamlit as st
-import replicate
-import requests
-from io import BytesIO
-from PIL import Image
 from tales_data import tales
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="centered")
 
-# --- Инициализация состояния ---
+# --- Инициализация состояния (без изменений) ---
 if "selected_tale" not in st.session_state:
     st.session_state.selected_tale = None
 if "scene_id" not in st.session_state:
@@ -18,49 +14,7 @@ if "scenes" not in st.session_state:
     st.session_state.scenes = {}
 if "scene_history" not in st.session_state:
     st.session_state.scene_history = []
-if "image_counter" not in st.session_state:
-    st.session_state.image_counter = 0  # для перегенерации
 
-# --- Проверка токена Replicate ---
-REPLICATE_API_TOKEN = st.secrets.get("REPLICATE_API_TOKEN", None)
-if REPLICATE_API_TOKEN is None:
-    st.error("❌ API-токен Replicate не найден. Добавьте REPLICATE_API_TOKEN в секреты приложения.")
-    st.stop()
-
-replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
-
-# --- Функция генерации изображения через Replicate ---
-@st.cache_data(ttl=3600)
-def generate_image_replicate(prompt, counter):
-    try:
-        output = replicate_client.run(
-            "stability-ai/stable-diffusion-3.5-large",
-            input={
-                "prompt": prompt,
-                "width": 1024,
-                "height": 512,
-                "num_outputs": 1,
-                "guidance_scale": 7.5,
-                "num_inference_steps": 25,
-                "negative_prompt": "ugly, blurry, low quality, bad anatomy, child drawing, cartoon"
-            }
-        )
-        if output and isinstance(output, list) and len(output) > 0:
-            image_url = output[0]
-            img_response = requests.get(image_url, timeout=15)
-            if img_response.status_code == 200:
-                return Image.open(BytesIO(img_response.content))
-            else:
-                st.warning("Не удалось скачать изображение")
-                return None
-        else:
-            st.warning("Replicate не вернул изображение")
-            return None
-    except Exception as e:
-        st.warning(f"Ошибка при генерации: {e}")
-        return None
-
-# --- Основные функции приложения (без изменений) ---
 def start_tale(tale_name):
     st.session_state.selected_tale = tale_name
     st.session_state.scene_id = "start"
@@ -154,21 +108,11 @@ else:
     current_scene = st.session_state.scenes.get(st.session_state.scene_id)
 
     if current_scene:
-        # --- Генерация изображения с учётом счётчика ---
-        if current_scene.get("prompt"):
-            with st.spinner("🎨 Волшебная картинка создаётся..."):
-                image = generate_image_replicate(current_scene["prompt"], st.session_state.image_counter)
-            
-            if image:
-                st.image(image, width='stretch', caption="✨ Волшебная иллюстрация")
-                if st.button("🔄 Другая картинка"):
-                    st.session_state.image_counter += 1
-                    st.rerun()
-            else:
-                st.image("https://via.placeholder.com/800x400/ffe6f0/ff69b4?text=✨+Представьте+сами", width='stretch')
-                st.caption("🌟 Не удалось сгенерировать картинку, но вы можете представить эту сцену сами!")
+        # --- Отображаем локальную картинку (если есть) ---
+        if current_scene.get("image"):
+            st.image(current_scene["image"], width='stretch', caption="✨ Иллюстрация к сказке")
         else:
-            st.image("https://via.placeholder.com/800x400/ffe6f0/ff69b4?text=✨+Вообразите+эту+сцену", width='stretch')
+            st.image("https://via.placeholder.com/800x400/ffe6f0/ff69b4?text=✨+Представьте+сами", width='stretch')
 
         if current_scene.get("options"):
             st.markdown("### Твой выбор:")
