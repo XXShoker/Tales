@@ -4,7 +4,7 @@ from tales_data import tales
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="wide")
 
-# --- Стили ---
+# --- Стили с !important для принудительного применения ---
 st.markdown("""
 <style>
     /* Подключаем шрифты */
@@ -12,146 +12,150 @@ st.markdown("""
     
     /* Общий фон */
     .stApp {
-        background-color: #fef9e7;
+        background-color: #fef9e7 !important;
     }
     
     /* Заголовки */
     h1, h2, h3, h4, h5, h6 {
-        font-family: 'Cormorant Garamond', serif;
+        font-family: 'Cormorant Garamond', serif !important;
         color: #2c1e0e !important;
-        font-weight: 600;
+        font-weight: 600 !important;
     }
     
     h1 {
-        font-size: 3rem;
-        border-bottom: 3px solid #d4b68a;
-        padding-bottom: 15px;
+        font-size: 3rem !important;
+        border-bottom: 3px solid #d4b68a !important;
+        padding-bottom: 15px !important;
     }
     
     /* Текст */
     p, li, .stMarkdown, .stText, .stChatMessage p {
-        font-family: 'Open Sans', sans-serif;
+        font-family: 'Open Sans', sans-serif !important;
         color: #1a1309 !important;
-        font-size: 1.1rem;
-        line-height: 1.6;
+        font-size: 1.1rem !important;
+        line-height: 1.6 !important;
     }
     
     /* Боковая панель */
     section[data-testid="stSidebar"] {
-        background-color: #f5e9d8;
+        background-color: #f5e9d8 !important;
     }
     
     /* Кнопка доната */
     .stLinkButton a {
-        background-color: #d4b68a;
+        background-color: #d4b68a !important;
         color: #2a1c0e !important;
-        border-radius: 50px;
-        padding: 15px 25px;
-        text-decoration: none;
-        font-weight: bold;
-        border: 2px solid #b5926a;
-        display: inline-block;
-        width: 100%;
-        text-align: center;
-        transition: all 0.3s ease;
+        border-radius: 50px !important;
+        padding: 15px 25px !important;
+        text-decoration: none !important;
+        font-weight: bold !important;
+        border: 2px solid #b5926a !important;
+        display: inline-block !important;
+        width: 100% !important;
+        text-align: center !important;
+        transition: all 0.3s ease !important;
     }
     
     .stLinkButton a:hover {
-        background-color: #b5926a;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        background-color: #b5926a !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
     }
     
     /* Все кнопки */
     .stButton > button {
-        background-color: #e6d5b8;
-        color: #2a1c0e;
-        border: 2px solid #b5926a;
-        border-radius: 40px;
+        background-color: #e6d5b8 !important;
+        color: #2a1c0e !important;
+        border: 2px solid #b5926a !important;
+        border-radius: 40px !important;
         padding: 15px 20px !important;
         font-size: 1.2rem !important;
-        font-weight: 600;
-        font-family: 'Open Sans', sans-serif;
-        width: 100%;
-        min-height: 60px;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        font-weight: 600 !important;
+        font-family: 'Open Sans', sans-serif !important;
+        width: 100% !important;
+        min-height: 60px !important;
+        transition: all 0.2s ease !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
     }
     
     .stButton > button:hover {
-        background-color: #d4b68a;
-        border-color: #8b6b4f;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        background-color: #d4b68a !important;
+        border-color: #8b6b4f !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
     }
     
-    /* КАРТОЧКИ СКАЗОК - 1000px */
+    /* КАРТОЧКИ СКАЗОК - 1000px с !important */
     div[data-testid="column"] > div {
-        background-color: #fffaf0;
-        border-radius: 20px;
-        padding: 30px;
-        border: 2px solid #e9d9c4;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        height: 500px;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        transition: all 0.3s ease;
+        background-color: #fffaf0 !important;
+        border-radius: 20px !important;
+        padding: 30px !important;
+        border: 2px solid #e9d9c4 !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+        height: 1000px !important;  /* ПРИНУДИТЕЛЬНО 1000px */
+        min-height: 1000px !important;
+        max-height: 1000px !important;
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        transition: all 0.3s ease !important;
     }
     
     div[data-testid="column"] > div:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-        border-color: #d4b68a;
+        transform: translateY(-5px) !important;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15) !important;
+        border-color: #d4b68a !important;
     }
     
-    /* Изображения */
+    /* Изображения - 500px с !important */
     div[data-testid="column"] img {
-        width: 100%;
-        height: 300px;
-        object-fit: cover;
-        border-radius: 15px;
-        border: 2px solid #d4b68a;
-        margin-bottom: 20px;
+        width: 100% !important;
+        height: 500px !important;  /* ПРИНУДИТЕЛЬНО 500px */
+        min-height: 500px !important;
+        max-height: 500px !important;
+        object-fit: cover !important;
+        border-radius: 15px !important;
+        border: 2px solid #d4b68a !important;
+        margin-bottom: 20px !important;
     }
     
     /* Заголовок сказки */
     div[data-testid="column"] h3 {
-        font-size: 2.5rem;
-        margin: 0 0 15px 0;
+        font-size: 2.5rem !important;
+        margin: 0 0 15px 0 !important;
         color: #2c1e0e !important;
     }
     
     /* Описание сказки */
     div[data-testid="column"] p {
-        font-size: 1.2rem;
-        margin: 0 0 25px 0;
-        flex-grow: 1;
+        font-size: 1.2rem !important;
+        margin: 0 0 25px 0 !important;
+        flex-grow: 1 !important;
         color: #1a1309 !important;
-        line-height: 1.5;
-        max-height: 200px;
-        overflow-y: auto;
-        padding-right: 10px;
+        line-height: 1.5 !important;
+        max-height: 200px !important;
+        overflow-y: auto !important;
+        padding-right: 10px !important;
     }
     
     /* Кнопка в карточке */
     div[data-testid="column"] .stButton {
-        margin-top: auto;
-        width: 100%;
+        margin-top: auto !important;
+        width: 100% !important;
     }
     
     /* Сообщения чата */
     .stChatMessage {
         background-color: #fffaf0 !important;
-        border: 2px solid #e9d9c4;
+        border: 2px solid #e9d9c4 !important;
         border-radius: 20px !important;
         padding: 15px 20px !important;
-        margin-bottom: 10px;
+        margin-bottom: 10px !important;
     }
     
     .stChatMessage p {
         color: #1a1309 !important;
-        font-size: 1.1rem;
+        font-size: 1.1rem !important;
     }
     
     .stChatMessage[data-testid="chatMessageUser"] {
@@ -161,38 +165,42 @@ st.markdown("""
     /* Прогресс-бар */
     .stProgress > div > div {
         background-color: #b5926a !important;
-        border-radius: 10px;
+        border-radius: 10px !important;
     }
     
     /* Заголовки секций */
     .section-header {
-        font-size: 2.2rem;
-        margin: 40px 0 20px 0;
-        padding-left: 15px;
-        border-left: 5px solid #b5926a;
+        font-size: 2.2rem !important;
+        margin: 40px 0 20px 0 !important;
+        padding-left: 15px !important;
+        border-left: 5px solid #b5926a !important;
         color: #2c1e0e !important;
     }
     
     /* Адаптация для мобильных */
     @media (max-width: 600px) {
         div[data-testid="column"] > div {
-            height: 800px;
-            padding: 20px;
+            height: 800px !important;
+            min-height: 800px !important;
+            max-height: 800px !important;
+            padding: 20px !important;
         }
         div[data-testid="column"] img {
-            height: 400px;
+            height: 400px !important;
+            min-height: 400px !important;
+            max-height: 400px !important;
         }
         div[data-testid="column"] h3 {
-            font-size: 2rem;
+            font-size: 2rem !important;
         }
         div[data-testid="column"] p {
-            font-size: 1rem;
+            font-size: 1rem !important;
         }
         h1 {
-            font-size: 2rem;
+            font-size: 2rem !important;
         }
         .section-header {
-            font-size: 1.8rem;
+            font-size: 1.8rem !important;
         }
     }
 </style>
