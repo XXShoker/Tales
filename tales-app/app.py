@@ -47,12 +47,12 @@ st.markdown("""
         line-height: 1.6;
     }
     
-    /* Боковая панель */
+    /* Боковая панель - на мобильных превращается в выезжающее меню */
     section[data-testid="stSidebar"] {
         background-color: #f5e9d8;
     }
     
-    /* Кнопка доната */
+    /* Кнопка доната - улучшенная для мобильных */
     .stLinkButton a {
         background-color: #d4b68a;
         color: #2a1c0e !important;
@@ -64,6 +64,36 @@ st.markdown("""
         display: inline-block;
         width: 100%;
         text-align: center;
+        font-size: 1.2rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .stLinkButton a:hover {
+        background-color: #b5926a;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    /* Кнопка "Сменить сказку" в сайдбаре */
+    .sidebar-button {
+        background-color: #cbb89e;
+        color: #2a1c0e;
+        border: 2px solid #9b7e62;
+        border-radius: 40px;
+        padding: 15px 20px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        width: 100%;
+        margin: 10px 0;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-align: center;
+    }
+    
+    .sidebar-button:hover {
+        background-color: #b89e7c;
+        transform: translateY(-2px);
     }
     
     /* Все кнопки */
@@ -79,6 +109,7 @@ st.markdown("""
         width: 100%;
         min-height: 60px;
         transition: all 0.2s ease;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     
     .stButton > button:hover {
@@ -88,7 +119,7 @@ st.markdown("""
         box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     }
     
-    /* КАРТОЧКИ - ФИКСИРОВАННАЯ ВЫСОТА 1000px */
+    /* КАРТОЧКИ - ФИКСИРОВАННАЯ ВЫСОТА */
     div[data-testid="column"] > div {
         background-color: #fffaf0;
         border-radius: 20px;
@@ -100,7 +131,7 @@ st.markdown("""
         flex-direction: column;
     }
     
-    /* Изображения - ФИКСИРОВАННАЯ ВЫСОТА 500px */
+    /* Изображения - ФИКСИРОВАННАЯ ВЫСОТА */
     div[data-testid="column"] img {
         width: 100%;
         height: 500px !important;
@@ -149,26 +180,127 @@ st.markdown("""
         border-radius: 10px;
     }
     
-    /* Адаптация для мобильных */
+    /* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
     @media (max-width: 600px) {
+        /* Уменьшаем карточки */
         div[data-testid="column"] > div {
             height: 800px !important;
-            padding: 20px;
+            padding: 15px;
         }
         div[data-testid="column"] img {
-            height: 400px !important;
+            height: 350px !important;
         }
         div[data-testid="column"] h3 {
             font-size: 1.5rem;
         }
+        div[data-testid="column"] p {
+            font-size: 0.95rem;
+        }
+        
+        /* Делаем заголовок меньше */
         h1 {
             font-size: 2rem;
         }
         .section-header {
-            font-size: 1.8rem;
+            font-size: 1.5rem;
+        }
+        
+        /* Фиксированная кнопка доната внизу экрана */
+        .stLinkButton {
+            position: fixed;
+            bottom: 20px;
+            left: 10px;
+            right: 10px;
+            z-index: 999;
+            width: calc(100% - 20px);
+        }
+        
+        .stLinkButton a {
+            background-color: #d4b68a;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            font-size: 1.1rem;
+            padding: 12px 20px;
+            border: 2px solid #8b6b4f;
+        }
+        
+        /* Добавляем плавающую кнопку для возврата к сказкам */
+        .floating-home-button {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 998;
+            background-color: #e6d5b8;
+            border: 2px solid #b5926a;
+            border-radius: 40px;
+            padding: 8px 15px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2a1c0e;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
+        
+        /* В сайдбаре скрываем стандартную кнопку доната */
+        section[data-testid="stSidebar"] .stLinkButton {
+            position: static;
+            margin: 10px 0;
+        }
+        
+        /* Делаем сайдбар более заметным на мобильных */
+        section[data-testid="stSidebar"] {
+            background-color: #f5e9d8;
+            width: 280px !important;
+        }
+        
+        /* Кнопки в сайдбаре */
+        section[data-testid="stSidebar"] .stButton > button {
+            font-size: 1rem;
+            padding: 12px 15px !important;
+            min-height: 50px;
+        }
+        
+        /* Делаем заголовок сайдбара более заметным */
+        section[data-testid="stSidebar"] h2 {
+            font-size: 1.5rem;
+            text-align: center;
+            background-color: #e6d5b8;
+            padding: 10px;
+            border-radius: 40px;
+            margin-top: 0;
         }
     }
 </style>
+""", unsafe_allow_html=True)
+
+# --- JavaScript для плавающей кнопки ---
+st.markdown("""
+<script>
+    // Функция для создания плавающей кнопки "На главную"
+    function createFloatingHomeButton() {
+        // Проверяем, не на главной ли мы
+        const urlParams = new URLSearchParams(window.location.search);
+        if (!urlParams.has('tale')) {
+            // Если на главной, не показываем кнопку
+            return;
+        }
+        
+        // Создаём кнопку
+        const btn = document.createElement('div');
+        btn.className = 'floating-home-button';
+        btn.innerHTML = '🏠 К сказкам';
+        btn.onclick = function() {
+            window.location.href = window.location.pathname;
+        };
+        document.body.appendChild(btn);
+    }
+    
+    // Запускаем после загрузки страницы
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', createFloatingHomeButton);
+    } else {
+        createFloatingHomeButton();
+    }
+</script>
 """, unsafe_allow_html=True)
 
 # --- Инициализация состояния ---
