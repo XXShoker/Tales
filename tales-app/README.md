@@ -1,39 +1,19 @@
-# Tales Application
+# 📖 Интерактивные сказки
 
-## Instructions to Run the Application
+Приложение на Streamlit, где вы сами выбираете развитие сюжета в любимых сказках.
 
-1. **Clone the Repository**:
+## Возможности
+
+- Выбор сказки из списка.
+- Интерактивный диалог: вы нажимаете на кнопки, история развивается.
+- История сообщений (как в чате).
+- Возможность начать сказку заново или сменить её.
+- Поддержка проекта через донат (кнопка в боковой панели).
+
+## Как запустить
+
+1. Убедитесь, что установлен Python 3.9 или выше.
+2. Клонируйте репозиторий:
    ```bash
-   git clone https://github.com/XXShoker/Tales.git
-   ```
-
-2. **Navigate into the Directory**:
-   ```bash
-   cd Tales
-   ```
-
-3. **Install Dependencies**:
-   Make sure to have the necessary dependencies installed. You can usually do this using:
-   ```bash
-   npm install
-   ```
-   or
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Run the Application**:
-   Depending on the framework you're using, the command might be:
-   ```bash
-   npm start
-   ```
-   or for Python:
-   ```bash
-   python app.py
-   ```
-
-5. **Access the Application**:
-   Open your browser and go to `http://localhost:3000` or the appropriate port where the app is running.
-
-# Note
-Check the documentation for any specific configurations or environment settings needed to run the application.
+   git clone https://github.com/your-username/tales-app.git
+   cd tales-app
