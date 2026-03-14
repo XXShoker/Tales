@@ -4,7 +4,7 @@ from tales_data import tales
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="wide")
 
-# --- Простые стили ---
+# --- Стили ---
 st.markdown("""
 <style>
     /* Подключаем шрифты */
@@ -15,10 +15,10 @@ st.markdown("""
         background-color: #fef9e7;
     }
     
-    /* Заголовки - ВСЕ тёмные и читаемые */
+    /* Заголовки - тёмные и читаемые */
     h1, h2, h3, h4, h5, h6 {
         font-family: 'Cormorant Garamond', serif;
-        color: #2c1e0e !important;  /* Тёмно-коричневый, почти чёрный */
+        color: #2c1e0e !important;
         font-weight: 600;
     }
     
@@ -28,10 +28,10 @@ st.markdown("""
         padding-bottom: 15px;
     }
     
-    /* Текст сказок - ТЁМНЫЙ */
+    /* Текст */
     p, li, .stMarkdown, .stText, .stChatMessage p {
         font-family: 'Open Sans', sans-serif;
-        color: #1a1309 !important;  /* Очень тёмный, отлично читается */
+        color: #1a1309 !important;
         font-size: 1.1rem;
         line-height: 1.6;
     }
@@ -55,20 +55,18 @@ st.markdown("""
         text-align: center;
     }
     
-    /* Все кнопки - ОДИНАКОВОГО РАЗМЕРА */
+    /* Все кнопки */
     .stButton > button {
         background-color: #e6d5b8;
         color: #2a1c0e;
         border: 2px solid #b5926a;
         border-radius: 40px;
-        padding: 15px 20px !important;  /* Увеличенный отступ */
+        padding: 15px 20px !important;
         font-size: 1.2rem !important;
         font-weight: 600;
         font-family: 'Open Sans', sans-serif;
         width: 100%;
-        height: auto !important;
-        min-height: 60px;  /* Минимальная высота для всех кнопок */
-        margin: 0 !important;
+        min-height: 60px;
         transition: all 0.2s ease;
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
@@ -80,14 +78,14 @@ st.markdown("""
         box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     }
     
-    /* Карточки сказок - ФИКСИРОВАННАЯ ВЫСОТА */
+    /* Карточки сказок */
     div[data-testid="column"] > div {
         background-color: #fffaf0;
         border-radius: 20px;
         padding: 25px;
         border: 2px solid #e9d9c4;
         box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        height: 650px;  /* Увеличено для лучшего размещения */
+        height: 650px;
         display: flex;
         flex-direction: column;
         transition: all 0.3s ease;
@@ -99,7 +97,7 @@ st.markdown("""
         border-color: #d4b68a;
     }
     
-    /* Изображения - ФИКСИРОВАННЫЙ РАЗМЕР */
+    /* Изображения */
     div[data-testid="column"] img {
         width: 100%;
         height: 350px;
@@ -127,11 +125,11 @@ st.markdown("""
     
     /* Кнопка в карточке */
     div[data-testid="column"] .stButton {
-        margin-top: auto;  /* Прижимаем кнопку к низу */
+        margin-top: auto;
         width: 100%;
     }
     
-    /* Сообщения чата - ТЁМНЫЙ ТЕКСТ */
+    /* Сообщения чата */
     .stChatMessage {
         background-color: #fffaf0 !important;
         border: 2px solid #e9d9c4;
@@ -163,28 +161,10 @@ st.markdown("""
         border-left: 5px solid #b5926a;
         color: #2c1e0e !important;
     }
-    
-    /* Адаптация для мобильных */
-    @media (max-width: 600px) {
-        h1 {
-            font-size: 2rem;
-        }
-        div[data-testid="column"] > div {
-            height: 550px;
-        }
-        div[data-testid="column"] img {
-            height: 250px;
-        }
-        .stButton > button {
-            padding: 12px 15px !important;
-            font-size: 1rem !important;
-            min-height: 50px;
-        }
-    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- Инициализация ---
+# --- Инициализация состояния ---
 if "selected_tale" not in st.session_state:
     st.session_state.selected_tale = None
 if "scene_id" not in st.session_state:
@@ -196,9 +176,10 @@ if "scenes" not in st.session_state:
 if "scene_history" not in st.session_state:
     st.session_state.scene_history = []
 if "achieved_endings" not in st.session_state:
-    st.session_state.achieved_endings = {}
+    st.session_state.achieved_endings = {}  # СЧЕТЧИК ЗДЕСЬ!
 
 def count_total_endings(tale_name):
+    """Подсчитывает общее количество концовок в сказке"""
     tale = tales.get(tale_name)
     if not tale:
         return 0
@@ -209,6 +190,7 @@ def count_total_endings(tale_name):
     return count
 
 def get_ending_stats(tale_name):
+    """Возвращает (сколько открыто, сколько всего)"""
     opened = len(st.session_state.achieved_endings.get(tale_name, set()))
     total = count_total_endings(tale_name)
     return opened, total
@@ -256,10 +238,12 @@ with st.sidebar:
     st.markdown("---")
     st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", use_container_width=True)
     
+    # СЧЕТЧИК - отображается только когда выбрана сказка
     if st.session_state.selected_tale:
-        opened, total = get_ending_stats(st.session_state.selected_tale)
         st.markdown("---")
-        st.markdown(f"### {st.session_state.selected_tale}")
+        opened, total = get_ending_stats(st.session_state.selected_tale)
+        st.markdown(f"### 📊 Прогресс")
+        st.markdown(f"**{st.session_state.selected_tale}**")
         if total > 0:
             st.progress(min(opened/total, 1.0))
         st.markdown(f"Найдено концовок: **{opened} / {total}**")
@@ -350,16 +334,38 @@ else:
     
     current = st.session_state.scenes.get(st.session_state.scene_id)
     if current:
-        if not current.get("options"):
-            if current.get("ending_type"):
+        if not current.get("options"):  # Это концовка
+            # Запоминаем концовку
+            if current.get("ending_type") and current.get("ending_number"):
                 ending_id = f"{current['ending_type']}_{current['ending_number']}"
-                if ending_id not in st.session_state.achieved_endings.get(st.session_state.selected_tale, set()):
-                    st.session_state.achieved_endings.setdefault(st.session_state.selected_tale, set()).add(ending_id)
-                    st.rerun()
-                st.success(f"🎉 Концовка #{current['ending_number']} ({current['ending_type']})")
             else:
-                st.success("🎉 Конец сказки!")
+                ending_id = current["text"][:100]  # для старых сказок
             
+            if st.session_state.selected_tale not in st.session_state.achieved_endings:
+                st.session_state.achieved_endings[st.session_state.selected_tale] = set()
+            
+            if ending_id not in st.session_state.achieved_endings[st.session_state.selected_tale]:
+                st.session_state.achieved_endings[st.session_state.selected_tale].add(ending_id)
+                st.rerun()
+            
+            # Показываем сообщение о концовке
+            st.markdown("---")
+            if current.get("ending_type"):
+                emoji = {"happy": "😊", "sad": "😢", "neutral": "😐"}.get(current["ending_type"], "🎉")
+                st.markdown(f"## {emoji} **Концовка #{current['ending_number']}**")
+                if current["ending_type"] == "happy":
+                    st.success("🎉 Поздравляем! Это счастливый конец!")
+                else:
+                    st.info("😕 Это не счастливый конец. Попробуй пройти сказку снова!")
+            else:
+                st.markdown("## 🎉 **Конец сказки!**")
+            
+            # Показываем прогресс
+            opened, total = get_ending_stats(st.session_state.selected_tale)
+            st.markdown(f"*Всего в этой сказке **{total}** концовок. Ты нашёл уже **{opened}**.*")
+            
+            # Кнопки
+            st.markdown("---")
             col1, col2 = st.columns(2)
             with col1:
                 if len(st.session_state.scene_history) > 1:
@@ -370,11 +376,18 @@ else:
                     start_tale(st.session_state.selected_tale)
                     st.rerun()
         else:
+            # Обычный выбор
+            st.markdown("### Твой выбор:")
             for opt in current["options"]:
-                if st.button(opt["text"], use_container_width=True):
+                if st.button(opt["text"], key=f"choice_{opt['next']}", use_container_width=True):
                     handle_choice(opt["text"], opt["next"])
                     st.rerun()
             if len(st.session_state.scene_history) > 1:
                 st.markdown("---")
                 if st.button("↩️ Назад к выбору", use_container_width=True):
                     go_back()
+    else:
+        st.error("⚠️ Сцена не найдена")
+        if st.button("⬅️ К выбору сказок", use_container_width=True):
+            reset_to_main()
+            st.rerun()
