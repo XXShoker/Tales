@@ -1,125 +1,15 @@
+```python
 import streamlit as st
 import os
+import streamlit.components.v1 as components
 from tales_data import tales
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="centered")
 
-# -----------------------------
-# CSS
-# -----------------------------
-st.markdown("""
-<style>
+# -------------------------
+# STATE
+# -------------------------
 
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Open+Sans:wght@400;600&display=swap');
-
-.stApp{
-background:#fef9e7;
-font-family:'Open Sans',sans-serif;
-}
-
-h1,h2,h3{
-font-family:'Cormorant Garamond',serif;
-color:#5d3a1a;
-}
-
-/* ---- CAROUSEL ---- */
-
-.carousel{
-display:flex;
-overflow-x:auto;
-gap:20px;
-padding:15px 10px;
-
-scroll-snap-type:x mandatory;
-scroll-behavior:smooth;
-}
-
-.carousel::-webkit-scrollbar{
-height:8px;
-}
-
-.carousel::-webkit-scrollbar-thumb{
-background:#b5926a;
-border-radius:10px;
-}
-
-/* card */
-
-.card{
-
-flex:0 0 240px;
-
-background:#fffaf0;
-
-border-radius:18px;
-
-padding:12px;
-
-scroll-snap-align:start;
-
-box-shadow:0 4px 12px rgba(0,0,0,0.1);
-
-transition:0.2s;
-}
-
-.card:hover{
-transform:scale(1.05);
-box-shadow:0 8px 20px rgba(0,0,0,0.2);
-}
-
-.card img{
-
-width:100%;
-height:140px;
-object-fit:cover;
-
-border-radius:10px;
-}
-
-.card-title{
-font-weight:700;
-margin-top:10px;
-font-size:1.1rem;
-}
-
-.card-desc{
-font-size:0.9rem;
-height:55px;
-overflow:hidden;
-margin-top:4px;
-}
-
-.start-btn{
-
-display:block;
-
-margin-top:10px;
-
-text-align:center;
-
-background:#d4b68a;
-
-padding:8px;
-
-border-radius:12px;
-
-text-decoration:none;
-
-color:#2a1c0e;
-
-font-weight:600;
-}
-
-.start-btn:hover{
-background:#b89e7c;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-# -----------------------------
-# SESSION STATE
-# -----------------------------
 if "selected_tale" not in st.session_state:
     st.session_state.selected_tale = None
 
@@ -135,9 +25,11 @@ if "scenes" not in st.session_state:
 if "scene_history" not in st.session_state:
     st.session_state.scene_history = []
 
-# -----------------------------
-# START TALE
-# -----------------------------
+
+# -------------------------
+# TALE LOGIC
+# -------------------------
+
 def start_tale(tale_name):
 
     st.session_state.selected_tale = tale_name
@@ -151,18 +43,18 @@ def start_tale(tale_name):
 
     first_scene = tale["scenes"]["start"]
 
-    st.session_state.messages.append(
-        {"role":"assistant","content":first_scene["text"]}
-    )
+    st.session_state.messages.append({
+        "role":"assistant",
+        "content":first_scene["text"]
+    })
 
-# -----------------------------
-# CHOICE
-# -----------------------------
+
 def handle_choice(text,next_scene):
 
-    st.session_state.messages.append(
-        {"role":"user","content":text}
-    )
+    st.session_state.messages.append({
+        "role":"user",
+        "content":text
+    })
 
     st.session_state.scene_id = next_scene
 
@@ -170,13 +62,12 @@ def handle_choice(text,next_scene):
 
     scene = st.session_state.scenes[next_scene]
 
-    st.session_state.messages.append(
-        {"role":"assistant","content":scene["text"]}
-    )
+    st.session_state.messages.append({
+        "role":"assistant",
+        "content":scene["text"]
+    })
 
-# -----------------------------
-# GO BACK
-# -----------------------------
+
 def go_back():
 
     if len(st.session_state.scene_history) > 1:
@@ -190,9 +81,7 @@ def go_back():
 
         st.rerun()
 
-# -----------------------------
-# RESET
-# -----------------------------
+
 def reset():
 
     st.session_state.selected_tale = None
@@ -200,12 +89,83 @@ def reset():
     st.session_state.scenes = {}
     st.session_state.scene_history = []
 
-# -----------------------------
-# CAROUSEL HTML
-# -----------------------------
+
+# -------------------------
+# CAROUSEL
+# -------------------------
+
 def show_carousel(tales_list):
 
-    html = '<div class="carousel">'
+    html = """
+    <style>
+
+    .carousel{
+        display:flex;
+        overflow-x:auto;
+        gap:20px;
+        padding:20px 10px;
+        scroll-snap-type:x mandatory;
+        font-family:sans-serif;
+    }
+
+    .carousel::-webkit-scrollbar{
+        height:8px;
+    }
+
+    .carousel::-webkit-scrollbar-thumb{
+        background:#b5926a;
+        border-radius:10px;
+    }
+
+    .card{
+        flex:0 0 240px;
+        background:#fffaf0;
+        border-radius:18px;
+        padding:12px;
+        scroll-snap-align:start;
+        box-shadow:0 4px 12px rgba(0,0,0,0.1);
+        transition:0.2s;
+    }
+
+    .card:hover{
+        transform:scale(1.05);
+    }
+
+    .card img{
+        width:100%;
+        height:140px;
+        object-fit:cover;
+        border-radius:10px;
+    }
+
+    .card-title{
+        font-weight:700;
+        margin-top:8px;
+        font-size:1.1rem;
+    }
+
+    .card-desc{
+        font-size:0.9rem;
+        height:55px;
+        overflow:hidden;
+    }
+
+    .start-btn{
+        display:block;
+        margin-top:10px;
+        text-align:center;
+        background:#d4b68a;
+        padding:8px;
+        border-radius:12px;
+        text-decoration:none;
+        color:black;
+        font-weight:600;
+    }
+
+    </style>
+
+    <div class="carousel">
+    """
 
     for tale_name in tales_list:
 
@@ -216,32 +176,29 @@ def show_carousel(tales_list):
 
         cover = tale.get("cover","")
 
-        if not cover or not os.path.exists(cover):
+        if not cover:
             cover = "https://via.placeholder.com/240x150"
 
         desc = tale.get("description","")
 
         html += f"""
         <div class="card">
-
             <img src="{cover}">
-
             <div class="card-title">{tale_name}</div>
-
             <div class="card-desc">{desc}</div>
-
             <a class="start-btn" href="?tale={tale_name}">✨ Начать</a>
-
         </div>
         """
 
     html += "</div>"
 
-    st.markdown(html, unsafe_allow_html=True)
+    components.html(html, height=320, scrolling=False)
 
-# -----------------------------
-# HANDLE QUERY PARAMS
-# -----------------------------
+
+# -------------------------
+# HANDLE URL PARAMS
+# -------------------------
+
 params = st.query_params
 
 if "tale" in params:
@@ -252,15 +209,17 @@ if "tale" in params:
 
         start_tale(selected)
 
-# -----------------------------
+
+# -------------------------
 # SIDEBAR
-# -----------------------------
+# -------------------------
+
 with st.sidebar:
 
     st.markdown("## 📖 О проекте")
 
-    st.markdown(
-    "Интерактивные сказки, где ребёнок сам выбирает путь истории."
+    st.write(
+        "Интерактивные сказки, где ребёнок сам выбирает развитие истории."
     )
 
     st.markdown("---")
@@ -280,9 +239,11 @@ with st.sidebar:
             reset()
             st.rerun()
 
-# -----------------------------
+
+# -------------------------
 # MAIN
-# -----------------------------
+# -------------------------
+
 st.title("📖 Интерактивные сказки")
 
 if st.session_state.selected_tale is None:
@@ -307,7 +268,6 @@ else:
     for msg in st.session_state.messages:
 
         with st.chat_message(msg["role"]):
-
             st.write(msg["content"])
 
     scene = st.session_state.scenes[st.session_state.scene_id]
@@ -317,9 +277,7 @@ else:
         st.success("🎉 Конец сказки!")
 
         if st.button("🔄 Начать заново"):
-
             start_tale(st.session_state.selected_tale)
-
             st.rerun()
 
     else:
@@ -329,13 +287,11 @@ else:
         for opt in scene["options"]:
 
             if st.button(opt["text"]):
-
                 handle_choice(opt["text"],opt["next"])
-
                 st.rerun()
 
         if len(st.session_state.scene_history) > 1:
 
             if st.button("⬅️ Назад"):
-
                 go_back()
+```
