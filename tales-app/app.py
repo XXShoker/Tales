@@ -125,44 +125,6 @@ init_session_state()
 
 # --- ПРОВЕРКА АВТОРИЗАЦИИ ---
 if not check_password():
-    st.title("🔐 Вход в Интерактивные сказки")
-    
-    # Добавляем прямую ссылку на вход
-    st.markdown("""
-    ### 👇 Нажмите для входа:
-    
-    <div style="text-align: center; margin: 30px 0;">
-        <a href="https://share.streamlit.io/signin" target="_blank" style="
-            background: linear-gradient(135deg, #d4b68a, #b5926a);
-            color: #2a1c0e;
-            padding: 15px 30px;
-            border-radius: 50px;
-            text-decoration: none;
-            font-size: 1.3rem;
-            font-weight: bold;
-            border: 2px solid #8b6b4f;
-            display: inline-block;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        ">
-        🔑 Войти через Streamlit
-        </a>
-    </div>
-    
-    ---
-    ### Инструкция:
-    1. Нажмите кнопку выше
-    2. Войдите через Google (если нужно)
-    3. Вернитесь на эту страницу
-    4. **Обновите страницу** (клавиша F5)
-    """)
-    
-    # Добавляем изображение для красоты
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        st.image("https://via.placeholder.com/400x200/ffe6f0/ff69b4?text=✨+Сказки", width='stretch')
-        st.info("ℹ️ После входа ваш прогресс будет сохраняться автоматически")
-    
-    st.stop()
 
 # --- Функции для работы с GitHub ---
 @st.cache_resource(ttl=60)
