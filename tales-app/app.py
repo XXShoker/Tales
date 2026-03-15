@@ -941,10 +941,40 @@ st.markdown("""
         padding: 25px !important;
         box-shadow: 0 10px 25px rgba(93,58,26,0.15) !important;
         height: 100% !important;           /* растягиваем на всю высоту колонки */
-        min-height: 550px;                  /* фиксированная минимальная высота */
         display: flex;
         flex-direction: column;
         transition: all 0.3s ease;
+    }
+    
+    /* Изображение – фиксированная высота */
+    div[data-testid="column"] > div img {
+        width: 100% !important;
+        height: 200px !important;          /* подберите нужное значение */
+        object-fit: cover !important;
+        border-radius: 16px !important;
+        border: 2px solid #b5926a !important;
+        margin-bottom: 15px !important;
+    }
+    
+    /* Заголовок и прогресс – обычный поток */
+    div[data-testid="column"] > div h3 {
+        margin-top: 0 !important;
+        margin-bottom: 10px !important;
+    }
+    
+    /* Контейнер для описания – ограниченная высота с прокруткой */
+    div[data-testid="column"] > div .stMarkdown {
+        flex: 1 1 auto;                    /* занимает доступное место */
+        overflow-y: auto;
+        max-height: 150px;                 /* подберите нужное значение */
+        margin-bottom: 15px !important;
+        padding-right: 5px;
+    }
+    
+    /* Кнопка всегда внизу */
+    div[data-testid="column"] > div .stButton {
+        margin-top: auto;
+        width: 100%;
     }
     
     /* Контейнер для описания – с прокруткой при необходимости */
