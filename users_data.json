@@ -4,7 +4,7 @@
     "username": "XShoker",
     "name": "Viacheslav",
     "email": "zapomni2803@gmail.com",
-    "last_login": "2026-03-15T18:14:42.062501",
+    "last_login": "2026-03-15T18:15:00.137889",
     "achieved_endings": {
       "Сталкер в себе": [
         "neutral_11",
@@ -24,10 +24,11 @@
         "happy_11"
       ],
       "Проклятие крови ЛИКСА": [
-        "happy_4",
-        "neutral_1",
         "neutral_4",
-        "sad_1"
+        "neutral_2",
+        "sad_1",
+        "neutral_1",
+        "happy_4"
       ],
       "Хроники разбитых часов: Детектив времени": [
         "neutral_4",
@@ -69,7 +70,7 @@
       "explorer": false,
       "talisman": false,
       "death_10": false,
-      "lyx_5": false,
+      "lyx_5": true,
       "lyx_all": false,
       "stalker_10": false,
       "stalker_all": false,
