@@ -321,18 +321,16 @@ def restore_tale_state_from_url():
 
 # --- АВТОРИЗАЦИЯ (ГАРАНТИРОВАННО РАБОЧАЯ) ---
 def init_auth():
-    """Инициализация авторизации – выполняется только один раз после входа"""
-    
+    """Инициализация авторизации – выполняется при загрузке страницы"""
     email = st.query_params.get('user_email')
     name = st.query_params.get('user_name')
     username = st.query_params.get('user_username')
     
-    # Если пользователь уже есть – ничего не делаем
-    if st.session_state.get('user'):
+    # Если пользователь уже есть в session_state и email совпадает – пропускаем
+    if st.session_state.get('user') and st.session_state.user['email'] == email:
         return
     
     if email:
-        # Устанавливаем пользователя
         st.session_state.user = {
             'email': email,
             'name': name or email.split('@')[0],
@@ -341,7 +339,7 @@ def init_auth():
         }
         print(f"✅ Пользователь УСТАНОВЛЕН: {st.session_state.user}")
         
-        # Загружаем прогресс только один раз
+        # Загружаем прогресс только один раз за сессию
         if not st.session_state.progress_loaded:
             try:
                 users = get_github_data()
@@ -357,56 +355,36 @@ def init_auth():
             except Exception as e:
                 print(f"❌ Ошибка загрузки прогресса: {e}")
     else:
-        # Если нет email – удаляем пользователя
         if st.session_state.get('user'):
             st.session_state.user = None
 
 def login_user(email, name, username):
-    """Вход пользователя"""
+    """Вход пользователя – сохраняет данные в URL, rerun произойдёт автоматически"""
     print(f"✅ Вход: {email}")
-    
     st.session_state.user = {
         'email': email,
         'name': name,
         'username': username,
         'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
     }
-    
-    # Сохраняем в URL
+    # Сохраняем в URL – это вызовет rerun
     st.query_params['user_email'] = email
     st.query_params['user_name'] = name
     st.query_params['user_username'] = username
-    
-    # Загружаем прогресс сразу
-    try:
-        users = get_github_data()
-        if email in users:
-            st.session_state.achieved_endings = users[email].get("achieved_endings", {})
-            user_achievements = users[email].get("achievements", {})
-            if user_achievements:
-                for key, value in user_achievements.items():
-                    if key in st.session_state.achievements:
-                        st.session_state.achievements[key] = value
-        st.session_state.progress_loaded = True
-    except Exception as e:
-        print(f"Ошибка загрузки прогресса при входе: {e}")
-    
-    st.rerun()  # один rerun для обновления интерфейса
+    # Прогресс загрузится в init_auth при следующем запуске
     
 def logout_user():
     """Выход пользователя"""
     print("👋 Выход")
-    
     st.session_state.user = None
-    
-    # Удаляем из URL
+    st.session_state.progress_loaded = False
     if 'user_email' in st.query_params:
         del st.query_params['user_email']
     if 'user_name' in st.query_params:
         del st.query_params['user_name']
     if 'user_username' in st.query_params:
         del st.query_params['user_username']
-    
+    # Rerun после очистки параметров
     st.rerun()
 
 # ВЫЗЫВАЕМ init_auth() - ОБЯЗАТЕЛЬНО!
