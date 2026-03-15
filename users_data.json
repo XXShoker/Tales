@@ -4,7 +4,7 @@
     "username": "XShoker",
     "name": "Viacheslav",
     "email": "zapomni2803@gmail.com",
-    "last_login": "2026-03-15T17:44:00.447177",
+    "last_login": "2026-03-15T17:47:48.192646",
     "achieved_endings": {
       "Сталкер в себе": [
         "neutral_11",
@@ -16,13 +16,14 @@
       ],
       "Колобок": [
         "happy_10",
-        "happy_11",
+        "neutral_2",
+        "sad_2",
         "happy_9",
-        "sad_2"
+        "happy_11"
       ]
     },
     "achievements": {
-      "kolobok_5": false,
+      "kolobok_5": true,
       "kolobok_all": false,
       "teremok_5": false,
       "teremok_all": false,
