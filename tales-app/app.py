@@ -13,6 +13,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from tales_data import tales
 import time
+
 if 'last_run' not in st.session_state:
     st.session_state.last_run = time.time()
 else:
@@ -135,7 +136,6 @@ def get_github_data():
             decoded = base64.b64decode(content["content"]).decode("utf-8")
             users_data = json.loads(decoded)
             
-            # Преобразуем списки обратно в множества для удобства работы
             for email, user_data in users_data.items():
                 if "achieved_endings" in user_data:
                     endings_dict = user_data["achieved_endings"]
@@ -148,8 +148,6 @@ def get_github_data():
         else:
             return {}
     except Exception as e:
-        # ВАЖНО: при ошибке возвращаем пустой словарь, но не кэшируем ошибку
-        # (можно добавить st.warning, если нужно)
         return {}
 
 def save_users_to_github(users_data):
@@ -210,10 +208,8 @@ def save_user_progress():
             email = st.session_state.user["email"]
             users = get_github_data()
             
-            # Берём существующие данные пользователя (если есть)
             user_data = users.get(email, {})
             
-            # Обновляем только те поля, которые должны измениться
             user_data.update({
                 "user_id": st.session_state.user["user_id"],
                 "username": st.session_state.user["username"],
@@ -228,17 +224,12 @@ def save_user_progress():
             users[email] = user_data
             save_users_to_github(users)
         except Exception as e:
-            # Показываем ошибку в интерфейсе (временно, для отладки)
             st.error(f"Ошибка сохранения прогресса: {e}")
 
 # --- Функции для работы с URL (сохранение состояния сказки) ---
 def save_tale_state_to_url():
     """Сохраняет состояние сказки в URL, только если оно изменилось"""
-    
-    # Текущие параметры
     current = st.query_params.to_dict()
-    
-    # Формируем новые параметры
     new_params = {}
     
     if st.session_state.get('selected_tale'):
@@ -251,24 +242,19 @@ def save_tale_state_to_url():
         recent_history = st.session_state.scene_history[-5:]
         new_params['history'] = ','.join(recent_history)
     
-    # Сравниваем с текущими (только по ключам, которые есть в new_params)
     changed = False
     for key, value in new_params.items():
         if current.get(key) != value:
             changed = True
             break
-    
-    # Также проверяем, не удалились ли параметры, которые были
     for key in ['tale', 'scene', 'history']:
         if key not in new_params and key in current:
             changed = True
             break
     
     if changed:
-        # Обновляем только изменённые параметры
         for key, value in new_params.items():
             st.query_params[key] = value
-        # Удаляем те, которых больше нет
         for key in ['tale', 'scene', 'history']:
             if key not in new_params and key in st.query_params:
                 del st.query_params[key]
@@ -319,14 +305,13 @@ def restore_tale_state_from_url():
         
         st.session_state.tale_restored = True
 
-# --- АВТОРИЗАЦИЯ (ГАРАНТИРОВАННО РАБОЧАЯ) ---
+# --- АВТОРИЗАЦИЯ ---
 def init_auth():
     """Инициализация авторизации – выполняется при загрузке страницы"""
     email = st.query_params.get('user_email')
     name = st.query_params.get('user_name')
     username = st.query_params.get('user_username')
     
-    # Если пользователь уже есть в session_state и email совпадает – пропускаем
     if st.session_state.get('user') and st.session_state.user['email'] == email:
         return
     
@@ -339,7 +324,6 @@ def init_auth():
         }
         print(f"✅ Пользователь УСТАНОВЛЕН: {st.session_state.user}")
         
-        # Загружаем прогресс только один раз за сессию
         if not st.session_state.progress_loaded:
             try:
                 users = get_github_data()
@@ -367,12 +351,10 @@ def login_user(email, name, username):
         'username': username,
         'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
     }
-    # Сохраняем в URL – это вызовет rerun
     st.query_params['user_email'] = email
     st.query_params['user_name'] = name
     st.query_params['user_username'] = username
-    # Прогресс загрузится в init_auth при следующем запуске
-    
+
 def logout_user():
     """Выход пользователя"""
     print("👋 Выход")
@@ -384,10 +366,8 @@ def logout_user():
         del st.query_params['user_name']
     if 'user_username' in st.query_params:
         del st.query_params['user_username']
-    # Rerun после очистки параметров
     st.rerun()
 
-# ВЫЗЫВАЕМ init_auth() - ОБЯЗАТЕЛЬНО!
 init_auth()
 
 # --- ПРОВЕРКА АВТОРИЗАЦИИ ---
@@ -432,7 +412,7 @@ if not st.session_state.get('user'):
                                 username = found_user.get('username', found_email.split('@')[0])
                                 login_user(found_email, name, username)
                                 st.success("✅ Вход выполнен!")
-                                st.rerun()
+                                # rerun не нужен – обновление query_params вызовет его автоматически
                             else:
                                 st.error("❌ Неверный пароль!")
                     else:
@@ -507,7 +487,6 @@ if not st.session_state.get('user'):
                                     st.error("❌ Не удалось отправить код")
                                     st.session_state.pending_verification = None
         else:
-            # Здесь pending_verification существует и не None
             pending = st.session_state.pending_verification
             st.info(f"📧 Код отправлен на {pending['email']}")
             
@@ -543,10 +522,10 @@ if not st.session_state.get('user'):
                         
                         if save_users_to_github(users):
                             login_user(pending['email'], pending['name'], pending['username'])
-                            save_user_progress()  # <--- ДОБАВЛЕННАЯ СТРОКА
+                            save_user_progress()
                             st.session_state.pending_verification = None
                             st.success("✅ Регистрация успешна!")
-                            st.rerun()
+                            # rerun не нужен – login_user уже обновил query_params
                         else:
                             st.error("❌ Ошибка сохранения данных")
                     else:
@@ -570,12 +549,9 @@ if not st.session_state.get('user'):
                 st.rerun()
     
     # --- ВОССТАНОВЛЕНИЕ ПАРОЛЯ ---
-        # --- ВОССТАНОВЛЕНИЕ ПАРОЛЯ ---
-    # --- ВОССТАНОВЛЕНИЕ ПАРОЛЯ ---
     with tab3:
         st.markdown("### 🔑 Восстановление пароля")
         
-        # Если reset_data нет или оно вдруг стало None – показываем форму ввода email
         if 'reset_data' not in st.session_state or st.session_state.reset_data is None:
             with st.form("reset_form"):
                 reset_email = st.text_input("Ваш Email", placeholder="your@email.com")
@@ -605,9 +581,7 @@ if not st.session_state.get('user'):
                     else:
                         st.error("❌ Введите email")
         else:
-            # Данные восстановления есть – показываем форму ввода кода и нового пароля
             reset_data = st.session_state.reset_data
-            # Дополнительная защита: если reset_data вдруг стал None, перезапустим
             if reset_data is None:
                 st.session_state.reset_data = None
                 st.rerun()
@@ -696,6 +670,7 @@ def handle_choice(choice_text, next_scene_id):
     if next_scene:
         st.session_state.messages.append({"role": "assistant", "content": next_scene["text"]})
     save_tale_state_to_url()
+    st.rerun()
 
 def go_back():
     if len(st.session_state.scene_history) > 1:
@@ -733,9 +708,9 @@ def reset_to_main():
         del st.query_params['scene']
     if 'history' in st.query_params:
         del st.query_params['history']
+    st.rerun()
 
 def check_achievements(tale_name, ending_type=None, ending_data=None):
-    """Проверка и разблокировка достижений"""
     progress = st.session_state.achievement_progress
     ach = st.session_state.achievements
     
@@ -855,20 +830,16 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
 
     if tale_name == "Сталкер в себе":
         progress["stalker_count"] = len(st.session_state.achieved_endings.get("Сталкер в себе", set()))
-        # Достижение за 10 концовок (пример)
         if progress["stalker_count"] >= 10 and not ach.get("stalker_10", False):
             ach["stalker_10"] = True
             st.balloons()
             st.success("🏆 Достижение: «Бывалый» (10 концовок)")
-        # Достижение за все концовки (у нас их 23)
         if progress["stalker_count"] >= 23 and not ach.get("stalker_all", False):
             ach["stalker_all"] = True
             st.balloons()
             st.success("🏆 Достижение: «Хозяин Зоны» (все концовки)")
-        # Секретные концовки (№9,16,19,20,21,22)
         secret_endings = [9, 16, 19, 20, 21, 22]
         if ending_data and ending_data.get("ending_number") in secret_endings:
-            # Например, за первую секретную концовку
             if ending_data.get("ending_number") == 9 and not ach.get("stalker_secret1", False):
                 ach["stalker_secret1"] = True
                 st.balloons()
@@ -895,7 +866,6 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
         st.balloons()
         st.success("👑 ДОСТИЖЕНИЕ: «Библиотекарь» (ВСЕ концовки!)")
     
-    # Сохраняем прогресс после каждого достижения
     save_user_progress()
 
 # --- СТИЛИ (ФИНАЛЬНЫЕ) ---
@@ -903,50 +873,25 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Open+Sans:wght@400;600&display=swap');
     
-    /* Общий фон */
-    .stApp {
-        background: linear-gradient(135deg, #fcf3e0 0%, #fef9e7 100%);
-    }
-    
-    /* ВЕСЬ ТЕКСТ - ТЕМНО-КОРИЧНЕВЫЙ */
-    * {
-        color: #2c1e0e !important;
-    }
-    
-    /* Заголовки */
+    .stApp { background: linear-gradient(135deg, #fcf3e0 0%, #fef9e7 100%); }
+    * { color: #2c1e0e !important; }
     h1, h2, h3, h4, h5, h6 {
         font-family: 'Cormorant Garamond', serif;
         font-weight: 700 !important;
         text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
     }
-    
-    h1 {
-        font-size: 3rem;
-        border-bottom: 3px solid #b5926a;
-        padding-bottom: 15px;
-        margin-bottom: 30px;
-    }
-    
-    /* Обычный текст */
+    h1 { font-size: 3rem; border-bottom: 3px solid #b5926a; padding-bottom: 15px; margin-bottom: 30px; }
     p, li, span, div, .stMarkdown, .stText, .stChatMessage p {
         font-family: 'Open Sans', sans-serif;
         font-size: clamp(1rem, 2vw, 1.2rem);
         line-height: 1.6;
         font-weight: 500 !important;
     }
-    
-    /* Боковая панель */
     section[data-testid="stSidebar"] {
         background: linear-gradient(180deg, #f5e9d8 0%, #ecdcc5 100%);
         border-right: 2px solid #b5926a;
     }
-    
-    /* Боковая панель - ВЕСЬ ТЕКСТ */
-    section[data-testid="stSidebar"] * {
-        color: #2c1e0e !important;
-    }
-    
-    /* Кнопки */
+    section[data-testid="stSidebar"] * { color: #2c1e0e !important; }
     .stButton > button {
         background: linear-gradient(135deg, #e6d5b8, #d4b68a) !important;
         color: #2a1c0e !important;
@@ -958,18 +903,8 @@ st.markdown("""
         width: 100%;
         min-height: 60px;
     }
-    
-    /* Текст на кнопках */
-    .stButton > button p {
-        color: #2a1c0e !important;
-    }
-    
-    /* Поля ввода */
-    .stTextInput > label {
-        color: #2c1e0e !important;
-        font-weight: 600;
-    }
-    
+    .stButton > button p { color: #2a1c0e !important; }
+    .stTextInput > label { color: #2c1e0e !important; font-weight: 600; }
     .stTextInput > div > input {
         background-color: white !important;
         border: 2px solid #b5926a !important;
@@ -978,8 +913,6 @@ st.markdown("""
         color: #2c1e0e !important;
         font-size: 1rem !important;
     }
-    
-    /* Чат сообщения */
     .stChatMessage {
         background: white !important;
         border: 2px solid #b5926a !important;
@@ -987,12 +920,9 @@ st.markdown("""
         padding: 15px 20px !important;
         margin-bottom: 10px;
     }
-    
     .stChatMessage[data-testid="chatMessageUser"] {
         background: linear-gradient(135deg, #e6d5b8, #d4b68a) !important;
     }
-    
-    /* Карточки сказок */
     div[data-testid="column"] > div {
         background: white !important;
         border: 2px solid #b5926a !important;
@@ -1000,23 +930,9 @@ st.markdown("""
         padding: 25px !important;
         box-shadow: 0 10px 25px rgba(93,58,26,0.15) !important;
     }
-    
-    /* Текст в карточках */
-    div[data-testid="column"] > div * {
-        color: #2c1e0e !important;
-    }
-    
-    /* Прогресс (общий) */
-    .stProgress > div > div {
-        background: linear-gradient(90deg, #b5926a, #8b6b4f) !important;
-    }
-    
-    /* Мобильная версия */
-    @media (max-width: 600px) {
-        h1 { font-size: 2rem; }
-    }
-
-    /* Кнопка доната - текст должен быть виден */
+    div[data-testid="column"] > div * { color: #2c1e0e !important; }
+    .stProgress > div > div { background: linear-gradient(90deg, #b5926a, #8b6b4f) !important; }
+    @media (max-width: 600px) { h1 { font-size: 2rem; } }
     .stLinkButton a {
         color: #2a1c0e !important;
         background: linear-gradient(135deg, #d4b68a, #b5926a) !important;
@@ -1024,18 +940,10 @@ st.markdown("""
         text-decoration: none;
         font-weight: bold;
     }
-    
-    .stLinkButton a:hover {
-        background: linear-gradient(135deg, #b5926a, #9b7e62) !important;
-    }
-    
-    /* Ссылки */
-    a {
-        color: #2c1e0e !important;
-    }
+    .stLinkButton a:hover { background: linear-gradient(135deg, #b5926a, #9b7e62) !important; }
+    a { color: #2c1e0e !important; }
 
-    /* ===== ДОСТИЖЕНИЯ – УПРОЩЁННЫЙ ВАРИАНТ ===== */
-    /* Заголовок экспандера – чтобы не чернел при раскрытии */
+    /* ===== ДОСТИЖЕНИЯ ===== */
     .stExpander header,
     .stExpander summary,
     .stExpander header *,
@@ -1052,13 +960,7 @@ st.markdown("""
         font-size: 1.2rem !important;
         text-shadow: 1px 1px 2px rgba(255,255,255,0.5) !important;
     }
-    
-    /* Полностью скрываем прогресс-бар */
-    .stExpander .stProgress {
-        display: none !important;
-    }
-    
-    /* Строки достижений – оставляем как есть (или можно упростить) */
+    .stExpander .stProgress { display: none !important; }
     .stExpander .stMarkdown p {
         margin: 6px 0 !important;
         padding: 6px 10px !important;
@@ -1067,14 +969,11 @@ st.markdown("""
         border-left: 3px solid transparent !important;
         font-size: 0.95rem !important;
     }
-    
-    /* Подсветка открытых достижений */
     .stExpander .stMarkdown p:has(🐺, 🦊, 🐭, 🏠, 🐠, 👑, 🐔, 🥚, 🌲, 🦌, 🕵️, ⏰, 🫀, 🔪, 💔, 🌹, 💍, 🧛, 🩸, 🧚, 🐝, 🔮, 🍷, ⏳, 📀, 💿, 📚, ⚡, 🔍, 🍀, 💀) {
         background: rgba(181, 146, 106, 0.15) !important;
         border-left: 3px solid #b5926a !important;
         font-weight: 500 !important;
     }
-    
     .stExpander h3 {
         margin-top: 15px !important;
         margin-bottom: 8px !important;
@@ -1082,13 +981,9 @@ st.markdown("""
         border-bottom: 1px solid #b5926a !important;
         padding-bottom: 5px !important;
     }
-    
-    .stExpander [data-testid="column"] {
-        padding: 0 5px !important;
-    }
+    .stExpander [data-testid="column"] { padding: 0 5px !important; }
 
     /* ===== КНОПКИ УПРАВЛЕНИЯ БОКОВОЙ ПАНЕЛЬЮ ===== */
-    /* Кнопка сворачивания (когда панель открыта) */
     button[data-testid="baseButton-headerNoPadding"],
     button[kind="headerNoPadding"],
     .st-emotion-cache-1wbqy5l button {
@@ -1100,8 +995,6 @@ st.markdown("""
         color: #2c1e0e !important;
         box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
     }
-    
-    /* Кнопка открытия (когда панель свёрнута) */
     button[data-testid="collapsedControl"],
     button[title*="chevron" i],
     button[aria-label*="chevron" i] {
@@ -1115,8 +1008,6 @@ st.markdown("""
         position: relative !important;
         z-index: 9999 !important;
     }
-    
-    /* Иконки внутри этих кнопок */
     button[data-testid="baseButton-headerNoPadding"] svg,
     button[kind="headerNoPadding"] svg,
     .st-emotion-cache-1wbqy5l button svg,
@@ -1128,7 +1019,6 @@ st.markdown("""
         width: 20px !important;
         height: 20px !important;
     }
-    
 </style>
 """, unsafe_allow_html=True)
 
@@ -1138,7 +1028,6 @@ with st.sidebar:
         user = st.session_state.user
         st.markdown(f"👋 Привет, **{user.get('username', user['email'])}**!")
         st.markdown(f"📧 {user['email']}")
-        
         if st.button("🚪 Выйти", width='stretch'):
             logout_user()
     else:
@@ -1159,7 +1048,6 @@ with st.sidebar:
             reset_to_main()
             st.rerun()
 
-    # --- Достижения ---
     if st.session_state.selected_tale is None:
         with st.expander("🏆 Достижения"):
             ach = st.session_state.achievements
@@ -1226,7 +1114,6 @@ st.caption("Выбирайте свой путь в каждой истории!
 
 if st.session_state.selected_tale is None:
     all_tales = list(tales.keys())
-    
     classic_tales = ["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"]
     adventure_tales = ["Путешествие в Волшебный лес"]
     adult_tales = [
@@ -1240,9 +1127,7 @@ if st.session_state.selected_tale is None:
         tales_in_cat = [t for t in tale_list if t in all_tales]
         if not tales_in_cat:
             return
-        
         st.markdown(f"### {title}")
-        
         cols = st.columns(2)
         for idx, tale_name in enumerate(tales_in_cat):
             with cols[idx % 2]:
@@ -1252,13 +1137,10 @@ if st.session_state.selected_tale is None:
                         st.image(cover_path, width='stretch')
                     else:
                         st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", width='stretch')
-                    
                     st.markdown(f"### {tale_name}")
-                    
                     opened, total = get_ending_stats(tale_name)
                     if total > 0:
                         st.markdown(f"📊 Прогресс: {opened}/{total}")
-                    
                     st.markdown(tales[tale_name].get("description", ""))
                     if st.button("✨ Начать", key=f"{tale_name}", width='stretch'):
                         start_tale(tale_name)
