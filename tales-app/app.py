@@ -961,45 +961,32 @@ st.markdown("""
         color: #2c1e0e !important;
     }
 
-       /* ===== ДОСТИЖЕНИЯ – ПРОГРЕСС-БАР И ЗАГОЛОВОК ===== */
-    /* Заголовок экспандера – делаем контрастным */
+      /* ===== ДОСТИЖЕНИЯ – УПРОЩЁННЫЙ ВАРИАНТ ===== */
+    /* Заголовок экспандера – чтобы не сливался */
     .stExpander header * {
         color: #2c1e0e !important;
         font-weight: 700 !important;
         font-size: 1.2rem !important;
-    }
-    
-    /* Прогресс-бар – убираем лишние полоски, делаем единую полосу */
-    .stExpander .stProgress {
-        height: 20px !important;
         background: transparent !important;
-        margin: 5px 0 15px 0 !important;
-    }
-    .stExpander .stProgress > div {
-        background-color: #e6d5b8 !important;
-        border-radius: 20px !important;
-        height: 20px !important;
-        box-shadow: none !important;
-        border: none !important;
-    }
-    .stExpander .stProgress > div > div {
-        background: linear-gradient(90deg, #b5926a, #8b6b4f) !important;
-        border-radius: 20px !important;
-        height: 20px !important;
-        box-shadow: inset 0 1px 3px rgba(0,0,0,0.2) !important;
+        text-shadow: 1px 1px 2px rgba(255,255,255,0.5) !important;
     }
     
-    /* Строки достижений – оставляем как есть (у вас уже есть) */
+    /* Полностью скрываем прогресс-бар */
+    .stExpander .stProgress {
+        display: none !important;
+    }
+    
+    /* Строки достижений – оставляем как есть (или можно упростить) */
     .stExpander .stMarkdown p {
         margin: 6px 0 !important;
         padding: 6px 10px !important;
         border-radius: 8px !important;
         background: rgba(255,255,255,0.3) !important;
         border-left: 3px solid transparent !important;
-        transition: all 0.2s ease !important;
         font-size: 0.95rem !important;
     }
     
+    /* Подсветка открытых достижений */
     .stExpander .stMarkdown p:has(🐺, 🦊, 🐭, 🏠, 🐠, 👑, 🐔, 🥚, 🌲, 🦌, 🕵️, ⏰, 🫀, 🔪, 💔, 🌹, 💍, 🧛, 🩸, 🧚, 🐝, 🔮, 🍷, ⏳, 📀, 💿, 📚, ⚡, 🔍, 🍀, 💀) {
         background: rgba(181, 146, 106, 0.15) !important;
         border-left: 3px solid #b5926a !important;
