@@ -232,7 +232,6 @@ def restore_tale_state_from_url():
         
         st.session_state.tale_restored = True
 
-# --- ПРОВЕРКА АВТОРИЗАЦИИ (НАДЕЖНЫЙ ВАРИАНТ) ---
 # --- ПРОСТАЯ АВТОРИЗАЦИЯ ЧЕРЕЗ SESSION_STATE ---
 def init_auth():
     """Инициализация авторизации"""
@@ -296,18 +295,19 @@ init_auth()
 if not st.session_state.get('user'):
     st.title("🔐 Вход в Интерактивные сказки")
     
-    st.markdown("### Введите ваши данные для входа:")
+    st.markdown("### Введите email для входа:")
     
     with st.form("login_form"):
-        email = st.text_input("Email")
-        name = st.text_input("Ваше имя")
+        email = st.text_input("Email", placeholder="your@email.com")
         submitted = st.form_submit_button("Войти", width='stretch')
         
         if submitted:
-            if email and name:
+            if email:
+                # Используем email и как имя (часть до @)
+                name = email.split('@')[0]  # Берем часть до @
                 login_user(email, name)
             else:
-                st.error("Пожалуйста, заполните все поля")
+                st.error("Пожалуйста, введите email")
     
     st.markdown("---")
     st.info("ℹ️ Ваш прогресс будет автоматически сохраняться")
@@ -631,8 +631,8 @@ st.markdown("""
 # --- Боковая панель ---
 with st.sidebar:
     if st.session_state.get('user'):
-        st.markdown(f"👋 Привет, **{st.session_state.user['name']}**!")
-        st.markdown(f"📧 {st.session_state.user['email']}")
+        # Показываем email вместо имени (которое сейчас дублирует email)
+        st.markdown(f"👋 Привет, **{st.session_state.user['email']}**!")
     else:
         st.markdown("👋 Добро пожаловать!")
     
