@@ -290,95 +290,121 @@ def clear_cookie(name):
     st.components.v1.html(js, height=0)
 
 # --- АВТОРИЗАЦИЯ ---
+# --- АВТОРИЗАЦИЯ ЧЕРЕЗ LOCALSTORAGE (РАБОТАЕТ В STREAMLIT) ---
 def init_auth():
-    """Инициализация авторизации с проверкой cookies"""
+    """Инициализация авторизации"""
     
-    # Добавляем JavaScript для чтения cookies
-    st.components.v1.html(get_cookie_js(), height=0)
-    
-    if 'user' not in st.session_state:
-        # 1. Проверяем cookies через URL параметры
-        cookie_email = st.query_params.get('cookie_email')
-        cookie_name = st.query_params.get('cookie_name')
+    # JavaScript для работы с localStorage
+    st.components.v1.html("""
+    <script>
+    // Функция для сохранения данных
+    window.saveUserData = function(email, name) {
+        localStorage.setItem('user_email', email);
+        localStorage.setItem('user_name', name);
+        localStorage.setItem('user_expiry', Date.now() + (30 * 24 * 60 * 60 * 1000));
         
-        if cookie_email and cookie_name:
+        // Добавляем в URL для Streamlit
+        const url = new URL(window.location.href);
+        url.searchParams.set('storage_email', email);
+        url.searchParams.set('storage_name', name);
+        window.history.replaceState({}, '', url);
+        window.location.reload();
+    };
+    
+    // Функция для удаления данных
+    window.clearUserData = function() {
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('user_name');
+        localStorage.removeItem('user_expiry');
+        
+        const url = new URL(window.location.href);
+        url.searchParams.delete('storage_email');
+        url.searchParams.delete('storage_name');
+        window.history.replaceState({}, '', url);
+        window.location.reload();
+    };
+    
+    // При загрузке проверяем localStorage
+    (function() {
+        const email = localStorage.getItem('user_email');
+        const name = localStorage.getItem('user_name');
+        const expiry = localStorage.getItem('user_expiry');
+        
+        // Проверяем срок действия (30 дней)
+        if (email && name && expiry && Date.now() < parseInt(expiry)) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('storage_email', email);
+            url.searchParams.set('storage_name', name);
+            window.history.replaceState({}, '', url);
+        } else {
+            // Просрочено - очищаем
+            localStorage.removeItem('user_email');
+            localStorage.removeItem('user_name');
+            localStorage.removeItem('user_expiry');
+        }
+    })();
+    </script>
+    """, height=0)
+    
+    # Проверяем наличие данных в URL (из localStorage)
+    if 'user' not in st.session_state:
+        storage_email = st.query_params.get('storage_email')
+        storage_name = st.query_params.get('storage_name')
+        
+        if storage_email and storage_name:
             st.session_state.user = {
-                'email': cookie_email,
-                'name': cookie_name,
-                'user_id': hashlib.md5(cookie_email.encode()).hexdigest()[:10]
+                'email': storage_email,
+                'name': storage_name,
+                'user_id': hashlib.md5(storage_email.encode()).hexdigest()[:10]
             }
             
             # Загружаем прогресс
             users = get_github_data()
-            if cookie_email in users:
-                st.session_state.achieved_endings = users[cookie_email].get("achieved_endings", {})
-                user_achievements = users[cookie_email].get("achievements", {})
+            if storage_email in users:
+                st.session_state.achieved_endings = users[storage_email].get("achieved_endings", {})
+                user_achievements = users[storage_email].get("achievements", {})
                 if user_achievements:
                     for key, value in user_achievements.items():
                         if key in st.session_state.achievements:
                             st.session_state.achievements[key] = value
             
             # Очищаем временные параметры
-            if 'cookie_email' in st.query_params:
-                del st.query_params['cookie_email']
-            if 'cookie_name' in st.query_params:
-                del st.query_params['cookie_name']
-        
-        # 2. Если нет cookies, проверяем прямые параметры (старая система)
-        elif 'user_email' in st.query_params and 'user_name' in st.query_params:
-            st.session_state.user = {
-                'email': st.query_params['user_email'],
-                'name': st.query_params['user_name'],
-                'user_id': hashlib.md5(st.query_params['user_email'].encode()).hexdigest()[:10]
-            }
+            if 'storage_email' in st.query_params:
+                del st.query_params['storage_email']
+            if 'storage_name' in st.query_params:
+                del st.query_params['storage_name']
         else:
             st.session_state.user = None
 
 def login_user(email, name):
     """Вход пользователя"""
+    # Вызываем JavaScript для сохранения в localStorage
+    st.components.v1.html(f"""
+    <script>
+    window.saveUserData('{email}', '{name}');
+    </script>
+    """, height=0)
+    
+    # Также сохраняем в session_state для немедленного использования
     st.session_state.user = {
         'email': email,
         'name': name,
         'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
     }
     
-    # Устанавливаем cookies (30 дней)
-    set_cookie('user_email', email, 30)
-    set_cookie('user_name', name, 30)
-    
-    # Загружаем прогресс
-    users = get_github_data()
-    if email in users:
-        st.session_state.achieved_endings = users[email].get("achieved_endings", {})
-        user_achievements = users[email].get("achievements", {})
-        if user_achievements:
-            for key, value in user_achievements.items():
-                if key in st.session_state.achievements:
-                    st.session_state.achievements[key] = value
-    
-    # Сохраняем в URL для немедленного восстановления
-    st.query_params['user_email'] = email
-    st.query_params['user_name'] = name
-    
     st.rerun()
 
 def logout_user():
     """Выход пользователя"""
+    # Очищаем session_state
     st.session_state.user = None
     
-    # Удаляем cookies
-    clear_cookie('user_email')
-    clear_cookie('user_name')
-    
-    # Очищаем параметры URL
-    if 'user_email' in st.query_params:
-        del st.query_params['user_email']
-    if 'user_name' in st.query_params:
-        del st.query_params['user_name']
-    if 'cookie_email' in st.query_params:
-        del st.query_params['cookie_email']
-    if 'cookie_name' in st.query_params:
-        del st.query_params['cookie_name']
+    # Вызываем JavaScript для очистки localStorage
+    st.components.v1.html("""
+    <script>
+    window.clearUserData();
+    </script>
+    """, height=0)
     
     st.rerun()
 
@@ -389,22 +415,52 @@ init_auth()
 if not st.session_state.get('user'):
     st.title("🔐 Вход в Интерактивные сказки")
     
-    st.markdown("### Введите email для входа:")
+    st.markdown("### Введите данные для входа:")
     
     with st.form("login_form"):
         email = st.text_input("Email", placeholder="your@email.com")
-        submitted = st.form_submit_button("Войти", width='stretch')
+        password = st.text_input("Пароль", type="password", placeholder="••••••••")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            name = st.text_input("Имя (для новых пользователей)")
+        
+        submitted = st.form_submit_button("Войти / Зарегистрироваться", width='stretch')
         
         if submitted:
-            if email:
-                # Используем email и как имя (часть до @)
-                name = email.split('@')[0]  # Берем часть до @
-                login_user(email, name)
+            if email and password:
+                users = get_github_data()
+                
+                # Проверяем, есть ли пользователь
+                if email in users:
+                    # Проверяем пароль
+                    stored_password = users[email].get('password')
+                    if stored_password == hashlib.sha256(password.encode()).hexdigest():
+                        name = users[email].get('name', email.split('@')[0])
+                        login_user(email, name)
+                    else:
+                        st.error("❌ Неверный пароль!")
+                else:
+                    # Новый пользователь - регистрируем
+                    if name:
+                        # Сохраняем в GitHub
+                        users[email] = {
+                            'password': hashlib.sha256(password.encode()).hexdigest(),
+                            'name': name,
+                            'created_at': datetime.now().isoformat()
+                        }
+                        if save_users_to_github(users):
+                            login_user(email, name)
+                            st.success("✅ Регистрация успешна!")
+                        else:
+                            st.error("❌ Ошибка сохранения")
+                    else:
+                        st.warning("⚠️ Для регистрации укажите имя")
             else:
-                st.error("Пожалуйста, введите email")
+                st.error("❌ Заполните email и пароль")
     
     st.markdown("---")
-    st.info("ℹ️ Ваш прогресс будет автоматически сохраняться")
+    st.info("ℹ️ Новые пользователи регистрируются автоматически")
     st.stop()
 
 # --- Восстанавливаем состояние сказки из URL ---
