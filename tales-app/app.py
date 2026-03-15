@@ -160,7 +160,7 @@ st.markdown("""
         border-radius: 3px;
     }
     
-    /* Достижения - улучшенный дизайн */
+        /* Достижения - улучшенный дизайн */
     .stExpander {
         background-color: #fffaf0 !important;
         border: 2px solid #d4b68a !important;
@@ -190,20 +190,28 @@ st.markdown("""
         border-radius: 0 0 18px 18px !important;
     }
     
-    /* Прогресс-бар в достижениях */
+    /* Прогресс-бар в достижениях - ИСПРАВЛЕНО */
+    .stExpander .stProgress {
+        margin: 10px 0 !important;
+    }
+    
     .stExpander .stProgress > div {
         background-color: #e6d5b8 !important;
-        border-radius: 10px !important;
-        height: 20px !important;
+        border-radius: 15px !important;
+        height: 24px !important;
+        border: 1px solid #b5926a !important;
+        overflow: hidden !important;
     }
     
     .stExpander .stProgress > div > div {
         background: linear-gradient(90deg, #b5926a, #8b6b4f) !important;
-        border-radius: 10px !important;
+        border-radius: 15px !important;
+        height: 100% !important;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.2) !important;
     }
     
     /* Текст в достижениях */
-    .stExpander p, .stExpander span, .stExpander div {
+    .stExpander p, .stExpander span, .stExpander div:not(.stProgress) {
         color: #2c1e0e !important;
         font-size: 1rem !important;
     }
@@ -212,17 +220,26 @@ st.markdown("""
     .achievement-section {
         background-color: #f5e9d8 !important;
         border-radius: 15px !important;
-        padding: 10px !important;
-        margin: 10px 0 !important;
+        padding: 15px !important;
+        margin: 15px 0 !important;
         border: 1px solid #d4b68a !important;
+        box-shadow: inset 0 1px 4px rgba(0,0,0,0.05) !important;
     }
     
     .achievement-section h3, .achievement-section h4 {
-        margin: 0 0 10px 0 !important;
+        margin: 0 0 12px 0 !important;
         color: #2c1e0e !important;
-        font-size: 1.2rem !important;
-        border-bottom: 1px solid #b5926a !important;
-        padding-bottom: 5px !important;
+        font-size: 1.3rem !important;
+        border-bottom: 2px solid #b5926a !important;
+        padding-bottom: 8px !important;
+        font-family: 'Cormorant Garamond', serif !important;
+    }
+    
+    /* Текст внутри секций */
+    .achievement-section p, .achievement-section div {
+        color: #2c1e0e !important;
+        font-size: 1rem !important;
+        line-height: 1.5 !important;
     }
     
     /* Анимация появления текста */
