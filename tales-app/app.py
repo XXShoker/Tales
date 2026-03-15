@@ -27,68 +27,58 @@ EMAIL_PASSWORD = st.secrets.get("EMAIL_PASSWORD")
 FROM_EMAIL = st.secrets.get("FROM_EMAIL", EMAIL_USER)
 SESSION_SECRET = st.secrets.get("SESSION_SECRET", "default_secret_change_me")
 
-# --- JavaScript для работы с cookies ---
-st.markdown("""
-<script>
-function setCookie(name, value, days) {
-    let expires = "";
-    if (days) {
-        const date = new Date();
-        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-        expires = "; expires=" + date.toUTCString();
-    }
-    document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax";
-}
+# --- Функции для работы с cookies и URL ---
+def init_from_url():
+    """Инициализация состояния из URL параметров при загрузке"""
+    
+    # Восстанавливаем выбранную сказку
+    if 'tale' in st.query_params and not st.session_state.get('selected_tale'):
+        tale_name = st.query_params['tale']
+        if tale_name in tales:
+            start_tale(tale_name)
+    
+    # Восстанавливаем сцену
+    if 'scene' in st.query_params and st.session_state.get('selected_tale'):
+        scene_id = st.query_params['scene']
+        if scene_id in st.session_state.get('scenes', {}):
+            # Проверяем, не была ли уже загружена эта сцена
+            if st.session_state.scene_id != scene_id:
+                st.session_state.scene_id = scene_id
+                
+                # Восстанавливаем историю сообщений
+                tale_data = tales.get(st.session_state.selected_tale)
+                if tale_data:
+                    st.session_state.scenes = tale_data["scenes"]
+                    
+                    # Перестраиваем историю сообщений
+                    st.session_state.messages = []
+                    st.session_state.scene_history = []
+                    
+                    # Восстанавливаем путь к сцене (упрощенно - показываем только текущую)
+                    current_scene = st.session_state.scenes.get(scene_id)
+                    if current_scene:
+                        st.session_state.messages.append({"role": "assistant", "content": current_scene["text"]})
+                        st.session_state.scene_history.append(scene_id)
 
-function getCookie(name) {
-    const nameEQ = name + "=";
-    const ca = document.cookie.split(';');
-    for(let i = 0; i < ca.length; i++) {
-        let c = ca[i];
-        while (c.charAt(0) == ' ') c = c.substring(1, c.length);
-        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
-    }
-    return null;
-}
-
-function eraseCookie(name) {
-    document.cookie = name + '=; Max-Age=-99999999; path=/';
-}
-
-window.addEventListener('message', function(event) {
-    if (event.data.type === 'set_session') {
-        setCookie('session_token', event.data.token, 30);
-        setCookie('session_email', event.data.email, 30);
-        setCookie('session_expiry', event.data.expiry, 30);
-    }
-    if (event.data.type === 'clear_session') {
-        eraseCookie('session_token');
-        eraseCookie('session_email');
-        eraseCookie('session_expiry');
-    }
-});
-</script>
-""", unsafe_allow_html=True)
-
-# --- Функции для работы с cookies ---
-def set_session_cookie(token, email, expiry):
-    st.components.v1.html(f"""
-    <script>
-        window.parent.postMessage({{
-            type: 'set_session',
-            token: '{token}',
-            email: '{email}',
-            expiry: '{expiry}'
-        }}, '*');
-    </script>
-    """, height=0)
-
-def clear_session_cookie():
-    st.components.v1.html("""
-    <script>
-        window.parent.postMessage({type: 'clear_session'}, '*');
-    </script>
-    """, height=0)
+def update_url():
+    """Обновляет URL параметры в соответствии с текущим состоянием"""
+    params = {}
+    
+    if st.session_state.get('selected_tale'):
+        params['tale'] = st.session_state.selected_tale
+    
+    if st.session_state.get('scene_id') and st.session_state.scene_id != "start":
+        params['scene'] = st.session_state.scene_id
+    
+    # Обновляем URL параметры без перезагрузки
+    if params:
+        st.query_params.update(params)
+    else:
+        # Очищаем параметры если нет активной сказки
+        if 'tale' in st.query_params:
+            del st.query_params['tale']
+        if 'scene' in st.query_params:
+            del st.query_params['scene']
 
 # --- Инициализация состояния ---
 def init_session_state():
@@ -122,6 +112,7 @@ def init_session_state():
             "crossover": False,
             "total_50": False, "total_80": False, "total_all": False,
             "speedrun": False, "explorer": False, "talisman": False, "death_10": False,
+            "lyx_5": False, "lyx_all": False
         }
     if "achievement_progress" not in st.session_state:
         st.session_state.achievement_progress = {
@@ -130,7 +121,13 @@ def init_session_state():
             "detective_count": 0, "detective_time": 0, "detective_save": 0,
             "romance_love": 0, "romance_happy": 0,
             "total_endings_found": 0, "death_count": 0, "speedrun_tales": set(),
+            "lyx_count": 0
         }
+    
+    # Инициализация из URL при первом запуске
+    if 'initialized' not in st.session_state:
+        init_from_url()
+        st.session_state.initialized = True
 
 init_session_state()
 
@@ -321,9 +318,6 @@ def verify_registration(code):
     if save_users_to_github(users):
         st.session_state.user = users[email]
         st.session_state.achieved_endings = {}
-        token = generate_session_token(user_id)
-        expiry = (datetime.now() + timedelta(days=30)).isoformat()
-        set_session_cookie(token, email, expiry)
         del st.session_state.pending_registration
         return True, "Регистрация успешна!"
     else:
@@ -341,9 +335,6 @@ def login_user(email, password):
     if verify_password(password, user["password_hash"]):
         st.session_state.user = user
         st.session_state.achieved_endings = user.get("achieved_endings", {})
-        token = generate_session_token(user["user_id"])
-        expiry = (datetime.now() + timedelta(days=30)).isoformat()
-        set_session_cookie(token, email, expiry)
         return True, "Вход выполнен успешно!"
     else:
         return False, "Неверный пароль"
@@ -358,12 +349,6 @@ def logout_user():
     
     st.session_state.user = None
     st.session_state.achieved_endings = {}
-    st.session_state.messages = []
-    st.session_state.scenes = {}
-    st.session_state.scene_history = []
-    st.session_state.selected_tale = None
-    
-    clear_session_cookie()
     st.rerun()
 
 def delete_account():
@@ -552,6 +537,9 @@ def start_tale(tale_name):
         st.session_state.messages.append({"role": "assistant", "content": first_scene["text"]})
     if tale_name not in st.session_state.achieved_endings:
         st.session_state.achieved_endings[tale_name] = set()
+    
+    # Обновляем URL
+    update_url()
 
 def handle_choice(choice_text, next_scene_id):
     st.session_state.messages.append({"role": "user", "content": choice_text})
@@ -560,6 +548,9 @@ def handle_choice(choice_text, next_scene_id):
     next_scene = st.session_state.scenes.get(next_scene_id)
     if next_scene:
         st.session_state.messages.append({"role": "assistant", "content": next_scene["text"]})
+    
+    # Обновляем URL
+    update_url()
 
 def go_back():
     if len(st.session_state.scene_history) > 1:
@@ -568,6 +559,9 @@ def go_back():
         if len(st.session_state.messages) >= 2:
             st.session_state.messages.pop()
             st.session_state.messages.pop()
+        
+        # Обновляем URL
+        update_url()
         st.rerun()
 
 def reset_to_main():
@@ -575,8 +569,14 @@ def reset_to_main():
     st.session_state.messages = []
     st.session_state.scenes = {}
     st.session_state.scene_history = []
+    
+    # Очищаем URL параметры
+    if 'tale' in st.query_params:
+        del st.query_params['tale']
+    if 'scene' in st.query_params:
+        del st.query_params['scene']
 
-# --- Стили ---
+# --- Стили (исправленные) ---
 st.markdown("""
 <style>
     /* Подключаем шрифты */
@@ -650,7 +650,7 @@ st.markdown("""
         box-shadow: 0 6px 18px rgba(0,0,0,0.2);
     }
     
-    /* Все кнопки */
+    /* Все кнопки - ИСПРАВЛЕНО: заменен use_container_width на width */
     .stButton > button {
         background: linear-gradient(135deg, #e6d5b8, #d4b68a);
         color: #2a1c0e !important;
@@ -725,14 +725,15 @@ st.markdown("""
         border-color: #8b6b4f !important;
     }
     
-    /* КАРТОЧКИ */
+    /* КАРТОЧКИ - ИСПРАВЛЕНО: убрана фиксированная высота */
     div[data-testid="column"] > div {
         background: white;
         border-radius: 24px;
         padding: 25px;
         border: 2px solid #e9d9c4;
         box-shadow: 0 10px 25px rgba(93,58,26,0.1);
-        height: 1000px !important;
+        height: auto !important;
+        min-height: 600px;
         display: flex;
         flex-direction: column;
         transition: all 0.3s ease;
@@ -745,10 +746,11 @@ st.markdown("""
         border-color: #d4b68a;
     }
     
-    /* Изображения */
+    /* Изображения - ИСПРАВЛЕНО: убрана фиксированная высота */
     div[data-testid="column"] img {
         width: 100%;
-        height: 500px !important;
+        height: auto !important;
+        max-height: 400px;
         object-fit: cover;
         border-radius: 16px;
         border: 2px solid #d4b68a;
@@ -832,11 +834,12 @@ st.markdown("""
     /* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
     @media (max-width: 600px) {
         div[data-testid="column"] > div {
-            height: 800px !important;
+            height: auto !important;
+            min-height: 500px;
             padding: 15px;
         }
         div[data-testid="column"] img {
-            height: 350px !important;
+            max-height: 250px;
         }
         h1 {
             font-size: 2rem;
@@ -893,22 +896,35 @@ st.markdown("""
         const urlParams = new URLSearchParams(window.location.search);
         if (!urlParams.has('tale')) return;
         
+        // Проверяем, не создана ли уже кнопка
+        if (document.querySelector('.floating-home-button')) return;
+        
         const homeBtn = document.createElement('div');
         homeBtn.className = 'floating-home-button';
         homeBtn.innerHTML = '🏠 К сказкам';
-        homeBtn.onclick = () => window.location.href = window.location.pathname;
+        homeBtn.onclick = () => {
+            // Очищаем URL параметры и перезагружаем
+            const url = new URL(window.location.href);
+            url.searchParams.delete('tale');
+            url.searchParams.delete('scene');
+            window.location.href = url.pathname;
+        };
         document.body.appendChild(homeBtn);
     }
     
+    // Создаем кнопку после загрузки страницы
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', createFloatingButtons);
     } else {
         createFloatingButtons();
     }
+    
+    // Также проверяем при изменении URL
+    window.addEventListener('popstate', createFloatingButtons);
 </script>
 """, unsafe_allow_html=True)
 
-# --- Боковая панель с авторизацией ---
+# --- Боковая панель с авторизацией (исправлены use_container_width) ---
 with st.sidebar:
     st.markdown("## 📖 О проекте")
     st.markdown("Вы сами выбираете, как развернётся история. Все сказки абсолютно бесплатны.")
@@ -918,11 +934,11 @@ with st.sidebar:
     if st.session_state.user:
         st.markdown(f"👋 Привет, **{st.session_state.user['name']}**!")
         st.markdown(f"📧 {st.session_state.user['email']}")
-        if st.button("🚪 Выйти", use_container_width=True):
+        if st.button("🚪 Выйти", width='stretch'):
             logout_user()
         with st.expander("⚠️ Удалить аккаунт"):
             st.warning("Это действие необратимо. Все ваши данные будут удалены.")
-            if st.button("🗑️ Подтвердить удаление", use_container_width=True):
+            if st.button("🗑️ Подтвердить удаление", width='stretch'):
                 if delete_account():
                     st.success("Аккаунт удалён.")
                     st.rerun()
@@ -934,7 +950,7 @@ with st.sidebar:
                 with st.form("login_form"):
                     email = st.text_input("Email")
                     password = st.text_input("Пароль", type="password")
-                    submitted = st.form_submit_button("Войти", use_container_width=True)
+                    submitted = st.form_submit_button("Войти", width='stretch')
                     if submitted:
                         success, msg = login_user(email, password)
                         if success:
@@ -968,7 +984,7 @@ with st.sidebar:
                         """)
                     agree = st.checkbox("Я принимаю условия пользовательского соглашения")
                     
-                    submitted = st.form_submit_button("Зарегистрироваться", use_container_width=True)
+                    submitted = st.form_submit_button("Зарегистрироваться", width='stretch')
                     if submitted:
                         if not agree:
                             st.error("Вы должны принять условия.")
@@ -989,7 +1005,7 @@ with st.sidebar:
             st.info(f"Код отправлен на {st.session_state.pending_registration['email']}")
             with st.form("verify_form"):
                 code = st.text_input("Введите 6-значный код", max_chars=6)
-                submitted = st.form_submit_button("Подтвердить", use_container_width=True)
+                submitted = st.form_submit_button("Подтвердить", width='stretch')
                 if submitted:
                     success, msg = verify_registration(code)
                     if success:
@@ -998,12 +1014,12 @@ with st.sidebar:
                         st.rerun()
                     else:
                         st.error(msg)
-            if st.button("Отменить регистрацию", use_container_width=True):
+            if st.button("Отменить регистрацию", width='stretch'):
                 st.session_state.pending_registration = None
                 st.rerun()
     
     st.markdown("---")
-    st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", use_container_width=True)
+    st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", width='stretch')
     
     # --- Прогресс текущей сказки ---
     if st.session_state.selected_tale:
@@ -1013,7 +1029,7 @@ with st.sidebar:
         if total > 0:
             st.progress(min(opened/total, 1.0))
         st.markdown(f"Найдено концовок: **{opened} / {total}**")
-        if st.button("🔄 Сменить сказку", use_container_width=True):
+        if st.button("🔄 Сменить сказку", width='stretch'):
             reset_to_main()
             st.rerun()
     
@@ -1109,9 +1125,9 @@ if st.session_state.selected_tale is None:
                     # Обложка
                     cover_path = tales[tale_name].get("cover", "")
                     if cover_path and os.path.exists(cover_path):
-                        st.image(cover_path, use_container_width=True)
+                        st.image(cover_path, width='stretch')
                     else:
-                        st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
+                        st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", width='stretch')
                     
                     st.markdown(f"### {tale_name}")
                     
@@ -1129,7 +1145,7 @@ if st.session_state.selected_tale is None:
                         """, unsafe_allow_html=True)
                     
                     st.markdown(tales[tale_name].get("description", ""))
-                    if st.button("✨ Начать", key=f"{tale_name}", use_container_width=True):
+                    if st.button("✨ Начать", key=f"{tale_name}", width='stretch'):
                         start_tale(tale_name)
                         st.rerun()
     
@@ -1181,24 +1197,24 @@ else:
             col1, col2 = st.columns(2)
             with col1:
                 if len(st.session_state.scene_history) > 1:
-                    if st.button("↩️ Вернуться назад", use_container_width=True):
+                    if st.button("↩️ Вернуться назад", width='stretch'):
                         go_back()
             with col2:
-                if st.button("🔄 Начать заново", use_container_width=True):
+                if st.button("🔄 Начать заново", width='stretch'):
                     start_tale(st.session_state.selected_tale)
                     st.rerun()
         else:
             st.markdown("### Твой выбор:")
             for opt in current["options"]:
-                if st.button(opt["text"], key=f"choice_{opt['next']}", use_container_width=True):
+                if st.button(opt["text"], key=f"choice_{opt['next']}", width='stretch'):
                     handle_choice(opt["text"], opt["next"])
                     st.rerun()
             if len(st.session_state.scene_history) > 1:
                 st.markdown("---")
-                if st.button("↩️ Назад к выбору", use_container_width=True):
+                if st.button("↩️ Назад к выбору", width='stretch'):
                     go_back()
     else:
         st.error("⚠️ Сцена не найдена")
-        if st.button("⬅️ К выбору сказок", use_container_width=True):
+        if st.button("⬅️ К выбору сказок", width='stretch'):
             reset_to_main()
             st.rerun()
