@@ -71,6 +71,8 @@ def send_verification_email(to_email, code):
 
 # --- Инициализация состояния ---
 def init_session_state():
+    if "_auth_initialized" not in st.session_state:
+        st.session_state._auth_initialized = False
     if "selected_tale" not in st.session_state:
         st.session_state.selected_tale = None
     if "progress_loaded" not in st.session_state:
@@ -307,7 +309,10 @@ def restore_tale_state_from_url():
 
 # --- АВТОРИЗАЦИЯ ---
 def init_auth():
-    """Инициализация авторизации – выполняется при загрузке страницы"""
+    """Инициализация авторизации – выполняется только один раз после входа"""
+    if st.session_state._auth_initialized:
+        return
+    
     email = st.query_params.get('user_email')
     name = st.query_params.get('user_name')
     username = st.query_params.get('user_username')
@@ -342,6 +347,8 @@ def init_auth():
         if st.session_state.get('user'):
             st.session_state.user = None
 
+    st.session_state._auth_initialized = True
+
 def login_user(email, name, username):
     """Вход пользователя – сохраняет данные в URL, rerun произойдёт автоматически"""
     print(f"✅ Вход: {email}")
@@ -354,12 +361,14 @@ def login_user(email, name, username):
     st.query_params['user_email'] = email
     st.query_params['user_name'] = name
     st.query_params['user_username'] = username
+    st.session_state._auth_initialized = True
 
 def logout_user():
     """Выход пользователя"""
     print("👋 Выход")
     st.session_state.user = None
     st.session_state.progress_loaded = False
+    st.session_state._auth_initialized = False
     if 'user_email' in st.query_params:
         del st.query_params['user_email']
     if 'user_name' in st.query_params:
