@@ -160,69 +160,23 @@ st.markdown("""
         border-radius: 3px;
     }
     
-    /* Достижения - улучшенный дизайн */
-    .stExpander {
-        background-color: #fffaf0 !important;
-        border: 2px solid #d4b68a !important;
-        border-radius: 20px !important;
-        margin: 15px 0 !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    /* Достижения */
+    .achievement-badge {
+        display: inline-block;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #e6d5b8;
+        color: #2a1c0e;
+        text-align: center;
+        line-height: 30px;
+        margin-right: 5px;
+        font-size: 1.2rem;
     }
     
-    .stExpander summary {
-        font-family: 'Cormorant Garamond', serif !important;
-        font-size: 1.5rem !important;
-        font-weight: 700 !important;
-        color: #2c1e0e !important;
-        padding: 15px 20px !important;
-        background: linear-gradient(135deg, #e6d5b8, #d4b68a) !important;
-        border-radius: 18px 18px 0 0 !important;
-        border-bottom: 2px solid #b5926a !important;
-    }
-    
-    .stExpander summary:hover {
-        background: linear-gradient(135deg, #d4b68a, #b5926a) !important;
-    }
-    
-    .stExpander > div {
-        background-color: #fffaf0 !important;
-        padding: 20px !important;
-        border-radius: 0 0 18px 18px !important;
-    }
-    
-    /* Прогресс-бар в достижениях */
-    .stExpander .stProgress > div {
-        background-color: #e6d5b8 !important;
-        border-radius: 10px !important;
-        height: 20px !important;
-    }
-    
-    .stExpander .stProgress > div > div {
-        background: linear-gradient(90deg, #b5926a, #8b6b4f) !important;
-        border-radius: 10px !important;
-    }
-    
-    /* Текст в достижениях */
-    .stExpander p, .stExpander span, .stExpander div {
-        color: #2c1e0e !important;
-        font-size: 1rem !important;
-    }
-    
-    /* Секции достижений */
-    .achievement-section {
-        background-color: #f5e9d8 !important;
-        border-radius: 15px !important;
-        padding: 10px !important;
-        margin: 10px 0 !important;
-        border: 1px solid #d4b68a !important;
-    }
-    
-    .achievement-section h3, .achievement-section h4 {
-        margin: 0 0 10px 0 !important;
-        color: #2c1e0e !important;
-        font-size: 1.2rem !important;
-        border-bottom: 1px solid #b5926a !important;
-        padding-bottom: 5px !important;
+    .achievement-unlocked {
+        background: linear-gradient(135deg, #d4b68a, #b5926a);
+        box-shadow: 0 0 10px gold;
     }
     
     /* Анимация появления текста */
@@ -445,6 +399,11 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
                 ach["teremok_bees"] = True
                 st.balloons()
                 st.success("🏆 Достижение разблокировано: «Пчелиный король» (секретные пчёлы)")
+            
+            # Золото (концовка 8)
+            if ending_num == 8 and not ach.get("teremok_gold", False):
+                # Добавим новое достижение для золота, если хотим
+                pass
     
     # --- Золотая рыбка ---
     if tale_name == "Золотая рыбка":
@@ -537,7 +496,8 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
         st.balloons()
         st.success("🏆 Достижение разблокировано: «Профессионал» (80 концовок)")
     
-    total_possible = 16 + 14 + 20 + 12 + 12 + 25 + 20
+    # Подсчёт всех возможных концовок
+    total_possible = 16 + 14 + 20 + 12 + 12 + 25 + 20  # обновил для золотой рыбки
     if total >= total_possible and not ach["total_all"]:
         ach["total_all"] = True
         st.balloons()
@@ -601,68 +561,61 @@ with st.sidebar:
     
     # Достижения (только на главном экране)
     if st.session_state.selected_tale is None:
-        with st.expander("🏆 ДОСТИЖЕНИЯ"):
+        with st.expander("🏆 Достижения"):
             ach = st.session_state.achievements
             
+            # Считаем сколько всего
             total_achieved = sum(1 for v in ach.values() if v)
-            st.markdown(f"**Общий прогресс: {total_achieved}/30**")
+            st.markdown(f"**Прогресс: {total_achieved}/30**")
             st.progress(total_achieved / 30)
             
             st.markdown("---")
             
-            st.markdown('<div class="achievement-section">', unsafe_allow_html=True)
-            st.markdown("### 📚 Классика")
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown(f"{'✅' if ach['kolobok_5'] else '⬜'} Колобок-беглец")
-                st.markdown(f"{'✅' if ach['kolobok_all'] else '⬜'} Ни одна лиса")
-                st.markdown(f"{'✅' if ach['teremok_5'] else '⬜'} Терем-теремок")
+            # Группируем по категориям
+            cols = st.columns(2)
+            
+            with cols[0]:
+                st.markdown("**📚 Классика**")
+                st.markdown(f"{'✅' if ach['kolobok_5'] else '⬜'} Колобок-беглец (5/16)")
+                st.markdown(f"{'✅' if ach['kolobok_all'] else '⬜'} Ни одна лиса не страшна")
+                st.markdown(f"{'✅' if ach['teremok_5'] else '⬜'} Терем-теремок (5/14)")
                 st.markdown(f"{'✅' if ach['teremok_all'] else '⬜'} Всем дом")
-            with col2:
                 st.markdown(f"{'✅' if ach['rybka_3_greedy'] else '⬜'} Золотая жадность")
                 st.markdown(f"{'✅' if ach['rybka_all'] else '⬜'} Мудрец")
                 st.markdown(f"{'✅' if ach['ryaba_3_save'] else '⬜'} Курочка-спасительница")
                 st.markdown(f"{'✅' if ach['ryaba_all'] else '⬜'} Золотой урожай")
-            st.markdown('</div>', unsafe_allow_html=True)
             
-            st.markdown('<div class="achievement-section">', unsafe_allow_html=True)
-            st.markdown("### 🧚 Приключения")
-            st.markdown(f"{'✅' if ach['forest_10_locations'] else '⬜'} Лесной исследователь")
-            st.markdown(f"{'✅' if ach['forest_all_friends'] else '⬜'} Друг зверей")
-            st.markdown(f"{'✅' if ach['forest_all'] else '⬜'} Повелитель леса")
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            st.markdown('<div class="achievement-section">', unsafe_allow_html=True)
-            st.markdown("### 🔞 16+")
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown("**Детектив**")
+            with cols[1]:
+                st.markdown("**🧚 Приключения**")
+                st.markdown(f"{'✅' if ach['forest_10_locations'] else '⬜'} Лесной исследователь")
+                st.markdown(f"{'✅' if ach['forest_all_friends'] else '⬜'} Друг зверей")
+                st.markdown(f"{'✅' if ach['forest_all'] else '⬜'} Повелитель леса")
+                
+                st.markdown("**🔞 16+**")
                 st.markdown(f"{'✅' if ach['detective_10'] else '⬜'} Следопыт")
                 st.markdown(f"{'✅' if ach['detective_time_5'] else '⬜'} Мастер времени")
                 st.markdown(f"{'✅' if ach['detective_save_3'] else '⬜'} Спаситель")
                 st.markdown(f"{'✅' if ach['detective_all'] else '⬜'} Идеальное преступление")
-            with col2:
-                st.markdown("**Романтика**")
+                
+                st.markdown("**💕 Романтика**")
                 st.markdown(f"{'✅' if ach['romance_3_love'] else '⬜'} Сердцеед")
                 st.markdown(f"{'✅' if ach['romance_5_happy'] else '⬜'} Романтик")
                 st.markdown(f"{'✅' if ach['romance_all'] else '⬜'} Идеальная пара")
-            st.markdown('</div>', unsafe_allow_html=True)
             
-            st.markdown('<div class="achievement-section">', unsafe_allow_html=True)
-            st.markdown("### 🔮 Секретные")
-            col1, col2, col3 = st.columns(3)
-            with col1:
+            st.markdown("---")
+            st.markdown("**🔮 Секретные**")
+            cols2 = st.columns(3)
+            with cols2[0]:
                 st.markdown(f"{'✅' if ach['teremok_fairy'] else '⬜'} Фея")
                 st.markdown(f"{'✅' if ach['teremok_bees'] else '⬜'} Пчёлы")
-            with col2:
+            with cols2[1]:
                 st.markdown(f"{'✅' if ach['ryaba_wish'] else '⬜'} Желание")
                 st.markdown(f"{'✅' if ach['ryaba_drink'] else '⬜'} Гулянка")
-            with col3:
+            with cols2[2]:
                 st.markdown(f"{'✅' if ach['crossover'] else '⬜'} Хранитель")
-            st.markdown('</div>', unsafe_allow_html=True)
             
-            st.markdown('<div class="achievement-section">', unsafe_allow_html=True)
-            st.markdown("### 🏆 Мета")
+            st.markdown("---")
+            st.markdown("**🏆 Мета**")
             st.markdown(f"{'✅' if ach['total_50'] else '⬜'} Коллекционер (50)")
             st.markdown(f"{'✅' if ach['total_80'] else '⬜'} Профессионал (80)")
             st.markdown(f"{'✅' if ach['total_all'] else '⬜'} Библиотекарь (все)")
@@ -670,7 +623,6 @@ with st.sidebar:
             st.markdown(f"{'✅' if ach['explorer'] else '⬜'} Исследователь")
             st.markdown(f"{'✅' if ach['talisman'] else '⬜'} Талисман")
             st.markdown(f"{'✅' if ach['death_10'] else '⬜'} Бессмертный")
-            st.markdown('</div>', unsafe_allow_html=True)
 
 # --- Основная область ---
 st.title("📖 Интерактивные сказки")
@@ -679,6 +631,7 @@ st.caption("Выбирайте свой путь в каждой истории!
 if st.session_state.selected_tale is None:
     all_tales = list(tales.keys())
     
+    # Категории
     classic_tales = ["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"]
     adventure_tales = ["Путешествие в Волшебный лес"]
     adult_tales = ["Хроники разбитых часов: Детектив времени", "Мелодия дождя"]
@@ -690,10 +643,12 @@ if st.session_state.selected_tale is None:
         
         st.markdown(f'<div class="section-header">{title}</div>', unsafe_allow_html=True)
         
+        # Две колонки
         cols = st.columns(2)
         for idx, tale_name in enumerate(tales_in_cat):
             with cols[idx % 2]:
                 with st.container():
+                    # Обложка
                     cover_path = tales[tale_name].get("cover", "")
                     if cover_path and os.path.exists(cover_path):
                         st.image(cover_path, use_container_width=True)
@@ -702,6 +657,7 @@ if st.session_state.selected_tale is None:
                     
                     st.markdown(f"### {tale_name}")
                     
+                    # Прогресс на карточке
                     opened, total = get_ending_stats(tale_name)
                     if total > 0:
                         progress_pct = opened / total if total > 0 else 0
@@ -727,6 +683,7 @@ if st.session_state.selected_tale is None:
     st.markdown("🌟 *Все сказки бесплатны. Если хотите поддержать проект, воспользуйтесь кнопкой в боковой панели.*")
 
 else:
+    # Сама сказка
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
@@ -744,7 +701,12 @@ else:
             
             if ending_id not in st.session_state.achieved_endings[st.session_state.selected_tale]:
                 st.session_state.achieved_endings[st.session_state.selected_tale].add(ending_id)
-                check_achievements(st.session_state.selected_tale, current.get("ending_type"), current)
+                
+                # Проверяем достижения
+                check_achievements(st.session_state.selected_tale, 
+                                 current.get("ending_type"), 
+                                 current)
+                
                 st.rerun()
             
             st.markdown("---")
