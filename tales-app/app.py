@@ -215,7 +215,8 @@ def save_user_progress():
             users[email] = user_data
             save_users_to_github(users)
         except Exception as e:
-            print(f"Ошибка сохранения прогресса: {e}")
+            # Показываем ошибку в интерфейсе (временно, для отладки)
+            st.error(f"Ошибка сохранения прогресса: {e}")
 
 # --- Функции для работы с URL (сохранение состояния сказки) ---
 def save_tale_state_to_url():
@@ -310,7 +311,6 @@ def login_user(email, name, username):
     """Вход пользователя"""
     print(f"✅ Вход: {email}")
     
-    # Устанавливаем пользователя
     st.session_state.user = {
         'email': email,
         'name': name,
@@ -318,12 +318,24 @@ def login_user(email, name, username):
         'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
     }
     
+    # Загружаем прогресс из GitHub сразу после установки пользователя
+    try:
+        users = get_github_data()
+        if email in users:
+            st.session_state.achieved_endings = users[email].get("achieved_endings", {})
+            user_achievements = users[email].get("achievements", {})
+            if user_achievements:
+                for key, value in user_achievements.items():
+                    if key in st.session_state.achievements:
+                        st.session_state.achievements[key] = value
+    except Exception as e:
+        print(f"Ошибка загрузки прогресса при входе: {e}")
+    
     # Сохраняем в URL
     st.query_params['user_email'] = email
     st.query_params['user_name'] = name
     st.query_params['user_username'] = username
     
-    print(f"✅ URL обновлен")
     st.rerun()
 
 def logout_user():
