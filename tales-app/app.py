@@ -274,43 +274,37 @@ def restore_tale_state_from_url():
         
         st.session_state.tale_restored = True
 
-# --- АВТОРИЗАЦИЯ (ИСПРАВЛЕННАЯ) ---
+# --- АВТОРИЗАЦИЯ (ГАРАНТИРОВАННО РАБОЧАЯ) ---
 def init_auth():
-    """Инициализация авторизации"""
-    if 'user' not in st.session_state:
-        # Прямое чтение из URL параметров
-        email = st.query_params.get('user_email')
-        name = st.query_params.get('user_name')
-        username = st.query_params.get('user_username')
-        
-        print(f"🔍 init_auth: email={email}, name={name}, username={username}")
-        
-        if email and name:
-            st.session_state.user = {
-                'email': email,
-                'name': name,
-                'username': username or name,
-                'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
-            }
-            print(f"✅ Пользователь восстановлен: {st.session_state.user}")
-            
-            # Загружаем прогресс
-            try:
-                users = get_github_data()
-                if email in users:
-                    st.session_state.achieved_endings = users[email].get("achieved_endings", {})
-                    user_achievements = users[email].get("achievements", {})
-                    if user_achievements:
-                        for key, value in user_achievements.items():
-                            if key in st.session_state.achievements:
-                                st.session_state.achievements[key] = value
-            except Exception as e:
-                print(f"Ошибка загрузки прогресса: {e}")
+    """Инициализация авторизации - ПРЯМОЕ ЧТЕНИЕ URL"""
+    
+    # ПРЯМОЕ чтение из URL - без всяких условий
+    email = st.query_params.get('user_email')
+    name = st.query_params.get('user_name')
+    username = st.query_params.get('user_username')
+    
+    print(f"🔍 URL параметры: email={email}, name={name}, username={username}")
+    
+    # Если есть email - сразу восстанавливаем пользователя
+    if email:
+        st.session_state.user = {
+            'email': email,
+            'name': name or email.split('@')[0],
+            'username': username or name or email.split('@')[0],
+            'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
+        }
+        print(f"✅ Пользователь УСТАНОВЛЕН: {st.session_state.user}")
+    else:
+        # Если нет email в URL - проверяем, может уже есть в session_state
+        if 'user' not in st.session_state:
+            st.session_state.user = None
+            print("ℹ️ Нет пользователя в URL")
 
 def login_user(email, name, username):
     """Вход пользователя"""
-    print(f"✅ login_user: {email}, {name}, {username}")
+    print(f"✅ Вход: {email}")
     
+    # Устанавливаем пользователя
     st.session_state.user = {
         'email': email,
         'name': name,
@@ -323,15 +317,14 @@ def login_user(email, name, username):
     st.query_params['user_name'] = name
     st.query_params['user_username'] = username
     
-    print(f"✅ URL обновлен: {st.query_params}")
+    print(f"✅ URL обновлен")
     st.rerun()
 
 def logout_user():
     """Выход пользователя"""
-    print("👋 logout_user")
+    print("👋 Выход")
     
     st.session_state.user = None
-    st.session_state.achieved_endings = {}
     
     # Удаляем из URL
     if 'user_email' in st.query_params:
@@ -343,13 +336,13 @@ def logout_user():
     
     st.rerun()
 
+# ВЫЗЫВАЕМ init_auth() - ОБЯЗАТЕЛЬНО!
 init_auth()
 
-# --- ОТЛАДКА (временно) ---
-with st.sidebar:
-    with st.expander("🔧 Отладка"):
-        st.write("User в session_state:", st.session_state.get('user'))
-        st.write("Параметры URL:", dict(st.query_params))
+# --- ДИАГНОСТИКА ---
+st.sidebar.markdown("### 🔍 Диагностика")
+st.sidebar.write("User в session_state:", st.session_state.get('user'))
+st.sidebar.write("Параметры URL:", dict(st.query_params))
 
 # --- ПРОВЕРКА АВТОРИЗАЦИИ ---
 if not st.session_state.get('user'):
@@ -828,7 +821,7 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
     # Сохраняем прогресс после каждого достижения
     save_user_progress()
 
-# --- Стили (ИСПРАВЛЕННЫЕ) ---
+# --- СТИЛИ (ГАРАНТИРОВАННО ВИДИМЫЙ ТЕКСТ) ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Open+Sans:wght@400;600&display=swap');
@@ -838,10 +831,14 @@ st.markdown("""
         background: linear-gradient(135deg, #fcf3e0 0%, #fef9e7 100%);
     }
     
-    /* Заголовки - ТЕМНЫЕ И ЧЕТКИЕ */
+    /* ВЕСЬ ТЕКСТ - ТЕМНО-КОРИЧНЕВЫЙ */
+    * {
+        color: #2c1e0e !important;
+    }
+    
+    /* Заголовки */
     h1, h2, h3, h4, h5, h6 {
         font-family: 'Cormorant Garamond', serif;
-        color: #2c1e0e !important;
         font-weight: 700 !important;
         text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
     }
@@ -853,25 +850,44 @@ st.markdown("""
         margin-bottom: 30px;
     }
     
-    /* ВЕСЬ ТЕКСТ - ТЕМНО-КОРИЧНЕВЫЙ */
-    p, li, span, div, .stMarkdown, .stText, .stChatMessage p, 
-    .stAlert, .stInfo, .stSuccess, .stWarning, .stError,
-    .st-bb, .st-at, .st-ae, .st-af, .st-ag {
+    /* Обычный текст */
+    p, li, span, div, .stMarkdown, .stText, .stChatMessage p {
         font-family: 'Open Sans', sans-serif;
-        color: #2c1e0e !important;
         font-size: clamp(1rem, 2vw, 1.2rem);
         line-height: 1.6;
         font-weight: 500 !important;
     }
     
-    /* Боковая панель - текст */
-    section[data-testid="stSidebar"] p,
-    section[data-testid="stSidebar"] .stMarkdown,
-    section[data-testid="stSidebar"] span {
+    /* Боковая панель */
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #f5e9d8 0%, #ecdcc5 100%);
+        border-right: 2px solid #b5926a;
+    }
+    
+    /* Боковая панель - ВЕСЬ ТЕКСТ */
+    section[data-testid="stSidebar"] * {
         color: #2c1e0e !important;
     }
     
-    /* Поля ввода - текст */
+    /* Кнопки */
+    .stButton > button {
+        background: linear-gradient(135deg, #e6d5b8, #d4b68a) !important;
+        color: #2a1c0e !important;
+        border: 2px solid #b5926a !important;
+        border-radius: 40px !important;
+        padding: 15px 20px !important;
+        font-size: 1.2rem !important;
+        font-weight: 600 !important;
+        width: 100%;
+        min-height: 60px;
+    }
+    
+    /* Текст на кнопках */
+    .stButton > button p {
+        color: #2a1c0e !important;
+    }
+    
+    /* Поля ввода */
     .stTextInput > label {
         color: #2c1e0e !important;
         font-weight: 600;
@@ -884,20 +900,6 @@ st.markdown("""
         padding: 12px 20px !important;
         color: #2c1e0e !important;
         font-size: 1rem !important;
-        font-weight: 500 !important;
-    }
-    
-    /* Кнопки */
-    .stButton > button {
-        background: linear-gradient(135deg, #e6d5b8, #d4b68a);
-        color: #2a1c0e !important;
-        border: 2px solid #b5926a;
-        border-radius: 40px;
-        padding: 15px 20px !important;
-        font-size: 1.2rem !important;
-        font-weight: 600;
-        width: 100%;
-        min-height: 60px;
     }
     
     /* Чат сообщения */
@@ -913,29 +915,28 @@ st.markdown("""
         background: linear-gradient(135deg, #e6d5b8, #d4b68a) !important;
     }
     
-    .stChatMessage p {
-        color: #2c1e0e !important;
-        font-weight: 500 !important;
-    }
-    
     /* Карточки сказок */
     div[data-testid="column"] > div {
-        background: white;
-        border-radius: 24px;
-        padding: 25px;
-        border: 2px solid #b5926a;
-        box-shadow: 0 10px 25px rgba(93,58,26,0.15);
-        height: auto !important;
-        min-height: 500px;
+        background: white !important;
+        border: 2px solid #b5926a !important;
+        border-radius: 24px !important;
+        padding: 25px !important;
+        box-shadow: 0 10px 25px rgba(93,58,26,0.15) !important;
     }
     
-    div[data-testid="column"] > div p {
+    /* Текст в карточках */
+    div[data-testid="column"] > div * {
         color: #2c1e0e !important;
     }
     
+    /* Прогресс */
+    .stProgress > div > div {
+        background: linear-gradient(90deg, #b5926a, #8b6b4f) !important;
+    }
+    
+    /* Мобильная версия */
     @media (max-width: 600px) {
         h1 { font-size: 2rem; }
-        div[data-testid="column"] > div { min-height: 400px; }
     }
 </style>
 """, unsafe_allow_html=True)
