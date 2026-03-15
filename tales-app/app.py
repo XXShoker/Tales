@@ -1014,28 +1014,46 @@ st.markdown("""
         padding: 0 5px !important;
     }
 
-    /* ===== КНОПКА СВОРАЧИВАНИЯ БОКОВОЙ ПАНЕЛИ ===== */
-    /* Делаем её всегда видимой и контрастной */
-    .stSidebarCollapseButton button,
-    button[data-testid="collapsedControl"],
-    .st-emotion-cache-1avcm0n button,
+    /* ===== КНОПКИ УПРАВЛЕНИЯ БОКОВОЙ ПАНЕЛЬЮ ===== */
+    /* Кнопка сворачивания (когда панель открыта) */
+    button[data-testid="baseButton-headerNoPadding"],
+    button[kind="headerNoPadding"],
     .st-emotion-cache-1wbqy5l button {
+        background: linear-gradient(135deg, #e6d5b8, #d4b68a) !important;
+        border: 2px solid #b5926a !important;
+        border-radius: 30px !important;
+        width: 36px !important;
+        height: 36px !important;
         color: #2c1e0e !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+    }
+    
+    /* Кнопка открытия (когда панель свёрнута) */
+    button[data-testid="collapsedControl"],
+    button[title*="chevron" i],
+    button[aria-label*="chevron" i] {
         background: linear-gradient(135deg, #e6d5b8, #d4b68a) !important;
         border: 2px solid #b5926a !important;
         border-radius: 30px !important;
         width: 40px !important;
         height: 40px !important;
-        font-size: 20px !important;
+        color: #2c1e0e !important;
         box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+        position: relative !important;
         z-index: 9999 !important;
     }
     
-    /* Иконка внутри кнопки (гамбургер) – тоже тёмная */
-    .stSidebarCollapseButton button svg,
-    button[data-testid="collapsedControl"] svg {
+    /* Иконки внутри этих кнопок */
+    button[data-testid="baseButton-headerNoPadding"] svg,
+    button[kind="headerNoPadding"] svg,
+    .st-emotion-cache-1wbqy5l button svg,
+    button[data-testid="collapsedControl"] svg,
+    button[title*="chevron" i] svg,
+    button[aria-label*="chevron" i] svg {
         color: #2c1e0e !important;
         fill: #2c1e0e !important;
+        width: 20px !important;
+        height: 20px !important;
     }
     
 </style>
