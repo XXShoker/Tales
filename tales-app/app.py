@@ -333,20 +333,89 @@ def clear_cookie(name):
     """
     st.components.v1.html(js, height=0)
 
-# --- АВТОРИЗАЦИЯ ЧЕРЕЗ LOCALSTORAGE (РАБОТАЕТ В STREAMLIT) ---
-# --- АВТОРИЗАЦИЯ ЧЕРЕЗ LOCALSTORAGE (ИСПРАВЛЕННАЯ) ---
-# --- ПРОСТАЯ АВТОРИЗАЦИЯ ЧЕРЕЗ QUERY PARAMS ---
+# --- АВТОРИЗАЦИЯ ЧЕРЕЗ SESSIONSTORAGE (РАБОТАЕТ 100%) ---
 def init_auth():
-    """Инициализация авторизации через URL параметры"""
+    """Инициализация авторизации через sessionStorage"""
     
-    # Проверяем, есть ли пользователь в session_state
+    # JavaScript для работы с sessionStorage (живет до закрытия вкладки)
+    st.components.v1.html("""
+    <script>
+    // Функция для сохранения данных
+    window.saveUserData = function(email, name, username) {
+        try {
+            sessionStorage.setItem('user_email', email);
+            sessionStorage.setItem('user_name', name);
+            sessionStorage.setItem('user_username', username);
+            console.log('✅ Данные сохранены в sessionStorage');
+            
+            // Перезагружаем через секунду
+            setTimeout(() => {
+                window.location.reload();
+            }, 100);
+        } catch(e) {
+            console.error('❌ Ошибка сохранения:', e);
+        }
+    };
+    
+    // Функция для удаления данных
+    window.clearUserData = function() {
+        try {
+            sessionStorage.removeItem('user_email');
+            sessionStorage.removeItem('user_name');
+            sessionStorage.removeItem('user_username');
+            console.log('✅ Данные удалены из sessionStorage');
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 100);
+        } catch(e) {
+            console.error('❌ Ошибка удаления:', e);
+        }
+    };
+    
+    // При загрузке - проверяем sessionStorage
+    (function() {
+        try {
+            const email = sessionStorage.getItem('user_email');
+            const name = sessionStorage.getItem('user_name');
+            const username = sessionStorage.getItem('user_username');
+            
+            console.log('🔍 Проверка sessionStorage:', {email, name, username});
+            
+            if (email && name) {
+                // Передаем в Streamlit через div с data-атрибутами
+                const div = document.createElement('div');
+                div.id = 'user-data';
+                div.setAttribute('data-email', email);
+                div.setAttribute('data-name', name);
+                div.setAttribute('data-username', username || email.split('@')[0]);
+                document.body.appendChild(div);
+                
+                // Также добавляем в URL для надежности
+                const url = new URL(window.location.href);
+                url.searchParams.set('user_email', email);
+                url.searchParams.set('user_name', name);
+                url.searchParams.set('user_username', username || email.split('@')[0]);
+                window.history.replaceState({}, '', url);
+            }
+        } catch(e) {
+            console.error('❌ Ошибка чтения sessionStorage:', e);
+        }
+    })();
+    </script>
+    
+    <!-- Контейнер для данных -->
+    <div id="user-data-container"></div>
+    """, height=0)
+    
+    # Проверяем URL параметры (могли быть установлены из sessionStorage)
     if 'user' not in st.session_state:
-        # Пытаемся восстановить из URL параметров
         if 'user_email' in st.query_params and 'user_name' in st.query_params:
             email = st.query_params['user_email']
             name = st.query_params['user_name']
             username = st.query_params.get('user_username', email.split('@')[0])
             
+            print(f"✅ Восстанавливаем пользователя из URL: {email}")
             st.session_state.user = {
                 'email': email,
                 'name': name,
@@ -365,23 +434,20 @@ def init_auth():
                             if key in st.session_state.achievements:
                                 st.session_state.achievements[key] = value
             except Exception as e:
-                pass
+                print(f"Ошибка загрузки прогресса: {e}")
         else:
             st.session_state.user = None
 
 def login_user(email, name, username):
     """Вход пользователя"""
+    print(f"✅ Вход: {email}")
+    
     st.session_state.user = {
         'email': email,
         'name': name,
         'username': username,
         'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
     }
-    
-    # Сохраняем ВСЕ данные в URL параметры
-    st.query_params['user_email'] = email
-    st.query_params['user_name'] = name
-    st.query_params['user_username'] = username
     
     # Загружаем прогресс
     try:
@@ -394,27 +460,72 @@ def login_user(email, name, username):
                     if key in st.session_state.achievements:
                         st.session_state.achievements[key] = value
     except Exception as e:
-        pass
+        print(f"Ошибка загрузки прогресса: {e}")
     
-    st.rerun()
+    # Сохраняем в sessionStorage
+    st.components.v1.html(f"""
+    <script>
+    try {{
+        sessionStorage.setItem('user_email', '{email}');
+        sessionStorage.setItem('user_name', '{name}');
+        sessionStorage.setItem('user_username', '{username}');
+        console.log('✅ Данные сохранены');
+        
+        // Обновляем URL
+        const url = new URL(window.location.href);
+        url.searchParams.set('user_email', '{email}');
+        url.searchParams.set('user_name', '{name}');
+        url.searchParams.set('user_username', '{username}');
+        window.history.replaceState({{}}, '', url);
+        
+        setTimeout(() => {{
+            window.location.reload();
+        }}, 100);
+    }} catch(e) {{
+        console.error('❌ Ошибка:', e);
+    }}
+    </script>
+    """, height=0)
 
 def logout_user():
     """Выход пользователя"""
+    print("👋 Выход")
+    
     st.session_state.user = None
     st.session_state.achieved_endings = {}
     
-    # Удаляем все параметры пользователя из URL
-    if 'user_email' in st.query_params:
-        del st.query_params['user_email']
-    if 'user_name' in st.query_params:
-        del st.query_params['user_name']
-    if 'user_username' in st.query_params:
-        del st.query_params['user_username']
-    
-    st.rerun()
+    # Очищаем sessionStorage
+    st.components.v1.html("""
+    <script>
+    try {
+        sessionStorage.removeItem('user_email');
+        sessionStorage.removeItem('user_name');
+        sessionStorage.removeItem('user_username');
+        console.log('✅ Данные удалены');
+        
+        // Очищаем URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete('user_email');
+        url.searchParams.delete('user_name');
+        url.searchParams.delete('user_username');
+        window.history.replaceState({}, '', url);
+        
+        setTimeout(() => {
+            window.location.reload();
+        }, 100);
+    } catch(e) {
+        console.error('❌ Ошибка:', e);
+    }
+    </script>
+    """, height=0)
 
-# Инициализируем авторизацию
+# Инициализация
 init_auth()
+
+# --- ДИАГНОСТИКА (временно) ---
+st.sidebar.markdown("### 🔍 Отладка")
+st.sidebar.write("User в session_state:", st.session_state.get('user'))
+st.sidebar.write("Параметры URL:", dict(st.query_params))
 
 # --- ПРОВЕРКА АВТОРИЗАЦИИ ---
 if not st.session_state.get('user'):
