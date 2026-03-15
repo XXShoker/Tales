@@ -518,15 +518,16 @@ if not st.session_state.get('user'):
                 st.rerun()
     
     # --- ВОССТАНОВЛЕНИЕ ПАРОЛЯ ---
+        # --- ВОССТАНОВЛЕНИЕ ПАРОЛЯ ---
     with tab3:
         st.markdown("### 🔑 Восстановление пароля")
         
         if 'reset_data' not in st.session_state:
             with st.form("reset_form"):
                 reset_email = st.text_input("Ваш Email", placeholder="your@email.com")
-                submitted_reset = st.form_submit_button("📧 Отправить код", width='stretch')
+                submitted = st.form_submit_button("📧 Отправить код", width='stretch')
                 
-                if submitted_reset:
+                if submitted:
                     if reset_email:
                         users = get_github_data()
                         if reset_email in users:
@@ -550,25 +551,25 @@ if not st.session_state.get('user'):
                     else:
                         st.error("❌ Введите email")
         else:
-            with st.form("verify_reset_form"):
-                verify_code = st.text_input("Введите код из письма", max_chars=6)
-                new_password = st.text_input("Новый пароль", type="password")
-                new_password2 = st.text_input("Подтвердите пароль", type="password")
+            reset_data = st.session_state.reset_data
+            st.info(f"📧 Код отправлен на {reset_data['email']}")
+            
+            with st.form("reset_verify_form"):
+                code_input = st.text_input("Введите код из письма", max_chars=6)
+                new_pass = st.text_input("Новый пароль", type="password")
+                new_pass2 = st.text_input("Подтвердите пароль", type="password")
+                submitted = st.form_submit_button("🔄 Сменить пароль", width='stretch')
                 
-                submitted_verify = st.form_submit_button("🔄 Сменить пароль", width='stretch')
-                
-                if submitted_verify:
-                    reset_data = st.session_state.reset_data
-                    
+                if submitted:
                     if datetime.now() > datetime.fromisoformat(reset_data['expiry']):
                         st.error("❌ Код истек. Запросите новый")
                         del st.session_state.reset_data
                         st.rerun()
-                    elif verify_code != reset_data['code']:
+                    elif code_input != reset_data['code']:
                         st.error("❌ Неверный код")
-                    elif not new_password or len(new_password) < 6:
+                    elif not new_pass or len(new_pass) < 6:
                         st.error("❌ Пароль должен быть не менее 6 символов")
-                    elif new_password != new_password2:
+                    elif new_pass != new_pass2:
                         st.error("❌ Пароли не совпадают")
                     else:
                         users = get_github_data()
@@ -576,11 +577,11 @@ if not st.session_state.get('user'):
                         
                         if email in users:
                             salt = "interactive_tales_salt"
-                            new_password_hash = hashlib.sha256((new_password + salt).encode()).hexdigest()
-                            users[email]['password'] = new_password_hash
+                            new_hash = hashlib.sha256((new_pass + salt).encode()).hexdigest()
+                            users[email]['password'] = new_hash
                             
                             if save_users_to_github(users):
-                                st.success("✅ Пароль успешно изменен!")
+                                st.success("✅ Пароль изменен! Теперь можете войти.")
                                 del st.session_state.reset_data
                                 st.rerun()
                             else:
