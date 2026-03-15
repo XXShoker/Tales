@@ -294,67 +294,40 @@ def clear_cookie(name):
 def init_auth():
     """Инициализация авторизации"""
     
-    # JavaScript для работы с localStorage
     st.components.v1.html("""
     <script>
-    // Функция для сохранения данных
-    window.saveUserData = function(email, name) {
-        localStorage.setItem('user_email', email);
-        localStorage.setItem('user_name', name);
-        localStorage.setItem('user_expiry', Date.now() + (30 * 24 * 60 * 60 * 1000));
-        
-        // Добавляем в URL для Streamlit
-        const url = new URL(window.location.href);
-        url.searchParams.set('storage_email', email);
-        url.searchParams.set('storage_name', name);
-        window.history.replaceState({}, '', url);
-        window.location.reload();
-    };
-    
-    // Функция для удаления данных
-    window.clearUserData = function() {
-        localStorage.removeItem('user_email');
-        localStorage.removeItem('user_name');
-        localStorage.removeItem('user_expiry');
-        
-        const url = new URL(window.location.href);
-        url.searchParams.delete('storage_email');
-        url.searchParams.delete('storage_name');
-        window.history.replaceState({}, '', url);
-        window.location.reload();
-    };
-    
-    // При загрузке проверяем localStorage
     (function() {
         const email = localStorage.getItem('user_email');
         const name = localStorage.getItem('user_name');
+        const username = localStorage.getItem('user_username');
         const expiry = localStorage.getItem('user_expiry');
         
-        // Проверяем срок действия (30 дней)
-        if (email && name && expiry && Date.now() < parseInt(expiry)) {
+        if (email && name && username && expiry && Date.now() < parseInt(expiry)) {
             const url = new URL(window.location.href);
             url.searchParams.set('storage_email', email);
             url.searchParams.set('storage_name', name);
+            url.searchParams.set('storage_username', username);
             window.history.replaceState({}, '', url);
         } else {
-            // Просрочено - очищаем
             localStorage.removeItem('user_email');
             localStorage.removeItem('user_name');
+            localStorage.removeItem('user_username');
             localStorage.removeItem('user_expiry');
         }
     })();
     </script>
     """, height=0)
     
-    # Проверяем наличие данных в URL (из localStorage)
     if 'user' not in st.session_state:
         storage_email = st.query_params.get('storage_email')
         storage_name = st.query_params.get('storage_name')
+        storage_username = st.query_params.get('storage_username')
         
-        if storage_email and storage_name:
+        if storage_email and storage_name and storage_username:
             st.session_state.user = {
                 'email': storage_email,
                 'name': storage_name,
+                'username': storage_username,
                 'user_id': hashlib.md5(storage_email.encode()).hexdigest()[:10]
             }
             
@@ -368,29 +341,51 @@ def init_auth():
                         if key in st.session_state.achievements:
                             st.session_state.achievements[key] = value
             
-            # Очищаем временные параметры
+            # Очищаем параметры
             if 'storage_email' in st.query_params:
                 del st.query_params['storage_email']
             if 'storage_name' in st.query_params:
                 del st.query_params['storage_name']
+            if 'storage_username' in st.query_params:
+                del st.query_params['storage_username']
         else:
             st.session_state.user = None
 
-def login_user(email, name):
+def login_user(email, name, username):
     """Вход пользователя"""
-    # Вызываем JavaScript для сохранения в localStorage
-    st.components.v1.html(f"""
-    <script>
-    window.saveUserData('{email}', '{name}');
-    </script>
-    """, height=0)
-    
-    # Также сохраняем в session_state для немедленного использования
     st.session_state.user = {
         'email': email,
         'name': name,
+        'username': username,
         'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
     }
+    
+    # Загружаем прогресс
+    users = get_github_data()
+    if email in users:
+        st.session_state.achieved_endings = users[email].get("achieved_endings", {})
+        user_achievements = users[email].get("achievements", {})
+        if user_achievements:
+            for key, value in user_achievements.items():
+                if key in st.session_state.achievements:
+                    st.session_state.achievements[key] = value
+    
+    # Сохраняем в localStorage через JavaScript
+    st.components.v1.html(f"""
+    <script>
+    localStorage.setItem('user_email', '{email}');
+    localStorage.setItem('user_name', '{name}');
+    localStorage.setItem('user_username', '{username}');
+    localStorage.setItem('user_expiry', Date.now() + (30 * 24 * 60 * 60 * 1000));
+    
+    const url = new URL(window.location.href);
+    url.searchParams.set('storage_email', '{email}');
+    url.searchParams.set('storage_name', '{name}');
+    url.searchParams.set('storage_username', '{username}');
+    window.history.replaceState({{}}, '', url);
+    window.location.reload();
+    </script>
+    """, height=0)
     
     st.rerun()
 
@@ -413,54 +408,119 @@ init_auth()
 
 # --- ПРОВЕРКА АВТОРИЗАЦИИ ---
 if not st.session_state.get('user'):
-    st.title("🔐 Вход в Интерактивные сказки")
+    st.title("🔐 Интерактивные сказки")
     
-    st.markdown("### Введите данные для входа:")
+    # Создаем вкладки для входа и регистрации
+    tab1, tab2 = st.tabs(["🔑 Вход", "📝 Регистрация"])
     
-    with st.form("login_form"):
-        email = st.text_input("Email", placeholder="your@email.com")
-        password = st.text_input("Пароль", type="password", placeholder="••••••••")
+    with tab1:
+        st.markdown("### Вход в существующий аккаунт")
         
-        col1, col2 = st.columns(2)
-        with col1:
-            name = st.text_input("Имя (для новых пользователей)")
-        
-        submitted = st.form_submit_button("Войти / Зарегистрироваться", width='stretch')
-        
-        if submitted:
-            if email and password:
-                users = get_github_data()
-                
-                # Проверяем, есть ли пользователь
-                if email in users:
-                    # Проверяем пароль
-                    stored_password = users[email].get('password')
-                    if stored_password == hashlib.sha256(password.encode()).hexdigest():
-                        name = users[email].get('name', email.split('@')[0])
-                        login_user(email, name)
-                    else:
-                        st.error("❌ Неверный пароль!")
-                else:
-                    # Новый пользователь - регистрируем
-                    if name:
-                        # Сохраняем в GitHub
-                        users[email] = {
-                            'password': hashlib.sha256(password.encode()).hexdigest(),
-                            'name': name,
-                            'created_at': datetime.now().isoformat()
-                        }
-                        if save_users_to_github(users):
-                            login_user(email, name)
-                            st.success("✅ Регистрация успешна!")
+        with st.form("login_form"):
+            login_email = st.text_input("Email или Логин", placeholder="your@email.com или username")
+            login_password = st.text_input("Пароль", type="password", placeholder="••••••••")
+            
+            submitted_login = st.form_submit_button("🔑 Войти", width='stretch')
+            
+            if submitted_login:
+                if login_email and login_password:
+                    users = get_github_data()
+                    
+                    # Ищем пользователя по email или логину
+                    found_user = None
+                    found_email = None
+                    
+                    for email, user_data in users.items():
+                        if (email == login_email or 
+                            user_data.get('username') == login_email):
+                            found_user = user_data
+                            found_email = email
+                            break
+                    
+                    if found_user:
+                        # Проверяем пароль
+                        stored_password = found_user.get('password')
+                        if stored_password == hashlib.sha256(login_password.encode()).hexdigest():
+                            name = found_user.get('name', found_email.split('@')[0])
+                            username = found_user.get('username', found_email.split('@')[0])
+                            login_user(found_email, name, username)
+                            st.success("✅ Вход выполнен!")
+                            st.rerun()
                         else:
-                            st.error("❌ Ошибка сохранения")
+                            st.error("❌ Неверный пароль!")
                     else:
-                        st.warning("⚠️ Для регистрации укажите имя")
-            else:
-                st.error("❌ Заполните email и пароль")
+                        st.error("❌ Пользователь не найден!")
+                else:
+                    st.error("❌ Заполните все поля")
+    
+    with tab2:
+        st.markdown("### Создание нового аккаунта")
+        
+        with st.form("register_form"):
+            reg_email = st.text_input("Email", placeholder="your@email.com")
+            reg_username = st.text_input("Логин (уникальный)", placeholder="username123")
+            reg_name = st.text_input("Ваше имя", placeholder="Иван Петров")
+            reg_password = st.text_input("Пароль", type="password", placeholder="••••••••")
+            reg_password2 = st.text_input("Подтвердите пароль", type="password", placeholder="••••••••")
+            
+            st.markdown("---")
+            st.markdown("### 📜 Пользовательское соглашение")
+            agree = st.checkbox("Я принимаю условия пользовательского соглашения")
+            
+            submitted_reg = st.form_submit_button("📝 Зарегистрироваться", width='stretch')
+            
+            if submitted_reg:
+                # Проверка заполнения полей
+                if not reg_email:
+                    st.error("❌ Введите email")
+                elif not reg_username:
+                    st.error("❌ Введите логин")
+                elif not reg_name:
+                    st.error("❌ Введите имя")
+                elif not reg_password:
+                    st.error("❌ Введите пароль")
+                elif reg_password != reg_password2:
+                    st.error("❌ Пароли не совпадают")
+                elif len(reg_password) < 6:
+                    st.error("❌ Пароль должен быть не менее 6 символов")
+                elif not agree:
+                    st.error("❌ Примите пользовательское соглашение")
+                else:
+                    users = get_github_data()
+                    
+                    # Проверяем, нет ли уже такого email
+                    if reg_email in users:
+                        st.error("❌ Пользователь с таким email уже существует")
+                    else:
+                        # Проверяем, нет ли уже такого логина
+                        username_exists = False
+                        for email, user_data in users.items():
+                            if user_data.get('username') == reg_username:
+                                username_exists = True
+                                break
+                        
+                        if username_exists:
+                            st.error("❌ Этот логин уже занят. Придумайте другой")
+                        else:
+                            # Регистрируем нового пользователя
+                            users[reg_email] = {
+                                'username': reg_username,
+                                'name': reg_name,
+                                'password': hashlib.sha256(reg_password.encode()).hexdigest(),
+                                'created_at': datetime.now().isoformat(),
+                                'achieved_endings': {},
+                                'achievements': {}
+                            }
+                            
+                            if save_users_to_github(users):
+                                login_user(reg_email, reg_name, reg_username)
+                                st.success("✅ Регистрация успешна!")
+                                st.rerun()
+                            else:
+                                st.error("❌ Ошибка сохранения данных")
     
     st.markdown("---")
-    st.info("ℹ️ Новые пользователи регистрируются автоматически")
+    st.info("ℹ️ Ваш прогресс будет автоматически сохраняться")
     st.stop()
 
 # --- Восстанавливаем состояние сказки из URL ---
@@ -871,12 +931,12 @@ st.markdown("""
 # --- Боковая панель ---
 with st.sidebar:
     if st.session_state.get('user'):
-        # Показываем имя пользователя
-        st.markdown(f"👋 Привет, **{st.session_state.user['name']}**!")
-        st.markdown(f"📧 {st.session_state.user['email']}")
+        user = st.session_state.user
+        st.markdown(f"👋 Привет, **{user.get('name', user['email'])}**!")
+        st.markdown(f"📧 {user['email']}")
+        st.markdown(f"🔑 Логин: **{user.get('username', user['email'].split('@')[0])}**")
         
-        # КНОПКА ВЫХОДА - должна быть здесь!
-        if st.button("🚪 Выйти", width='stretch', key='logout_btn'):
+        if st.button("🚪 Выйти", width='stretch'):
             logout_user()
     else:
         st.markdown("👋 Добро пожаловать!")
