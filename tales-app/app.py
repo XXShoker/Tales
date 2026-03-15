@@ -335,153 +335,53 @@ def clear_cookie(name):
 
 # --- АВТОРИЗАЦИЯ ЧЕРЕЗ LOCALSTORAGE (РАБОТАЕТ В STREAMLIT) ---
 # --- АВТОРИЗАЦИЯ ЧЕРЕЗ LOCALSTORAGE (ИСПРАВЛЕННАЯ) ---
+# --- ПРОСТАЯ АВТОРИЗАЦИЯ ЧЕРЕЗ QUERY PARAMS ---
 def init_auth():
-    """Инициализация авторизации с улучшенным восстановлением"""
+    """Инициализация авторизации через URL параметры"""
     
-    # JavaScript для работы с localStorage с задержкой
-    st.components.v1.html("""
-    <script>
-    // Функция для сохранения данных
-    window.saveUserData = function(email, name, username) {
-        try {
-            localStorage.setItem('user_email', email);
-            localStorage.setItem('user_name', name);
-            localStorage.setItem('user_username', username);
-            localStorage.setItem('user_expiry', Date.now() + (30 * 24 * 60 * 60 * 1000));
-            console.log('✅ Данные сохранены в localStorage');
-            
-            // Принудительно обновляем страницу после сохранения
-            setTimeout(() => {
-                window.location.reload();
-            }, 100);
-        } catch(e) {
-            console.error('❌ Ошибка сохранения:', e);
-        }
-    };
-    
-    // Функция для удаления данных
-    window.clearUserData = function() {
-        try {
-            localStorage.removeItem('user_email');
-            localStorage.removeItem('user_name');
-            localStorage.removeItem('user_username');
-            localStorage.removeItem('user_expiry');
-            console.log('✅ Данные удалены из localStorage');
-            
-            // Очищаем URL и перезагружаем
-            const url = new URL(window.location.href);
-            url.searchParams.delete('storage_email');
-            url.searchParams.delete('storage_name');
-            url.searchParams.delete('storage_username');
-            window.history.replaceState({}, '', url);
-            
-            setTimeout(() => {
-                window.location.reload();
-            }, 100);
-        } catch(e) {
-            console.error('❌ Ошибка удаления:', e);
-        }
-    };
-    
-    // Функция для проверки и восстановления данных
-    function restoreFromLocalStorage() {
-        try {
-            const email = localStorage.getItem('user_email');
-            const name = localStorage.getItem('user_name');
-            const username = localStorage.getItem('user_username');
-            const expiry = localStorage.getItem('user_expiry');
-            
-            console.log('🔄 Проверка localStorage:', {email, name, username, expiry});
-            
-            if (email && name && username && expiry) {
-                if (Date.now() < parseInt(expiry)) {
-                    console.log('✅ Данные найдены и валидны');
-                    const url = new URL(window.location.href);
-                    
-                    // Проверяем, нужно ли обновить URL
-                    if (!url.searchParams.has('storage_email')) {
-                        url.searchParams.set('storage_email', email);
-                        url.searchParams.set('storage_name', name);
-                        url.searchParams.set('storage_username', username);
-                        window.history.replaceState({}, '', url);
-                        console.log('✅ URL обновлен данными из localStorage');
-                        
-                        // Перезагружаем после обновления URL
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 50);
-                    }
-                } else {
-                    console.log('❌ Данные истекли');
-                    localStorage.removeItem('user_email');
-                    localStorage.removeItem('user_name');
-                    localStorage.removeItem('user_username');
-                    localStorage.removeItem('user_expiry');
-                }
-            } else {
-                console.log('ℹ️ Нет данных в localStorage');
-            }
-        } catch(e) {
-            console.error('❌ Ошибка восстановления:', e);
-        }
-    }
-    
-    // Запускаем восстановление после полной загрузки страницы
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', restoreFromLocalStorage);
-    } else {
-        restoreFromLocalStorage();
-    }
-    
-    // Также запускаем через небольшую задержку
-    setTimeout(restoreFromLocalStorage, 100);
-    setTimeout(restoreFromLocalStorage, 500);
-    </script>
-    """, height=0)
-    
-    # Проверяем наличие данных в URL (из localStorage)
+    # Проверяем, есть ли пользователь в session_state
     if 'user' not in st.session_state:
-        storage_email = st.query_params.get('storage_email')
-        storage_name = st.query_params.get('storage_name')
-        storage_username = st.query_params.get('storage_username')
-        
-        if storage_email and storage_name and storage_username:
-            print(f"✅ Восстанавливаем пользователя: {storage_email}")
+        # Пытаемся восстановить из URL параметров
+        if 'user_email' in st.query_params and 'user_name' in st.query_params:
+            email = st.query_params['user_email']
+            name = st.query_params['user_name']
+            username = st.query_params.get('user_username', email.split('@')[0])
+            
             st.session_state.user = {
-                'email': storage_email,
-                'name': storage_name,
-                'username': storage_username,
-                'user_id': hashlib.md5(storage_email.encode()).hexdigest()[:10]
+                'email': email,
+                'name': name,
+                'username': username,
+                'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
             }
             
             # Загружаем прогресс
             try:
                 users = get_github_data()
-                if storage_email in users:
-                    st.session_state.achieved_endings = users[storage_email].get("achieved_endings", {})
-                    user_achievements = users[storage_email].get("achievements", {})
+                if email in users:
+                    st.session_state.achieved_endings = users[email].get("achieved_endings", {})
+                    user_achievements = users[email].get("achievements", {})
                     if user_achievements:
                         for key, value in user_achievements.items():
                             if key in st.session_state.achievements:
                                 st.session_state.achievements[key] = value
             except Exception as e:
-                print(f"Ошибка загрузки прогресса: {e}")
-            
-            # НЕ очищаем параметры сразу, чтобы они остались для следующих обновлений
+                pass
         else:
             st.session_state.user = None
-            print("ℹ️ Нет данных для восстановления")
 
 def login_user(email, name, username):
     """Вход пользователя"""
-    print(f"✅ Вход пользователя: {email}")
-    
     st.session_state.user = {
         'email': email,
         'name': name,
         'username': username,
         'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
     }
+    
+    # Сохраняем ВСЕ данные в URL параметры
+    st.query_params['user_email'] = email
+    st.query_params['user_name'] = name
+    st.query_params['user_username'] = username
     
     # Загружаем прогресс
     try:
@@ -494,175 +394,34 @@ def login_user(email, name, username):
                     if key in st.session_state.achievements:
                         st.session_state.achievements[key] = value
     except Exception as e:
-        print(f"Ошибка загрузки прогресса: {e}")
+        pass
     
-    # Сохраняем в localStorage через JavaScript
-    st.components.v1.html(f"""
-    <script>
-    try {{
-        // Сохраняем в localStorage
-        localStorage.setItem('user_email', '{email}');
-        localStorage.setItem('user_name', '{name}');
-        localStorage.setItem('user_username', '{username}');
-        localStorage.setItem('user_expiry', Date.now() + (30 * 24 * 60 * 60 * 1000));
-        console.log('✅ Данные сохранены в localStorage');
-        
-        // Обновляем URL
-        const url = new URL(window.location.href);
-        url.searchParams.set('storage_email', '{email}');
-        url.searchParams.set('storage_name', '{name}');
-        url.searchParams.set('storage_username', '{username}');
-        window.history.replaceState({{}}, '', url);
-        console.log('✅ URL обновлен');
-        
-        // Перезагружаем страницу
-        setTimeout(() => {{
-            window.location.reload();
-        }}, 100);
-    }} catch(e) {{
-        console.error('❌ Ошибка:', e);
-    }}
-    </script>
-    """, height=0)
+    st.rerun()
 
 def logout_user():
     """Выход пользователя"""
-    print("👋 Выход пользователя")
-    
-    # Очищаем session_state
     st.session_state.user = None
     st.session_state.achieved_endings = {}
     
-    # Вызываем JavaScript для очистки localStorage
-    st.components.v1.html("""
-    <script>
-    try {
-        localStorage.removeItem('user_email');
-        localStorage.removeItem('user_name');
-        localStorage.removeItem('user_username');
-        localStorage.removeItem('user_expiry');
-        console.log('✅ Данные удалены из localStorage');
-        
-        // Очищаем URL
-        const url = new URL(window.location.href);
-        url.searchParams.delete('storage_email');
-        url.searchParams.delete('storage_name');
-        url.searchParams.delete('storage_username');
-        window.history.replaceState({}, '', url);
-        
-        setTimeout(() => {
-            window.location.reload();
-        }, 100);
-    } catch(e) {
-        console.error('❌ Ошибка:', e);
-    }
-    </script>
-    """, height=0)
+    # Удаляем все параметры пользователя из URL
+    if 'user_email' in st.query_params:
+        del st.query_params['user_email']
+    if 'user_name' in st.query_params:
+        del st.query_params['user_name']
+    if 'user_username' in st.query_params:
+        del st.query_params['user_username']
+    
+    st.rerun()
 
-# Вызываем инициализацию
+# Инициализируем авторизацию
 init_auth()
 
-# --- ПРОВЕРКА АВТОРИЗАЦИИ ---
 # --- ПРОВЕРКА АВТОРИЗАЦИИ ---
 if not st.session_state.get('user'):
     st.title("🔐 Интерактивные сказки")
     
-    # Проверяем, не в режиме ли восстановления пароля
-    if 'reset_mode' not in st.session_state:
-        st.session_state.reset_mode = False
-    
-    if st.session_state.reset_mode:
-        # --- РЕЖИМ ВОССТАНОВЛЕНИЯ ПАРОЛЯ ---
-        st.markdown("### 🔑 Восстановление пароля")
-        
-        with st.form("reset_form"):
-            reset_email = st.text_input("Ваш Email", placeholder="your@email.com")
-            submitted_reset = st.form_submit_button("📧 Отправить код", width='stretch')
-            
-            if submitted_reset:
-                if reset_email:
-                    users = get_github_data()
-                    if reset_email in users:
-                        # Генерируем временный код
-                        reset_code = ''.join(random.choices(string.digits, k=6))
-                        expiry = datetime.now() + timedelta(minutes=15)
-                        
-                        st.session_state.reset_data = {
-                            'email': reset_email,
-                            'code': reset_code,
-                            'expiry': expiry.isoformat()
-                        }
-                        
-                        # Здесь нужно отправить код на email
-                        # Для демо покажем код на экране
-                        if send_reset_code(reset_email, reset_code):
-                            st.success("✅ Код отправлен на ваш email!")
-                            st.session_state.reset_code_sent = True
-                            st.rerun()
-                        else:
-                            st.error("❌ Не удалось отправить код. Попробуйте позже")
-                        st.session_state.reset_code_sent = True
-                        st.rerun()
-                    else:
-                        st.error("❌ Пользователь с таким email не найден")
-                else:
-                    st.error("❌ Введите email")
-        
-        # Если код отправлен, показываем форму ввода
-        if st.session_state.get('reset_code_sent'):
-            with st.form("verify_reset_form"):
-                verify_code = st.text_input("Введите код из письма", max_chars=6)
-                new_password = st.text_input("Новый пароль", type="password")
-                new_password2 = st.text_input("Подтвердите пароль", type="password")
-                
-                submitted_verify = st.form_submit_button("🔄 Сменить пароль", width='stretch')
-                
-                if submitted_verify:
-                    reset_data = st.session_state.get('reset_data', {})
-                    
-                    if not reset_data:
-                        st.error("❌ Сессия восстановления истекла")
-                    elif datetime.now() > datetime.fromisoformat(reset_data['expiry']):
-                        st.error("❌ Код истек. Запросите новый")
-                        del st.session_state.reset_data
-                        del st.session_state.reset_code_sent
-                        st.rerun()
-                    elif verify_code != reset_data['code']:
-                        st.error("❌ Неверный код")
-                    elif not new_password or len(new_password) < 6:
-                        st.error("❌ Пароль должен быть не менее 6 символов")
-                    elif new_password != new_password2:
-                        st.error("❌ Пароли не совпадают")
-                    else:
-                        # Обновляем пароль
-                        users = get_github_data()
-                        email = reset_data['email']
-                        
-                        if email in users:
-                            users[email]['password'] = hashlib.sha256(new_password.encode()).hexdigest()
-                            
-                            if save_users_to_github(users):
-                                st.success("✅ Пароль успешно изменен!")
-                                # Очищаем данные восстановления
-                                del st.session_state.reset_data
-                                del st.session_state.reset_code_sent
-                                st.session_state.reset_mode = False
-                                st.rerun()
-                            else:
-                                st.error("❌ Ошибка сохранения")
-        
-        if st.button("◀️ Вернуться ко входу", width='stretch'):
-            st.session_state.reset_mode = False
-            if 'reset_data' in st.session_state:
-                del st.session_state.reset_data
-            if 'reset_code_sent' in st.session_state:
-                del st.session_state.reset_code_sent
-            st.rerun()
-        
-        st.stop()
-    
-    # --- ОСНОВНЫЕ ВКЛАДКИ ВХОДА И РЕГИСТРАЦИИ ---
-    tab1, tab2 = st.tabs(["🔑 Вход", "📝 Регистрация"])
+    # Создаем вкладки для входа и регистрации
+    tab1, tab2, tab3 = st.tabs(["🔑 Вход", "📝 Регистрация", "❓ Забыли пароль"])
     
     with tab1:
         st.markdown("### Вход в существующий аккаунт")
@@ -671,48 +430,38 @@ if not st.session_state.get('user'):
             login_email = st.text_input("Email или Логин", placeholder="your@email.com или username")
             login_password = st.text_input("Пароль", type="password", placeholder="••••••••")
             
-            col1, col2 = st.columns([1, 1])
-            with col1:
-                submitted_login = st.form_submit_button("🔑 Войти", width='stretch')
-            with col2:
-                # Кнопка "Забыли пароль" не в форме, чтобы не отправлять форму
-                pass
-        
-        # Кнопка "Забыли пароль" отдельно
-        if st.button("❓ Забыли пароль?", width='stretch'):
-            st.session_state.reset_mode = True
-            st.rerun()
-        
-        if submitted_login:
-            if login_email and login_password:
-                users = get_github_data()
-                
-                # Ищем пользователя по email или логину
-                found_user = None
-                found_email = None
-                
-                for email, user_data in users.items():
-                    if (email == login_email or 
-                        user_data.get('username') == login_email):
-                        found_user = user_data
-                        found_email = email
-                        break
-                
-                if found_user:
-                    # Проверяем пароль
-                    stored_password = found_user.get('password')
-                    if stored_password == hashlib.sha256(login_password.encode()).hexdigest():
-                        name = found_user.get('name', found_email.split('@')[0])
-                        username = found_user.get('username', found_email.split('@')[0])
-                        login_user(found_email, name, username)
-                        st.success("✅ Вход выполнен!")
-                        st.rerun()
+            submitted_login = st.form_submit_button("🔑 Войти", width='stretch')
+            
+            if submitted_login:
+                if login_email and login_password:
+                    users = get_github_data()
+                    
+                    # Ищем пользователя по email или логину
+                    found_user = None
+                    found_email = None
+                    
+                    for email, user_data in users.items():
+                        if (email == login_email or 
+                            user_data.get('username') == login_email):
+                            found_user = user_data
+                            found_email = email
+                            break
+                    
+                    if found_user:
+                        # Проверяем пароль
+                        stored_password = found_user.get('password')
+                        if stored_password == hashlib.sha256(login_password.encode()).hexdigest():
+                            name = found_user.get('name', found_email.split('@')[0])
+                            username = found_user.get('username', found_email.split('@')[0])
+                            login_user(found_email, name, username)
+                            st.success("✅ Вход выполнен!")
+                            st.rerun()
+                        else:
+                            st.error("❌ Неверный пароль!")
                     else:
-                        st.error("❌ Неверный пароль!")
+                        st.error("❌ Пользователь не найден!")
                 else:
-                    st.error("❌ Пользователь не найден!")
-            else:
-                st.error("❌ Заполните все поля")
+                    st.error("❌ Заполните все поля")
     
     with tab2:
         st.markdown("### Создание нового аккаунта")
@@ -779,6 +528,76 @@ if not st.session_state.get('user'):
                                 st.rerun()
                             else:
                                 st.error("❌ Ошибка сохранения данных")
+    
+    with tab3:
+        st.markdown("### 🔑 Восстановление пароля")
+        
+        with st.form("reset_form"):
+            reset_email = st.text_input("Ваш Email", placeholder="your@email.com")
+            submitted_reset = st.form_submit_button("📧 Отправить код", width='stretch')
+            
+            if submitted_reset:
+                if reset_email:
+                    users = get_github_data()
+                    if reset_email in users:
+                        # Генерируем временный код
+                        reset_code = ''.join(random.choices(string.digits, k=6))
+                        expiry = datetime.now() + timedelta(minutes=15)
+                        
+                        st.session_state.reset_data = {
+                            'email': reset_email,
+                            'code': reset_code,
+                            'expiry': expiry.isoformat()
+                        }
+                        
+                        st.info(f"🔐 Код подтверждения: **{reset_code}**")
+                        st.session_state.reset_code_sent = True
+                        st.rerun()
+                    else:
+                        st.error("❌ Пользователь с таким email не найден")
+                else:
+                    st.error("❌ Введите email")
+        
+        # Если код отправлен, показываем форму ввода
+        if st.session_state.get('reset_code_sent'):
+            with st.form("verify_reset_form"):
+                verify_code = st.text_input("Введите код из письма", max_chars=6)
+                new_password = st.text_input("Новый пароль", type="password")
+                new_password2 = st.text_input("Подтвердите пароль", type="password")
+                
+                submitted_verify = st.form_submit_button("🔄 Сменить пароль", width='stretch')
+                
+                if submitted_verify:
+                    reset_data = st.session_state.get('reset_data', {})
+                    
+                    if not reset_data:
+                        st.error("❌ Сессия восстановления истекла")
+                    elif datetime.now() > datetime.fromisoformat(reset_data['expiry']):
+                        st.error("❌ Код истек. Запросите новый")
+                        del st.session_state.reset_data
+                        del st.session_state.reset_code_sent
+                        st.rerun()
+                    elif verify_code != reset_data['code']:
+                        st.error("❌ Неверный код")
+                    elif not new_password or len(new_password) < 6:
+                        st.error("❌ Пароль должен быть не менее 6 символов")
+                    elif new_password != new_password2:
+                        st.error("❌ Пароли не совпадают")
+                    else:
+                        # Обновляем пароль
+                        users = get_github_data()
+                        email = reset_data['email']
+                        
+                        if email in users:
+                            users[email]['password'] = hashlib.sha256(new_password.encode()).hexdigest()
+                            
+                            if save_users_to_github(users):
+                                st.success("✅ Пароль успешно изменен!")
+                                del st.session_state.reset_data
+                                del st.session_state.reset_code_sent
+                                st.rerun()
+                            else:
+                                st.error("❌ Ошибка сохранения")
     
     st.markdown("---")
     st.info("ℹ️ Ваш прогресс будет автоматически сохраняться")
@@ -1195,7 +1014,6 @@ with st.sidebar:
         user = st.session_state.user
         st.markdown(f"👋 Привет, **{user.get('name', user['email'])}**!")
         st.markdown(f"📧 {user['email']}")
-        st.markdown(f"🔑 Логин: **{user.get('username', user['email'].split('@')[0])}**")
         
         if st.button("🚪 Выйти", width='stretch'):
             logout_user()
