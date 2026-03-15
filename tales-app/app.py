@@ -1,6 +1,3 @@
-## 📄 Полный финальный код `app.py` с исправленным дизайном достижений
-
-```python
 import streamlit as st
 import os
 from tales_data import tales
@@ -789,4 +786,3 @@ else:
         if st.button("⬅️ К выбору сказок", use_container_width=True):
             reset_to_main()
             st.rerun()
-```
