@@ -1063,7 +1063,7 @@ st.markdown("""
 with st.sidebar:
     if st.session_state.get('user'):
         user = st.session_state.user
-        st.markdown(f"👋 Привет, **{user.get('name', user['email'])}**!")
+        st.markdown(f"👋 Привет, **{user.get('username', user['email'])}**!")
         st.markdown(f"📧 {user['email']}")
         
         if st.button("🚪 Выйти", width='stretch'):
