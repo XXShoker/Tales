@@ -816,7 +816,7 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
     # Сохраняем прогресс после каждого достижения
     save_user_progress()
 
-# --- СТИЛИ (ГАРАНТИРОВАННО ВИДИМЫЙ ТЕКСТ) ---
+# --- СТИЛИ (ФИНАЛЬНЫЕ) ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Open+Sans:wght@400;600&display=swap');
@@ -924,7 +924,7 @@ st.markdown("""
         color: #2c1e0e !important;
     }
     
-    /* Прогресс */
+    /* Прогресс (общий) */
     .stProgress > div > div {
         background: linear-gradient(90deg, #b5926a, #8b6b4f) !important;
     }
@@ -934,7 +934,7 @@ st.markdown("""
         h1 { font-size: 2rem; }
     }
 
-        /* Кнопка доната - текст должен быть виден */
+    /* Кнопка доната - текст должен быть виден */
     .stLinkButton a {
         color: #2a1c0e !important;
         background: linear-gradient(135deg, #d4b68a, #b5926a) !important;
@@ -947,12 +947,13 @@ st.markdown("""
         background: linear-gradient(135deg, #b5926a, #9b7e62) !important;
     }
     
-    /* Убираем глобальный цвет для ссылок, если мешает */
+    /* Ссылки */
     a {
         color: #2c1e0e !important;
     }
 
-       /* ===== ПРОГРЕСС-БАР ВНУТРИ ДОСТИЖЕНИЙ ===== */
+    /* ===== ДОСТИЖЕНИЯ – ПРОГРЕСС-БАР И СПИСОК ===== */
+    /* Прогресс-бар внутри экспандера – ИСПРАВЛЕНО */
     .stExpander .stProgress > div {
         background-color: #e6d5b8 !important;
         border-radius: 20px !important;
@@ -963,6 +964,38 @@ st.markdown("""
         background: linear-gradient(90deg, #b5926a, #8b6b4f) !important;
         border-radius: 20px !important;
         height: 20px !important;
+    }
+
+    /* Стили для каждой строки достижения */
+    .stExpander .stMarkdown p {
+        margin: 6px 0 !important;
+        padding: 6px 10px !important;
+        border-radius: 8px !important;
+        background: rgba(255,255,255,0.3) !important;
+        border-left: 3px solid transparent !important;
+        transition: all 0.2s ease !important;
+        font-size: 0.95rem !important;
+    }
+    
+    /* Подсветка разблокированных достижений по наличию эмодзи */
+    .stExpander .stMarkdown p:has(🐺, 🦊, 🐭, 🏠, 🐠, 👑, 🐔, 🥚, 🌲, 🦌, 🕵️, ⏰, 🫀, 🔪, 💔, 🌹, 💍, 🧛, 🩸, 🧚, 🐝, 🔮, 🍷, ⏳, 📀, 💿, 📚, ⚡, 🔍, 🍀, 💀) {
+        background: rgba(181, 146, 106, 0.15) !important;
+        border-left: 3px solid #b5926a !important;
+        font-weight: 500 !important;
+    }
+    
+    /* Заголовки внутри экспандера */
+    .stExpander h3 {
+        margin-top: 15px !important;
+        margin-bottom: 8px !important;
+        font-size: 1.2rem !important;
+        border-bottom: 1px solid #b5926a !important;
+        padding-bottom: 5px !important;
+    }
+    
+    /* Колонки внутри достижений */
+    .stExpander [data-testid="column"] {
+        padding: 0 5px !important;
     }
     
 </style>
