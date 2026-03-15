@@ -519,10 +519,12 @@ if not st.session_state.get('user'):
     
     # --- ВОССТАНОВЛЕНИЕ ПАРОЛЯ ---
         # --- ВОССТАНОВЛЕНИЕ ПАРОЛЯ ---
+    # --- ВОССТАНОВЛЕНИЕ ПАРОЛЯ ---
     with tab3:
         st.markdown("### 🔑 Восстановление пароля")
         
-        if 'reset_data' not in st.session_state:
+        # Если reset_data нет или оно вдруг стало None – показываем форму ввода email
+        if 'reset_data' not in st.session_state or st.session_state.reset_data is None:
             with st.form("reset_form"):
                 reset_email = st.text_input("Ваш Email", placeholder="your@email.com")
                 submitted = st.form_submit_button("📧 Отправить код", width='stretch')
@@ -545,13 +547,19 @@ if not st.session_state.get('user'):
                                 st.rerun()
                             else:
                                 st.error("❌ Ошибка отправки")
-                                del st.session_state.reset_data
+                                st.session_state.reset_data = None
                         else:
                             st.error("❌ Пользователь с таким email не найден")
                     else:
                         st.error("❌ Введите email")
         else:
+            # Данные восстановления есть – показываем форму ввода кода и нового пароля
             reset_data = st.session_state.reset_data
+            # Дополнительная защита: если reset_data вдруг стал None, перезапустим
+            if reset_data is None:
+                st.session_state.reset_data = None
+                st.rerun()
+            
             st.info(f"📧 Код отправлен на {reset_data['email']}")
             
             with st.form("reset_verify_form"):
@@ -563,7 +571,7 @@ if not st.session_state.get('user'):
                 if submitted:
                     if datetime.now() > datetime.fromisoformat(reset_data['expiry']):
                         st.error("❌ Код истек. Запросите новый")
-                        del st.session_state.reset_data
+                        st.session_state.reset_data = None
                         st.rerun()
                     elif code_input != reset_data['code']:
                         st.error("❌ Неверный код")
@@ -582,13 +590,13 @@ if not st.session_state.get('user'):
                             
                             if save_users_to_github(users):
                                 st.success("✅ Пароль изменен! Теперь можете войти.")
-                                del st.session_state.reset_data
+                                st.session_state.reset_data = None
                                 st.rerun()
                             else:
                                 st.error("❌ Ошибка сохранения")
             
             if st.button("◀️ Назад"):
-                del st.session_state.reset_data
+                st.session_state.reset_data = None
                 st.rerun()
     
     st.markdown("---")
