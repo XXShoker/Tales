@@ -27,8 +27,39 @@ EMAIL_PASSWORD = st.secrets.get("EMAIL_PASSWORD")
 FROM_EMAIL = st.secrets.get("FROM_EMAIL", EMAIL_USER)
 SESSION_SECRET = st.secrets.get("SESSION_SECRET", "default_secret_change_me")
 
-# --- Функции для работы с GitHub ---
-@st.cache_data(ttl=60)
+# --- Инициализация состояния с проверкой на повторную загрузку ---
+def init_session_state():
+    if "selected_tale" not in st.session_state:
+        st.session_state.selected_tale = None
+    if "scene_id" not in st.session_state:
+        st.session_state.scene_id = "start"
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+    if "scenes" not in st.session_state:
+        st.session_state.scenes = {}
+    if "scene_history" not in st.session_state:
+        st.session_state.scene_history = []
+    if "achieved_endings" not in st.session_state:
+        st.session_state.achieved_endings = {}
+    if "user" not in st.session_state:
+        st.session_state.user = None
+    if "pending_registration" not in st.session_state:
+        st.session_state.pending_registration = None
+    if "session_token" not in st.session_state:
+        st.session_state.session_token = None
+    if "session_expiry" not in st.session_state:
+        st.session_state.session_expiry = None
+    if "_session_loaded" not in st.session_state:
+        st.session_state._session_loaded = False
+
+init_session_state()
+
+# --- Функции для работы с GitHub с кэшированием ---
+@st.cache_resource(ttl=300)  # Кэшируем на 5 минут
+def get_github_client():
+    """Возвращает клиент для работы с GitHub (синглтон)"""
+    return {"token": GH_TOKEN, "repo": GH_REPO}
+
 def load_users_from_github():
     """Загружает данные пользователей из GitHub"""
     if not GH_TOKEN:
@@ -75,14 +106,15 @@ def save_users_to_github(users_data):
             if key == "achieved_endings":
                 # Преобразуем словарь с множествами в словарь со списками
                 serializable_data[email][key] = {}
-                for tale_name, endings in value.items():
-                    if isinstance(endings, set):
-                        serializable_data[email][key][tale_name] = list(endings)
-                    else:
-                        serializable_data[email][key][tale_name] = endings
+                if value:
+                    for tale_name, endings in value.items():
+                        if isinstance(endings, set):
+                            serializable_data[email][key][tale_name] = list(endings)
+                        else:
+                            serializable_data[email][key][tale_name] = endings
             elif key == "achievements":
                 # Копируем как есть (словарь с булевыми значениями)
-                serializable_data[email][key] = value.copy()
+                serializable_data[email][key] = value.copy() if value else {}
             else:
                 # Остальные поля (user_id, name, email, password_hash, created_at, verified)
                 serializable_data[email][key] = value
@@ -174,7 +206,7 @@ def register_user(email, name, password):
     if not is_valid_email(email):
         return False, "Некорректный email"
     
-    users = st.session_state.users_data
+    users = load_users_from_github()
     if email in users:
         return False, "Пользователь с таким email уже существует"
     
@@ -208,7 +240,9 @@ def verify_registration(code):
     
     email = pending["email"]
     user_id = hashlib.md5(email.encode()).hexdigest()[:10]
-    st.session_state.users_data[email] = {
+    
+    users = load_users_from_github()
+    users[email] = {
         "user_id": user_id,
         "name": pending["name"],
         "email": email,
@@ -219,7 +253,12 @@ def verify_registration(code):
         "achievements": {}
     }
     
-    if save_users_to_github(st.session_state.users_data):
+    if save_users_to_github(users):
+        # Автоматически логиним пользователя после регистрации
+        st.session_state.user = users[email]
+        st.session_state.session_token = generate_session_token(user_id)
+        st.session_state.session_expiry = (datetime.now() + timedelta(days=30)).isoformat()
+        st.session_state.achieved_endings = {}
         del st.session_state.pending_registration
         return True, "Регистрация успешна!"
     else:
@@ -227,7 +266,7 @@ def verify_registration(code):
 
 def login_user(email, password):
     """Вход пользователя"""
-    users = st.session_state.users_data
+    users = load_users_from_github()
     if email not in users:
         return False, "Пользователь не найден"
     
@@ -237,6 +276,8 @@ def login_user(email, password):
     
     if verify_password(password, user["password_hash"]):
         st.session_state.user = user
+        st.session_state.session_token = generate_session_token(user["user_id"])
+        st.session_state.session_expiry = (datetime.now() + timedelta(days=30)).isoformat()
         st.session_state.achieved_endings = user.get("achieved_endings", {})
         return True, "Вход выполнен успешно!"
     else:
@@ -246,10 +287,14 @@ def logout_user():
     """Выход пользователя с сохранением прогресса"""
     if st.session_state.user:
         email = st.session_state.user["email"]
-        st.session_state.users_data[email]["achieved_endings"] = st.session_state.achieved_endings
-        save_users_to_github(st.session_state.users_data)
+        users = load_users_from_github()
+        if email in users:
+            users[email]["achieved_endings"] = st.session_state.achieved_endings
+            save_users_to_github(users)
     
     st.session_state.user = None
+    st.session_state.session_token = None
+    st.session_state.session_expiry = None
     st.session_state.achieved_endings = {}
     st.session_state.messages = []
     st.session_state.scenes = {}
@@ -261,9 +306,10 @@ def delete_account():
     """Удаление аккаунта пользователя"""
     if st.session_state.user:
         email = st.session_state.user["email"]
-        if email in st.session_state.users_data:
-            del st.session_state.users_data[email]
-            save_users_to_github(st.session_state.users_data)
+        users = load_users_from_github()
+        if email in users:
+            del users[email]
+            save_users_to_github(users)
         logout_user()
         return True
     return False
@@ -272,22 +318,28 @@ def save_user_progress():
     """Сохраняет прогресс текущего пользователя"""
     if st.session_state.user:
         email = st.session_state.user["email"]
-        st.session_state.users_data[email]["achieved_endings"] = st.session_state.achieved_endings
-        save_users_to_github(st.session_state.users_data)
+        users = load_users_from_github()
+        if email in users:
+            users[email]["achieved_endings"] = st.session_state.achieved_endings
+            save_users_to_github(users)
 
-# --- Инициализация состояния ---
-if "selected_tale" not in st.session_state:
-    st.session_state.selected_tale = None
-if "scene_id" not in st.session_state:
-    st.session_state.scene_id = "start"
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "scenes" not in st.session_state:
-    st.session_state.scenes = {}
-if "scene_history" not in st.session_state:
-    st.session_state.scene_history = []
-if "achieved_endings" not in st.session_state:
-    st.session_state.achieved_endings = {}
+# --- Проверка сессии при загрузке страницы ---
+def check_session():
+    """Проверяет, есть ли активная сессия и не истекла ли она"""
+    if st.session_state.session_token and st.session_state.session_expiry:
+        expiry = datetime.fromisoformat(st.session_state.session_expiry)
+        if datetime.now() < expiry:
+            # Сессия действительна, пользователь уже в st.session_state.user
+            return True
+        else:
+            # Сессия истекла, очищаем
+            st.session_state.user = None
+            st.session_state.session_token = None
+            st.session_state.session_expiry = None
+    return False
+
+# Проверяем сессию при каждом запуске
+check_session()
 
 # --- Достижения ---
 if "achievements" not in st.session_state:
@@ -315,15 +367,7 @@ if "achievement_progress" not in st.session_state:
         "total_endings_found": 0, "death_count": 0, "speedrun_tales": set(),
     }
 
-# Данные пользователей
-if "users_data" not in st.session_state:
-    st.session_state.users_data = load_users_from_github()
-if "user" not in st.session_state:
-    st.session_state.user = None
-if "pending_registration" not in st.session_state:
-    st.session_state.pending_registration = None
-
-# --- Стили ---
+# --- Стили (оставлены без изменений) ---
 st.markdown("""
 <style>
     /* Подключаем шрифты */
