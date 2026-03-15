@@ -333,41 +333,120 @@ def clear_cookie(name):
     """
     st.components.v1.html(js, height=0)
 
-# --- АВТОРИЗАЦИЯ ---
 # --- АВТОРИЗАЦИЯ ЧЕРЕЗ LOCALSTORAGE (РАБОТАЕТ В STREAMLIT) ---
+# --- АВТОРИЗАЦИЯ ЧЕРЕЗ LOCALSTORAGE (ИСПРАВЛЕННАЯ) ---
 def init_auth():
-    """Инициализация авторизации"""
+    """Инициализация авторизации с улучшенным восстановлением"""
     
+    # JavaScript для работы с localStorage с задержкой
     st.components.v1.html("""
     <script>
-    (function() {
-        const email = localStorage.getItem('user_email');
-        const name = localStorage.getItem('user_name');
-        const username = localStorage.getItem('user_username');
-        const expiry = localStorage.getItem('user_expiry');
-        
-        if (email && name && username && expiry && Date.now() < parseInt(expiry)) {
-            const url = new URL(window.location.href);
-            url.searchParams.set('storage_email', email);
-            url.searchParams.set('storage_name', name);
-            url.searchParams.set('storage_username', username);
-            window.history.replaceState({}, '', url);
-        } else {
+    // Функция для сохранения данных
+    window.saveUserData = function(email, name, username) {
+        try {
+            localStorage.setItem('user_email', email);
+            localStorage.setItem('user_name', name);
+            localStorage.setItem('user_username', username);
+            localStorage.setItem('user_expiry', Date.now() + (30 * 24 * 60 * 60 * 1000));
+            console.log('✅ Данные сохранены в localStorage');
+            
+            // Принудительно обновляем страницу после сохранения
+            setTimeout(() => {
+                window.location.reload();
+            }, 100);
+        } catch(e) {
+            console.error('❌ Ошибка сохранения:', e);
+        }
+    };
+    
+    // Функция для удаления данных
+    window.clearUserData = function() {
+        try {
             localStorage.removeItem('user_email');
             localStorage.removeItem('user_name');
             localStorage.removeItem('user_username');
             localStorage.removeItem('user_expiry');
+            console.log('✅ Данные удалены из localStorage');
+            
+            // Очищаем URL и перезагружаем
+            const url = new URL(window.location.href);
+            url.searchParams.delete('storage_email');
+            url.searchParams.delete('storage_name');
+            url.searchParams.delete('storage_username');
+            window.history.replaceState({}, '', url);
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 100);
+        } catch(e) {
+            console.error('❌ Ошибка удаления:', e);
         }
-    })();
+    };
+    
+    // Функция для проверки и восстановления данных
+    function restoreFromLocalStorage() {
+        try {
+            const email = localStorage.getItem('user_email');
+            const name = localStorage.getItem('user_name');
+            const username = localStorage.getItem('user_username');
+            const expiry = localStorage.getItem('user_expiry');
+            
+            console.log('🔄 Проверка localStorage:', {email, name, username, expiry});
+            
+            if (email && name && username && expiry) {
+                if (Date.now() < parseInt(expiry)) {
+                    console.log('✅ Данные найдены и валидны');
+                    const url = new URL(window.location.href);
+                    
+                    // Проверяем, нужно ли обновить URL
+                    if (!url.searchParams.has('storage_email')) {
+                        url.searchParams.set('storage_email', email);
+                        url.searchParams.set('storage_name', name);
+                        url.searchParams.set('storage_username', username);
+                        window.history.replaceState({}, '', url);
+                        console.log('✅ URL обновлен данными из localStorage');
+                        
+                        // Перезагружаем после обновления URL
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 50);
+                    }
+                } else {
+                    console.log('❌ Данные истекли');
+                    localStorage.removeItem('user_email');
+                    localStorage.removeItem('user_name');
+                    localStorage.removeItem('user_username');
+                    localStorage.removeItem('user_expiry');
+                }
+            } else {
+                console.log('ℹ️ Нет данных в localStorage');
+            }
+        } catch(e) {
+            console.error('❌ Ошибка восстановления:', e);
+        }
+    }
+    
+    // Запускаем восстановление после полной загрузки страницы
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', restoreFromLocalStorage);
+    } else {
+        restoreFromLocalStorage();
+    }
+    
+    // Также запускаем через небольшую задержку
+    setTimeout(restoreFromLocalStorage, 100);
+    setTimeout(restoreFromLocalStorage, 500);
     </script>
     """, height=0)
     
+    # Проверяем наличие данных в URL (из localStorage)
     if 'user' not in st.session_state:
         storage_email = st.query_params.get('storage_email')
         storage_name = st.query_params.get('storage_name')
         storage_username = st.query_params.get('storage_username')
         
         if storage_email and storage_name and storage_username:
+            print(f"✅ Восстанавливаем пользователя: {storage_email}")
             st.session_state.user = {
                 'email': storage_email,
                 'name': storage_name,
@@ -376,27 +455,27 @@ def init_auth():
             }
             
             # Загружаем прогресс
-            users = get_github_data()
-            if storage_email in users:
-                st.session_state.achieved_endings = users[storage_email].get("achieved_endings", {})
-                user_achievements = users[storage_email].get("achievements", {})
-                if user_achievements:
-                    for key, value in user_achievements.items():
-                        if key in st.session_state.achievements:
-                            st.session_state.achievements[key] = value
+            try:
+                users = get_github_data()
+                if storage_email in users:
+                    st.session_state.achieved_endings = users[storage_email].get("achieved_endings", {})
+                    user_achievements = users[storage_email].get("achievements", {})
+                    if user_achievements:
+                        for key, value in user_achievements.items():
+                            if key in st.session_state.achievements:
+                                st.session_state.achievements[key] = value
+            except Exception as e:
+                print(f"Ошибка загрузки прогресса: {e}")
             
-            # Очищаем параметры
-            if 'storage_email' in st.query_params:
-                del st.query_params['storage_email']
-            if 'storage_name' in st.query_params:
-                del st.query_params['storage_name']
-            if 'storage_username' in st.query_params:
-                del st.query_params['storage_username']
+            # НЕ очищаем параметры сразу, чтобы они остались для следующих обновлений
         else:
             st.session_state.user = None
+            print("ℹ️ Нет данных для восстановления")
 
 def login_user(email, name, username):
     """Вход пользователя"""
+    print(f"✅ Вход пользователя: {email}")
+    
     st.session_state.user = {
         'email': email,
         'name': name,
@@ -405,47 +484,80 @@ def login_user(email, name, username):
     }
     
     # Загружаем прогресс
-    users = get_github_data()
-    if email in users:
-        st.session_state.achieved_endings = users[email].get("achieved_endings", {})
-        user_achievements = users[email].get("achievements", {})
-        if user_achievements:
-            for key, value in user_achievements.items():
-                if key in st.session_state.achievements:
-                    st.session_state.achievements[key] = value
+    try:
+        users = get_github_data()
+        if email in users:
+            st.session_state.achieved_endings = users[email].get("achieved_endings", {})
+            user_achievements = users[email].get("achievements", {})
+            if user_achievements:
+                for key, value in user_achievements.items():
+                    if key in st.session_state.achievements:
+                        st.session_state.achievements[key] = value
+    except Exception as e:
+        print(f"Ошибка загрузки прогресса: {e}")
     
     # Сохраняем в localStorage через JavaScript
     st.components.v1.html(f"""
     <script>
-    localStorage.setItem('user_email', '{email}');
-    localStorage.setItem('user_name', '{name}');
-    localStorage.setItem('user_username', '{username}');
-    localStorage.setItem('user_expiry', Date.now() + (30 * 24 * 60 * 60 * 1000));
-    
-    const url = new URL(window.location.href);
-    url.searchParams.set('storage_email', '{email}');
-    url.searchParams.set('storage_name', '{name}');
-    url.searchParams.set('storage_username', '{username}');
-    window.history.replaceState({{}}, '', url);
-    window.location.reload();
+    try {{
+        // Сохраняем в localStorage
+        localStorage.setItem('user_email', '{email}');
+        localStorage.setItem('user_name', '{name}');
+        localStorage.setItem('user_username', '{username}');
+        localStorage.setItem('user_expiry', Date.now() + (30 * 24 * 60 * 60 * 1000));
+        console.log('✅ Данные сохранены в localStorage');
+        
+        // Обновляем URL
+        const url = new URL(window.location.href);
+        url.searchParams.set('storage_email', '{email}');
+        url.searchParams.set('storage_name', '{name}');
+        url.searchParams.set('storage_username', '{username}');
+        window.history.replaceState({{}}, '', url);
+        console.log('✅ URL обновлен');
+        
+        // Перезагружаем страницу
+        setTimeout(() => {{
+            window.location.reload();
+        }}, 100);
+    }} catch(e) {{
+        console.error('❌ Ошибка:', e);
+    }}
     </script>
     """, height=0)
-    
-    st.rerun()
 
 def logout_user():
     """Выход пользователя"""
+    print("👋 Выход пользователя")
+    
     # Очищаем session_state
     st.session_state.user = None
+    st.session_state.achieved_endings = {}
     
     # Вызываем JavaScript для очистки localStorage
     st.components.v1.html("""
     <script>
-    window.clearUserData();
+    try {
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('user_name');
+        localStorage.removeItem('user_username');
+        localStorage.removeItem('user_expiry');
+        console.log('✅ Данные удалены из localStorage');
+        
+        // Очищаем URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete('storage_email');
+        url.searchParams.delete('storage_name');
+        url.searchParams.delete('storage_username');
+        window.history.replaceState({}, '', url);
+        
+        setTimeout(() => {
+            window.location.reload();
+        }, 100);
+    } catch(e) {
+        console.error('❌ Ошибка:', e);
+    }
     </script>
     """, height=0)
-    
-    st.rerun()
 
 # Вызываем инициализацию
 init_auth()
