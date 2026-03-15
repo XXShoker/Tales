@@ -160,6 +160,25 @@ st.markdown("""
         border-radius: 3px;
     }
     
+    /* Достижения */
+    .achievement-badge {
+        display: inline-block;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #e6d5b8;
+        color: #2a1c0e;
+        text-align: center;
+        line-height: 30px;
+        margin-right: 5px;
+        font-size: 1.2rem;
+    }
+    
+    .achievement-unlocked {
+        background: linear-gradient(135deg, #d4b68a, #b5926a);
+        box-shadow: 0 0 10px gold;
+    }
+    
     /* Анимация появления текста */
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
@@ -266,7 +285,7 @@ st.markdown("""
 </script>
 """, unsafe_allow_html=True)
 
-# --- Инициализация ---
+# --- Инициализация состояния ---
 if "selected_tale" not in st.session_state:
     st.session_state.selected_tale = None
 if "scene_id" not in st.session_state:
@@ -279,6 +298,47 @@ if "scene_history" not in st.session_state:
     st.session_state.scene_history = []
 if "achieved_endings" not in st.session_state:
     st.session_state.achieved_endings = {}
+
+# --- Достижения ---
+if "achievements" not in st.session_state:
+    st.session_state.achievements = {
+        # Классика
+        "kolobok_5": False, "kolobok_all": False,
+        "teremok_5": False, "teremok_all": False,
+        "rybka_3_greedy": False, "rybka_all": False,
+        "ryaba_3_save": False, "ryaba_all": False,
+        # Приключения
+        "forest_10_locations": False, "forest_all_friends": False, "forest_all": False,
+        # Детектив
+        "detective_10": False, "detective_time_5": False, "detective_save_3": False, "detective_all": False,
+        # Романтика
+        "romance_3_love": False, "romance_5_happy": False, "romance_all": False,
+        # Секретные
+        "teremok_fairy": False, "teremok_bees": False,
+        "ryaba_wish": False, "ryaba_drink": False,
+        "crossover": False,
+        # Мета
+        "total_50": False, "total_80": False, "total_all": False,
+        "speedrun": False, "explorer": False, "talisman": False, "death_10": False,
+    }
+
+if "achievement_progress" not in st.session_state:
+    st.session_state.achievement_progress = {
+        "kolobok_count": 0,
+        "teremok_count": 0,
+        "rybka_greedy": 0,
+        "ryaba_save": 0,
+        "forest_locations": set(),
+        "forest_friends": set(),
+        "detective_count": 0,
+        "detective_time": 0,
+        "detective_save": 0,
+        "romance_love": 0,
+        "romance_happy": 0,
+        "total_endings_found": 0,
+        "death_count": 0,
+        "speedrun_tales": set(),
+    }
 
 def count_total_endings(tale_name):
     tale = tales.get(tale_name)
@@ -294,6 +354,115 @@ def get_ending_stats(tale_name):
     opened = len(st.session_state.achieved_endings.get(tale_name, set()))
     total = count_total_endings(tale_name)
     return opened, total
+
+def check_achievements(tale_name, ending_type=None, ending_data=None):
+    """Проверяет и разблокирует достижения"""
+    progress = st.session_state.achievement_progress
+    ach = st.session_state.achievements
+    
+    # --- Колобок ---
+    if tale_name == "Колобок":
+        progress["kolobok_count"] = len(st.session_state.achieved_endings.get("Колобок", set()))
+        if progress["kolobok_count"] >= 5 and not ach["kolobok_5"]:
+            ach["kolobok_5"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Колобок-беглец» (5 концовок)")
+        if progress["kolobok_count"] >= 16 and not ach["kolobok_all"]:
+            ach["kolobok_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Ни одна лиса не страшна» (все концовки Колобка)")
+    
+    # --- Теремок ---
+    if tale_name == "Теремок":
+        progress["teremok_count"] = len(st.session_state.achieved_endings.get("Теремок", set()))
+        if progress["teremok_count"] >= 5 and not ach["teremok_5"]:
+            ach["teremok_5"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Терем-теремок» (5 концовок)")
+        if progress["teremok_count"] >= 14 and not ach["teremok_all"]:
+            ach["teremok_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Всем дом» (все концовки Теремка)")
+        
+        # Секретные
+        if ending_data and ending_data.get("ending_type") == "secret":
+            if ending_data.get("ending_number") in [6,7,9,10,11,12,13]:
+                if not ach["teremok_fairy"] and ending_data.get("ending_number") in [6,7]:
+                    ach["teremok_fairy"] = True
+                    st.balloons()
+                    st.success("🏆 Достижение разблокировано: «Постучи три раза» (секретная фея)")
+                if not ach["teremok_bees"] and ending_data.get("ending_number") in [9,10,11]:
+                    ach["teremok_bees"] = True
+                    st.balloons()
+                    st.success("🏆 Достижение разблокировано: «Пчелиный король» (секретные пчёлы)")
+    
+    # --- Золотая рыбка ---
+    if tale_name == "Золотая рыбка":
+        if ending_type == "sad" and ending_data:
+            if ending_data.get("ending_number") in [1,2,3]:
+                progress["rybka_greedy"] += 1
+                if progress["rybka_greedy"] >= 3 and not ach["rybka_3_greedy"]:
+                    ach["rybka_3_greedy"] = True
+                    st.balloons()
+                    st.success("🏆 Достижение разблокировано: «Золотая жадность» (3 жадные концовки)")
+        
+        progress["rybka_count"] = len(st.session_state.achieved_endings.get("Золотая рыбка", set()))
+        if progress["rybka_count"] >= 10 and not ach["rybka_all"]:
+            ach["rybka_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Мудрец» (все концовки Золотой рыбки)")
+    
+    # --- Курочка Ряба ---
+    if tale_name == "Курочка Ряба":
+        if ending_type == "happy" and ending_data:
+            if ending_data.get("ending_number") in [1,2,3,4,5,6,7]:
+                progress["ryaba_save"] += 1
+                if progress["ryaba_save"] >= 3 and not ach["ryaba_3_save"]:
+                    ach["ryaba_3_save"] = True
+                    st.balloons()
+                    st.success("🏆 Достижение разблокировано: «Курочка-спасительница» (3 спасения)")
+        
+        progress["ryaba_count"] = len(st.session_state.achieved_endings.get("Курочка Ряба", set()))
+        if progress["ryaba_count"] >= 12 and not ach["ryaba_all"]:
+            ach["ryaba_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Золотой урожай» (все концовки Курочки Рябы)")
+        
+        # Секретные
+        if ending_data and ending_data.get("ending_type") == "secret":
+            if ending_data.get("ending_number") in [5,6,7]:
+                if not ach["ryaba_wish"] and ending_data.get("ending_number") in [5,6]:
+                    ach["ryaba_wish"] = True
+                    st.balloons()
+                    st.success("🏆 Достижение разблокировано: «Хрустальный шар» (загадать желание)")
+            if ending_data.get("ending_number") == 7:
+                if not ach["ryaba_drink"]:
+                    ach["ryaba_drink"] = True
+                    st.balloons()
+                    st.success("🏆 Достижение разблокировано: «Гулянка» (выпить с дедом)")
+    
+    # --- Общая статистика ---
+    total = 0
+    for tale in tales.keys():
+        total += len(st.session_state.achieved_endings.get(tale, set()))
+    progress["total_endings_found"] = total
+    
+    if total >= 50 and not ach["total_50"]:
+        ach["total_50"] = True
+        st.balloons()
+        st.success("🏆 Достижение разблокировано: «Коллекционер» (50 концовок)")
+    if total >= 80 and not ach["total_80"]:
+        ach["total_80"] = True
+        st.balloons()
+        st.success("🏆 Достижение разблокировано: «Профессионал» (80 концовок)")
+    
+    # Подсчёт всех возможных концовок (примерно 109)
+    total_possible = 16 + 14 + 10 + 12 + 12 + 25 + 20
+    if total >= total_possible and not ach["total_all"]:
+        ach["total_all"] = True
+        st.balloons()
+        st.balloons()
+        st.success("👑 ДОСТИЖЕНИЕ ПЛАТИНОВОЕ: «Библиотекарь» (ВСЕ концовки!)")
 
 def start_tale(tale_name):
     st.session_state.selected_tale = tale_name
@@ -349,6 +518,71 @@ with st.sidebar:
         if st.button("🔄 Сменить сказку", use_container_width=True):
             reset_to_main()
             st.rerun()
+    
+    # Достижения (только на главном экране)
+    if st.session_state.selected_tale is None:
+        with st.expander("🏆 Достижения"):
+            ach = st.session_state.achievements
+            
+            # Считаем сколько всего
+            total_achieved = sum(1 for v in ach.values() if v)
+            st.markdown(f"**Прогресс: {total_achieved}/30**")
+            st.progress(total_achieved / 30)
+            
+            st.markdown("---")
+            
+            # Группируем по категориям
+            cols = st.columns(2)
+            
+            with cols[0]:
+                st.markdown("**📚 Классика**")
+                st.markdown(f"{'✅' if ach['kolobok_5'] else '⬜'} Колобок-беглец (5/16)")
+                st.markdown(f"{'✅' if ach['kolobok_all'] else '⬜'} Ни одна лиса не страшна")
+                st.markdown(f"{'✅' if ach['teremok_5'] else '⬜'} Терем-теремок (5/14)")
+                st.markdown(f"{'✅' if ach['teremok_all'] else '⬜'} Всем дом")
+                st.markdown(f"{'✅' if ach['rybka_3_greedy'] else '⬜'} Золотая жадность")
+                st.markdown(f"{'✅' if ach['rybka_all'] else '⬜'} Мудрец")
+                st.markdown(f"{'✅' if ach['ryaba_3_save'] else '⬜'} Курочка-спасительница")
+                st.markdown(f"{'✅' if ach['ryaba_all'] else '⬜'} Золотой урожай")
+            
+            with cols[1]:
+                st.markdown("**🧚 Приключения**")
+                st.markdown(f"{'✅' if ach['forest_10_locations'] else '⬜'} Лесной исследователь")
+                st.markdown(f"{'✅' if ach['forest_all_friends'] else '⬜'} Друг зверей")
+                st.markdown(f"{'✅' if ach['forest_all'] else '⬜'} Повелитель леса")
+                
+                st.markdown("**🔞 16+**")
+                st.markdown(f"{'✅' if ach['detective_10'] else '⬜'} Следопыт")
+                st.markdown(f"{'✅' if ach['detective_time_5'] else '⬜'} Мастер времени")
+                st.markdown(f"{'✅' if ach['detective_save_3'] else '⬜'} Спаситель")
+                st.markdown(f"{'✅' if ach['detective_all'] else '⬜'} Идеальное преступление")
+                
+                st.markdown("**💕 Романтика**")
+                st.markdown(f"{'✅' if ach['romance_3_love'] else '⬜'} Сердцеед")
+                st.markdown(f"{'✅' if ach['romance_5_happy'] else '⬜'} Романтик")
+                st.markdown(f"{'✅' if ach['romance_all'] else '⬜'} Идеальная пара")
+            
+            st.markdown("---")
+            st.markdown("**🔮 Секретные**")
+            cols2 = st.columns(3)
+            with cols2[0]:
+                st.markdown(f"{'✅' if ach['teremok_fairy'] else '⬜'} Фея")
+                st.markdown(f"{'✅' if ach['teremok_bees'] else '⬜'} Пчёлы")
+            with cols2[1]:
+                st.markdown(f"{'✅' if ach['ryaba_wish'] else '⬜'} Желание")
+                st.markdown(f"{'✅' if ach['ryaba_drink'] else '⬜'} Гулянка")
+            with cols2[2]:
+                st.markdown(f"{'✅' if ach['crossover'] else '⬜'} Хранитель")
+            
+            st.markdown("---")
+            st.markdown("**🏆 Мета**")
+            st.markdown(f"{'✅' if ach['total_50'] else '⬜'} Коллекционер (50)")
+            st.markdown(f"{'✅' if ach['total_80'] else '⬜'} Профессионал (80)")
+            st.markdown(f"{'✅' if ach['total_all'] else '⬜'} Библиотекарь (все)")
+            st.markdown(f"{'✅' if ach['speedrun'] else '⬜'} Скороход")
+            st.markdown(f"{'✅' if ach['explorer'] else '⬜'} Исследователь")
+            st.markdown(f"{'✅' if ach['talisman'] else '⬜'} Талисман")
+            st.markdown(f"{'✅' if ach['death_10'] else '⬜'} Бессмертный")
 
 # --- Основная область ---
 st.title("📖 Интерактивные сказки")
@@ -386,7 +620,7 @@ if st.session_state.selected_tale is None:
                     # Прогресс на карточке
                     opened, total = get_ending_stats(tale_name)
                     if total > 0:
-                        progress_pct = opened / total
+                        progress_pct = opened / total if total > 0 else 0
                         st.markdown(f"""
                         <div class="card-progress">
                             <span>📊 {opened}/{total}</span>
@@ -427,6 +661,12 @@ else:
             
             if ending_id not in st.session_state.achieved_endings[st.session_state.selected_tale]:
                 st.session_state.achieved_endings[st.session_state.selected_tale].add(ending_id)
+                
+                # Проверяем достижения
+                check_achievements(st.session_state.selected_tale, 
+                                 current.get("ending_type"), 
+                                 current)
+                
                 st.rerun()
             
             st.markdown("---")
