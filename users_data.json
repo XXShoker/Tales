@@ -4,13 +4,14 @@
     "username": "XShoker",
     "name": "Viacheslav",
     "email": "zapomni2803@gmail.com",
-    "last_login": "2026-03-15T17:07:42.851461",
+    "last_login": "2026-03-15T17:07:51.440128",
     "achieved_endings": {
       "Сталкер в себе": [
-        "sad_4",
         "neutral_7",
-        "happy_6",
-        "secret_19"
+        "secret_19",
+        "sad_4",
+        "sad_8",
+        "happy_6"
       ]
     },
     "achievements": {
