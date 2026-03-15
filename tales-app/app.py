@@ -981,6 +981,67 @@ with st.sidebar:
         if st.button("🔄 Сменить сказку", width='stretch'):
             reset_to_main()
             st.rerun()
+
+    # --- Достижения ---
+    if st.session_state.selected_tale is None:
+        with st.expander("🏆 Достижения"):
+            ach = st.session_state.achievements
+            total_achieved = sum(1 for v in ach.values() if v)
+            st.markdown(f"**Прогресс: {total_achieved}/33**")
+            st.progress(total_achieved / 33)
+            st.markdown("---")
+            
+            cols = st.columns(2)
+            with cols[0]:
+                st.markdown("### 📚 Классика")
+                st.markdown(f"{'🐺' if ach['kolobok_5'] else '⬜'} Колобок-беглец (5/16)")
+                st.markdown(f"{'🦊' if ach['kolobok_all'] else '⬜'} Ни одна лиса не страшна")
+                st.markdown(f"{'🐭' if ach['teremok_5'] else '⬜'} Терем-теремок (5/14)")
+                st.markdown(f"{'🏠' if ach['teremok_all'] else '⬜'} Всем дом")
+                st.markdown(f"{'🐠' if ach['rybka_3_greedy'] else '⬜'} Золотая жадность")
+                st.markdown(f"{'👑' if ach['rybka_all'] else '⬜'} Мудрец")
+                st.markdown(f"{'🐔' if ach['ryaba_3_save'] else '⬜'} Курочка-спасительница")
+                st.markdown(f"{'🥚' if ach['ryaba_all'] else '⬜'} Золотой урожай")
+            
+            with cols[1]:
+                st.markdown("### 🧚 Приключения")
+                st.markdown(f"{'🌲' if ach['forest_10_locations'] else '⬜'} Лесной исследователь")
+                st.markdown(f"{'🦌' if ach['forest_all_friends'] else '⬜'} Друг зверей")
+                st.markdown(f"{'👑' if ach['forest_all'] else '⬜'} Повелитель леса")
+                
+                st.markdown("---")
+                st.markdown("### 🔞 16+")
+                st.markdown(f"{'🕵️' if ach['detective_10'] else '⬜'} Следопыт")
+                st.markdown(f"{'⏰' if ach['detective_time_5'] else '⬜'} Мастер времени")
+                st.markdown(f"{'🫀' if ach['detective_save_3'] else '⬜'} Спаситель")
+                st.markdown(f"{'🔪' if ach['detective_all'] else '⬜'} Идеальное преступление")
+                st.markdown(f"{'💔' if ach['romance_3_love'] else '⬜'} Сердцеед")
+                st.markdown(f"{'🌹' if ach['romance_5_happy'] else '⬜'} Романтик")
+                st.markdown(f"{'💍' if ach['romance_all'] else '⬜'} Идеальная пара")
+                st.markdown(f"{'🧛' if ach.get('lyx_5', False) else '⬜'} Выжившая (5/9)")
+                st.markdown(f"{'🩸' if ach.get('lyx_all', False) else '⬜'} Проклятие снято (9/9)")
+            
+            st.markdown("---")
+            st.markdown("### 🔮 Секретные")
+            cols2 = st.columns(3)
+            with cols2[0]:
+                st.markdown(f"{'🧚' if ach['teremok_fairy'] else '⬜'} Фея")
+                st.markdown(f"{'🐝' if ach['teremok_bees'] else '⬜'} Пчёлы")
+            with cols2[1]:
+                st.markdown(f"{'🔮' if ach['ryaba_wish'] else '⬜'} Желание")
+                st.markdown(f"{'🍷' if ach['ryaba_drink'] else '⬜'} Гулянка")
+            with cols2[2]:
+                st.markdown(f"{'⏳' if ach['crossover'] else '⬜'} Хранитель")
+            
+            st.markdown("---")
+            st.markdown("### 🏆 Мета")
+            st.markdown(f"{'📀' if ach['total_50'] else '⬜'} Коллекционер (50)")
+            st.markdown(f"{'💿' if ach['total_80'] else '⬜'} Профессионал (80)")
+            st.markdown(f"{'📚' if ach['total_all'] else '⬜'} Библиотекарь (все)")
+            st.markdown(f"{'⚡' if ach['speedrun'] else '⬜'} Скороход")
+            st.markdown(f"{'🔍' if ach['explorer'] else '⬜'} Исследователь")
+            st.markdown(f"{'🍀' if ach['talisman'] else '⬜'} Талисман")
+            st.markdown(f"{'💀' if ach['death_10'] else '⬜'} Бессмертный")
     
     st.markdown("---")
     st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", width='stretch')
