@@ -961,21 +961,35 @@ st.markdown("""
         color: #2c1e0e !important;
     }
 
-    /* ===== ДОСТИЖЕНИЯ – ПРОГРЕСС-БАР И СПИСОК ===== */
-    /* Прогресс-бар внутри экспандера – ИСПРАВЛЕНО */
+       /* ===== ДОСТИЖЕНИЯ – ПРОГРЕСС-БАР И ЗАГОЛОВОК ===== */
+    /* Заголовок экспандера – делаем контрастным */
+    .stExpander header * {
+        color: #2c1e0e !important;
+        font-weight: 700 !important;
+        font-size: 1.2rem !important;
+    }
+    
+    /* Прогресс-бар – убираем лишние полоски, делаем единую полосу */
+    .stExpander .stProgress {
+        height: 20px !important;
+        background: transparent !important;
+        margin: 5px 0 15px 0 !important;
+    }
     .stExpander .stProgress > div {
         background-color: #e6d5b8 !important;
         border-radius: 20px !important;
         height: 20px !important;
-        box-shadow: inset 0 1px 3px rgba(0,0,0,0.2) !important;
+        box-shadow: none !important;
+        border: none !important;
     }
     .stExpander .stProgress > div > div {
         background: linear-gradient(90deg, #b5926a, #8b6b4f) !important;
         border-radius: 20px !important;
         height: 20px !important;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.2) !important;
     }
-
-    /* Стили для каждой строки достижения */
+    
+    /* Строки достижений – оставляем как есть (у вас уже есть) */
     .stExpander .stMarkdown p {
         margin: 6px 0 !important;
         padding: 6px 10px !important;
@@ -986,14 +1000,12 @@ st.markdown("""
         font-size: 0.95rem !important;
     }
     
-    /* Подсветка разблокированных достижений по наличию эмодзи */
     .stExpander .stMarkdown p:has(🐺, 🦊, 🐭, 🏠, 🐠, 👑, 🐔, 🥚, 🌲, 🦌, 🕵️, ⏰, 🫀, 🔪, 💔, 🌹, 💍, 🧛, 🩸, 🧚, 🐝, 🔮, 🍷, ⏳, 📀, 💿, 📚, ⚡, 🔍, 🍀, 💀) {
         background: rgba(181, 146, 106, 0.15) !important;
         border-left: 3px solid #b5926a !important;
         font-weight: 500 !important;
     }
     
-    /* Заголовки внутри экспандера */
     .stExpander h3 {
         margin-top: 15px !important;
         margin-bottom: 8px !important;
@@ -1002,7 +1014,6 @@ st.markdown("""
         padding-bottom: 5px !important;
     }
     
-    /* Колонки внутри достижений */
     .stExpander [data-testid="column"] {
         padding: 0 5px !important;
     }
