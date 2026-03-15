@@ -27,6 +27,56 @@ EMAIL_PASSWORD = st.secrets.get("EMAIL_PASSWORD")
 FROM_EMAIL = st.secrets.get("FROM_EMAIL", EMAIL_USER)
 SESSION_SECRET = st.secrets.get("SESSION_SECRET", "default_secret_change_me")
 
+# --- Инициализация состояния (В САМОМ НАЧАЛЕ) ---
+def init_session_state():
+    """Инициализирует все ключи session_state"""
+    if "selected_tale" not in st.session_state:
+        st.session_state.selected_tale = None
+    if "scene_id" not in st.session_state:
+        st.session_state.scene_id = "start"
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+    if "scenes" not in st.session_state:
+        st.session_state.scenes = {}
+    if "scene_history" not in st.session_state:
+        st.session_state.scene_history = []
+    if "achieved_endings" not in st.session_state:
+        st.session_state.achieved_endings = {}
+    if "user" not in st.session_state:
+        st.session_state.user = None
+    if "pending_registration" not in st.session_state:
+        st.session_state.pending_registration = None
+    if "session_token" not in st.session_state:
+        st.session_state.session_token = None
+    if "session_expiry" not in st.session_state:
+        st.session_state.session_expiry = None
+    if "achievements" not in st.session_state:
+        st.session_state.achievements = {
+            "kolobok_5": False, "kolobok_all": False,
+            "teremok_5": False, "teremok_all": False,
+            "rybka_3_greedy": False, "rybka_all": False,
+            "ryaba_3_save": False, "ryaba_all": False,
+            "forest_10_locations": False, "forest_all_friends": False, "forest_all": False,
+            "detective_10": False, "detective_time_5": False, "detective_save_3": False, "detective_all": False,
+            "romance_3_love": False, "romance_5_happy": False, "romance_all": False,
+            "teremok_fairy": False, "teremok_bees": False,
+            "ryaba_wish": False, "ryaba_drink": False,
+            "crossover": False,
+            "total_50": False, "total_80": False, "total_all": False,
+            "speedrun": False, "explorer": False, "talisman": False, "death_10": False,
+        }
+    if "achievement_progress" not in st.session_state:
+        st.session_state.achievement_progress = {
+            "kolobok_count": 0, "teremok_count": 0, "rybka_greedy": 0, "ryaba_save": 0,
+            "forest_locations": set(), "forest_friends": set(),
+            "detective_count": 0, "detective_time": 0, "detective_save": 0,
+            "romance_love": 0, "romance_happy": 0,
+            "total_endings_found": 0, "death_count": 0, "speedrun_tales": set(),
+        }
+
+# Вызываем инициализацию
+init_session_state()
+
 # --- Функции для работы с GitHub ---
 @st.cache_resource(ttl=60)  # Кэшируем на 60 секунд
 def get_github_data():
@@ -262,13 +312,14 @@ def logout_user():
             save_users_to_github(users)
     
     # Полностью очищаем сессию
-    for key in ["user", "session_token", "session_expiry", "selected_tale", 
-                "scene_id", "messages", "scenes", "scene_history", "achieved_endings"]:
-        if key in st.session_state:
-            if key in ["achieved_endings"]:
-                st.session_state[key] = {}
-            else:
-                st.session_state[key] = None if key in ["user", "session_token", "session_expiry"] else [] if key in ["messages", "scene_history"] else {} if key in ["scenes"] else None
+    st.session_state.user = None
+    st.session_state.session_token = None
+    st.session_state.session_expiry = None
+    st.session_state.achieved_endings = {}
+    st.session_state.messages = []
+    st.session_state.scenes = {}
+    st.session_state.scene_history = []
+    st.session_state.selected_tale = None
     
     st.rerun()
 
@@ -293,71 +344,7 @@ def save_user_progress():
             users[email]["achieved_endings"] = st.session_state.achieved_endings
             save_users_to_github(users)
 
-# --- Инициализация состояния (с восстановлением сессии) ---
-def init_session():
-    """Инициализирует сессию, восстанавливая пользователя, если есть сохранённые данные"""
-    
-    # Базовые состояния
-    if "selected_tale" not in st.session_state:
-        st.session_state.selected_tale = None
-    if "scene_id" not in st.session_state:
-        st.session_state.scene_id = "start"
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-    if "scenes" not in st.session_state:
-        st.session_state.scenes = {}
-    if "scene_history" not in st.session_state:
-        st.session_state.scene_history = []
-    if "achieved_endings" not in st.session_state:
-        st.session_state.achieved_endings = {}
-    if "pending_registration" not in st.session_state:
-        st.session_state.pending_registration = None
-    
-    # Восстановление сессии пользователя
-    if "_session_restored" not in st.session_state:
-        # Пытаемся восстановить сессию из куки или локального хранилища
-        # В Streamlit нет прямого доступа к кукам, поэтому используем query params
-        # или полагаемся на то, что st.session_state сохраняется между rerun, но не между обновлениями страницы
-        
-        # Проверяем, есть ли сохранённый токен в query params (можно передавать при переходе)
-        query_params = st.query_params
-        if "session" in query_params and "user" in query_params:
-            # Это небезопасно, лучше не использовать
-            pass
-        
-        # Помечаем, что попытка восстановления была
-        st.session_state._session_restored = True
-
-# Вызываем инициализацию
-init_session()
-
-# --- Достижения ---
-if "achievements" not in st.session_state:
-    st.session_state.achievements = {
-        "kolobok_5": False, "kolobok_all": False,
-        "teremok_5": False, "teremok_all": False,
-        "rybka_3_greedy": False, "rybka_all": False,
-        "ryaba_3_save": False, "ryaba_all": False,
-        "forest_10_locations": False, "forest_all_friends": False, "forest_all": False,
-        "detective_10": False, "detective_time_5": False, "detective_save_3": False, "detective_all": False,
-        "romance_3_love": False, "romance_5_happy": False, "romance_all": False,
-        "teremok_fairy": False, "teremok_bees": False,
-        "ryaba_wish": False, "ryaba_drink": False,
-        "crossover": False,
-        "total_50": False, "total_80": False, "total_all": False,
-        "speedrun": False, "explorer": False, "talisman": False, "death_10": False,
-    }
-
-if "achievement_progress" not in st.session_state:
-    st.session_state.achievement_progress = {
-        "kolobok_count": 0, "teremok_count": 0, "rybka_greedy": 0, "ryaba_save": 0,
-        "forest_locations": set(), "forest_friends": set(),
-        "detective_count": 0, "detective_time": 0, "detective_save": 0,
-        "romance_love": 0, "romance_happy": 0,
-        "total_endings_found": 0, "death_count": 0, "speedrun_tales": set(),
-    }
-
-# --- Стили (сокращено для экономии места, оставьте свои стили) ---
+# --- Стили ---
 st.markdown("""
 <style>
     /* Подключаем шрифты */
@@ -563,6 +550,25 @@ st.markdown("""
         height: 100%;
         background: linear-gradient(90deg, #b5926a, #8b6b4f);
         border-radius: 3px;
+    }
+    
+    /* Достижения */
+    .achievement-badge {
+        display: inline-block;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #e6d5b8;
+        color: #2a1c0e;
+        text-align: center;
+        line-height: 30px;
+        margin-right: 5px;
+        font-size: 1.2rem;
+    }
+    
+    .achievement-unlocked {
+        background: linear-gradient(135deg, #d4b68a, #b5926a);
+        box-shadow: 0 0 10px gold;
     }
     
     /* Анимация появления текста */
