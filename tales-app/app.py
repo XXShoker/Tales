@@ -335,88 +335,37 @@ def clear_cookie(name):
 
 # --- АВТОРИЗАЦИЯ ЧЕРЕЗ SESSIONSTORAGE (РАБОТАЕТ 100%) ---
 def init_auth():
-    """Инициализация авторизации - УПРОЩЕННАЯ И РАБОЧАЯ"""
-    
-    # Прямая проверка URL параметров (БЕЗ ВСЯКОЙ JAVASCRIPT МАГИИ)
     if 'user' not in st.session_state:
-        # Просто берем данные из URL - они уже есть!
         email = st.query_params.get('user_email')
         name = st.query_params.get('user_name')
         username = st.query_params.get('user_username')
         
-        print(f"🔍 Проверка URL: email={email}, name={name}, username={username}")
-        
-        if email and name:
-            print(f"✅ Восстанавливаем пользователя: {email}")
+        if email:
             st.session_state.user = {
                 'email': email,
-                'name': name,
+                'name': name or email.split('@')[0],
                 'username': username or email.split('@')[0],
                 'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
             }
-            
-            # Загружаем прогресс
-            try:
-                users = get_github_data()
-                if email in users:
-                    st.session_state.achieved_endings = users[email].get("achieved_endings", {})
-                    user_achievements = users[email].get("achievements", {})
-                    if user_achievements:
-                        for key, value in user_achievements.items():
-                            if key in st.session_state.achievements:
-                                st.session_state.achievements[key] = value
-            except Exception as e:
-                print(f"Ошибка загрузки прогресса: {e}")
-        else:
-            st.session_state.user = None
-            print("ℹ️ Нет данных в URL")
 
 def login_user(email, name, username):
     """Вход пользователя"""
-    print(f"✅ Вход: {email}")
-    
     st.session_state.user = {
         'email': email,
         'name': name,
         'username': username,
         'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
     }
-    
-    # Сохраняем в URL (это все, что нужно!)
     st.query_params['user_email'] = email
     st.query_params['user_name'] = name
     st.query_params['user_username'] = username
-    
-    # Загружаем прогресс
-    try:
-        users = get_github_data()
-        if email in users:
-            st.session_state.achieved_endings = users[email].get("achieved_endings", {})
-            user_achievements = users[email].get("achievements", {})
-            if user_achievements:
-                for key, value in user_achievements.items():
-                    if key in st.session_state.achievements:
-                        st.session_state.achievements[key] = value
-    except Exception as e:
-        print(f"Ошибка загрузки прогресса: {e}")
-    
     st.rerun()
 
 def logout_user():
-    """Выход пользователя"""
-    print("👋 Выход")
-    
     st.session_state.user = None
-    st.session_state.achieved_endings = {}
-    
-    # Удаляем из URL
-    if 'user_email' in st.query_params:
-        del st.query_params['user_email']
-    if 'user_name' in st.query_params:
-        del st.query_params['user_name']
-    if 'user_username' in st.query_params:
-        del st.query_params['user_username']
-    
+    del st.query_params['user_email']
+    del st.query_params['user_name']
+    del st.query_params['user_username']
     st.rerun()
 
 # Инициализация
