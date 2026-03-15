@@ -16,69 +16,6 @@ GH_REPO = st.secrets.get("GH_REPO")
 GH_FILE_PATH = st.secrets.get("GH_FILE_PATH", "users_data.json")
 SESSION_SECRET = st.secrets.get("SESSION_SECRET", "default_secret_change_me")
 
-# --- ВСТРОЕННАЯ АУТЕНТИФИКАЦИЯ STREAMLIT ---
-# --- ИСПРАВЛЕННАЯ ФУНКЦИЯ ПРОВЕРКИ АВТОРИЗАЦИИ ---
-def check_password():
-    """Проверяет авторизацию пользователя"""
-    
-    # Если пользователь уже в session_state - всё ок
-    if st.session_state.get("user"):
-        return True
-    
-    # Проверяем несколько возможных источников авторизации
-    try:
-        # Вариант 1: experimental_user (Streamlit Community Cloud)
-        if hasattr(st, 'experimental_user'):
-            user_info = st.experimental_user
-            if user_info and user_info.get('email'):
-                email = user_info['email']
-                name = user_info.get('name', email.split('@')[0])
-                
-                st.session_state.user = {
-                    'email': email,
-                    'name': name,
-                    'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
-                }
-                
-                # Загружаем прогресс пользователя
-                users = get_github_data()
-                if email in users:
-                    st.session_state.achieved_endings = users[email].get("achieved_endings", {})
-                    user_achievements = users[email].get("achievements", {})
-                    if user_achievements:
-                        for key, value in user_achievements.items():
-                            if key in st.session_state.achievements:
-                                st.session_state.achievements[key] = value
-                return True
-        
-        # Вариант 2: query_params (для обратной совместимости)
-        if 'user_email' in st.query_params:
-            email = st.query_params['user_email']
-            st.session_state.user = {
-                'email': email,
-                'name': email.split('@')[0],
-                'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
-            }
-            return True
-            
-        # Вариант 3: тестовый режим (если APP_URL содержит localhost)
-        if 'localhost' in st.query_params.get('app_url', '') or 'streamlit.app' in st.query_params.get('app_url', ''):
-            # Для отладки создаем тестового пользователя
-            if 'debug_mode' not in st.session_state:
-                st.session_state.debug_mode = True
-                st.session_state.user = {
-                    'email': 'debug@example.com',
-                    'name': 'Debug User',
-                    'user_id': 'debug_123'
-                }
-                return True
-                
-    except Exception as e:
-        # В случае ошибки просто продолжаем
-        pass
-    
-    return False
-
 # --- Инициализация состояния ---
 def init_session_state():
     if "selected_tale" not in st.session_state:
@@ -122,9 +59,6 @@ def init_session_state():
         }
 
 init_session_state()
-
-# --- ПРОВЕРКА АВТОРИЗАЦИИ ---
-if not check_password():
 
 # --- Функции для работы с GitHub ---
 @st.cache_resource(ttl=60)
@@ -298,7 +232,69 @@ def restore_tale_state_from_url():
         
         st.session_state.tale_restored = True
 
-# --- Восстанавливаем состояние сказки ---
+# --- ПРОВЕРКА АВТОРИЗАЦИИ (НАДЕЖНЫЙ ВАРИАНТ) ---
+if not st.session_state.get('user'):
+    # Пытаемся получить пользователя из experimental_user
+    if hasattr(st, 'experimental_user') and st.experimental_user:
+        user_info = st.experimental_user
+        if user_info and user_info.get('email'):
+            st.session_state.user = {
+                'email': user_info['email'],
+                'name': user_info.get('name', user_info['email'].split('@')[0]),
+                'user_id': hashlib.md5(user_info['email'].encode()).hexdigest()[:10]
+            }
+            
+            # Загружаем прогресс пользователя
+            users = get_github_data()
+            if user_info['email'] in users:
+                st.session_state.achieved_endings = users[user_info['email']].get("achieved_endings", {})
+                user_achievements = users[user_info['email']].get("achievements", {})
+                if user_achievements:
+                    for key, value in user_achievements.items():
+                        if key in st.session_state.achievements:
+                            st.session_state.achievements[key] = value
+            
+            st.rerun()  # Перезагружаем с пользователем
+    else:
+        # Если нет experimental_user, показываем вход
+        st.title("🔐 Вход в Интерактивные сказки")
+        
+        st.markdown("""
+        ### 👇 Нажмите для входа:
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="https://share.streamlit.io/signin" target="_blank" style="
+                background: linear-gradient(135deg, #d4b68a, #b5926a);
+                color: #2a1c0e;
+                padding: 15px 30px;
+                border-radius: 50px;
+                text-decoration: none;
+                font-size: 1.3rem;
+                font-weight: bold;
+                border: 2px solid #8b6b4f;
+                display: inline-block;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            ">
+            🔑 Войти через Streamlit
+            </a>
+        </div>
+        
+        ---
+        ### Инструкция:
+        1. Нажмите кнопку выше
+        2. Войдите через Google (если нужно)
+        3. Вернитесь на эту страницу
+        4. **Обновите страницу** (клавиша F5)
+        """)
+        
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.image("https://via.placeholder.com/400x200/ffe6f0/ff69b4?text=✨+Сказки", width='stretch')
+            st.info("ℹ️ После входа ваш прогресс будет сохраняться автоматически")
+        
+        st.stop()
+
+# --- Восстанавливаем состояние сказки из URL ---
 restore_tale_state_from_url()
 
 # --- Функции для сказок ---
@@ -397,6 +393,130 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
             st.balloons()
             st.success("🏆 Достижение: «Ни одна лиса не страшна»")
     
+    if tale_name == "Теремок":
+        progress["teremok_count"] = len(st.session_state.achieved_endings.get("Теремок", set()))
+        if progress["teremok_count"] >= 5 and not ach["teremok_5"]:
+            ach["teremok_5"] = True
+            st.balloons()
+            st.success("🏆 Достижение: «Терем-теремок» (5 концовок)")
+        if progress["teremok_count"] >= 14 and not ach["teremok_all"]:
+            ach["teremok_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение: «Всем дом»")
+        
+        if ending_data:
+            ending_num = ending_data.get("ending_number")
+            if ending_num in [6, 7] and not ach["teremok_fairy"]:
+                ach["teremok_fairy"] = True
+                st.balloons()
+                st.success("🏆 Достижение: «Постучи три раза»")
+            if ending_num in [9, 10, 11] and not ach["teremok_bees"]:
+                ach["teremok_bees"] = True
+                st.balloons()
+                st.success("🏆 Достижение: «Пчелиный король»")
+    
+    if tale_name == "Золотая рыбка":
+        if ending_type == "sad" and ending_data:
+            if ending_data.get("ending_number") in [1,2,3]:
+                progress["rybka_greedy"] += 1
+                if progress["rybka_greedy"] >= 3 and not ach["rybka_3_greedy"]:
+                    ach["rybka_3_greedy"] = True
+                    st.balloons()
+                    st.success("🏆 Достижение: «Золотая жадность» (3 жадные концовки)")
+        
+        progress["rybka_count"] = len(st.session_state.achieved_endings.get("Золотая рыбка", set()))
+        if progress["rybka_count"] >= 10 and not ach["rybka_all"]:
+            ach["rybka_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение: «Мудрец» (все концовки Золотой рыбки)")
+    
+    if tale_name == "Курочка Ряба":
+        if ending_type == "happy" and ending_data:
+            if ending_data.get("ending_number") in [1,2,3,4,5,6,7]:
+                progress["ryaba_save"] += 1
+                if progress["ryaba_save"] >= 3 and not ach["ryaba_3_save"]:
+                    ach["ryaba_3_save"] = True
+                    st.balloons()
+                    st.success("🏆 Достижение: «Курочка-спасительница» (3 спасения)")
+        
+        progress["ryaba_count"] = len(st.session_state.achieved_endings.get("Курочка Ряба", set()))
+        if progress["ryaba_count"] >= 12 and not ach["ryaba_all"]:
+            ach["ryaba_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение: «Золотой урожай» (все концовки Курочки Рябы)")
+        
+        if ending_data and ending_data.get("ending_type") == "secret":
+            ending_num = ending_data.get("ending_number")
+            if ending_num in [5,6] and not ach["ryaba_wish"]:
+                ach["ryaba_wish"] = True
+                st.balloons()
+                st.success("🏆 Достижение: «Хрустальный шар» (загадать желание)")
+            if ending_num == 7 and not ach["ryaba_drink"]:
+                ach["ryaba_drink"] = True
+                st.balloons()
+                st.success("🏆 Достижение: «Гулянка» (выпить с дедом)")
+    
+    if tale_name == "Путешествие в Волшебный лес":
+        progress["forest_count"] = len(st.session_state.achieved_endings.get("Путешествие в Волшебный лес", set()))
+        if progress["forest_count"] >= 12 and not ach["forest_all"]:
+            ach["forest_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение: «Повелитель леса» (все концовки)")
+    
+    if tale_name == "Хроники разбитых часов: Детектив времени":
+        progress["detective_count"] = len(st.session_state.achieved_endings.get(tale_name, set()))
+        if progress["detective_count"] >= 10 and not ach["detective_10"]:
+            ach["detective_10"] = True
+            st.balloons()
+            st.success("🏆 Достижение: «Следопыт» (10 концовок)")
+        if progress["detective_count"] >= 25 and not ach["detective_all"]:
+            ach["detective_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение: «Идеальное преступление» (все концовки)")
+    
+    if tale_name == "Мелодия дождя":
+        progress["romance_count"] = len(st.session_state.achieved_endings.get(tale_name, set()))
+        if progress["romance_count"] >= 5 and not ach["romance_5_happy"]:
+            ach["romance_5_happy"] = True
+            st.balloons()
+            st.success("🏆 Достижение: «Романтик» (5 концовок)")
+        if progress["romance_count"] >= 20 and not ach["romance_all"]:
+            ach["romance_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение: «Идеальная пара» (все концовки)")
+    
+    if tale_name == "Проклятие крови ЛИКСА":
+        progress["lyx_count"] = len(st.session_state.achieved_endings.get(tale_name, set()))
+        if progress["lyx_count"] >= 5 and not ach.get("lyx_5", False):
+            ach["lyx_5"] = True
+            st.balloons()
+            st.success("🏆 Достижение: «Выжившая» (5 концовок ЛИКСЫ)")
+        if progress["lyx_count"] >= 9 and not ach.get("lyx_all", False):
+            ach["lyx_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение: «Проклятие снято» (все концовки ЛИКСЫ)")
+    
+    total = 0
+    for tale in tales.keys():
+        total += len(st.session_state.achieved_endings.get(tale, set()))
+    progress["total_endings_found"] = total
+    
+    if total >= 50 and not ach["total_50"]:
+        ach["total_50"] = True
+        st.balloons()
+        st.success("🏆 Достижение: «Коллекционер» (50 концовок)")
+    if total >= 80 and not ach["total_80"]:
+        ach["total_80"] = True
+        st.balloons()
+        st.success("🏆 Достижение: «Профессионал» (80 концовок)")
+    
+    total_possible = 16 + 14 + 20 + 12 + 12 + 25 + 20 + 9
+    if total >= total_possible and not ach["total_all"]:
+        ach["total_all"] = True
+        st.balloons()
+        st.balloons()
+        st.success("👑 ДОСТИЖЕНИЕ: «Библиотекарь» (ВСЕ концовки!)")
+    
     # Сохраняем прогресс после каждого достижения
     save_user_progress()
 
@@ -491,8 +611,12 @@ st.markdown("""
 
 # --- Боковая панель ---
 with st.sidebar:
-    st.markdown(f"👋 Привет, **{st.session_state.user['name']}**!")
-    st.markdown(f"📧 {st.session_state.user['email']}")
+    if st.session_state.get('user'):
+        st.markdown(f"👋 Привет, **{st.session_state.user['name']}**!")
+        st.markdown(f"📧 {st.session_state.user['email']}")
+    else:
+        st.markdown("👋 Добро пожаловать!")
+    
     st.markdown("---")
     st.markdown("## 📖 О проекте")
     st.markdown("Вы сами выбираете, как развернётся история.")
