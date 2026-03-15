@@ -43,7 +43,16 @@ def load_users_from_github():
         if response.status_code == 200:
             content = response.json()
             decoded = base64.b64decode(content["content"]).decode("utf-8")
-            return json.loads(decoded)
+            users_data = json.loads(decoded)
+            
+            # Преобразуем списки обратно в множества для achieved_endings
+            for email, user_data in users_data.items():
+                if "achieved_endings" in user_data:
+                    endings_dict = user_data["achieved_endings"]
+                    for tale_name, endings in endings_dict.items():
+                        if isinstance(endings, list):
+                            endings_dict[tale_name] = set(endings)
+            return users_data
         elif response.status_code == 404:
             return {}
         else:
@@ -58,13 +67,23 @@ def save_users_to_github(users_data):
     if not GH_TOKEN:
         return False
     
+    # Создаём копию данных, преобразуя set в list для JSON-сериализации
+    serializable_data = {}
+    for email, user_data in users_data.items():
+        serializable_data[email] = user_data.copy()
+        if "achieved_endings" in serializable_data[email]:
+            endings_dict = serializable_data[email]["achieved_endings"]
+            for tale_name, endings in endings_dict.items():
+                if isinstance(endings, set):
+                    endings_dict[tale_name] = list(endings)
+    
     url = f"https://api.github.com/repos/{GH_REPO}/contents/{GH_FILE_PATH}"
     headers = {"Authorization": f"token {GH_TOKEN}", "Accept": "application/vnd.github.v3+json"}
     
     response = requests.get(url, headers=headers)
     sha = response.json().get("sha") if response.status_code == 200 else None
     
-    content_json = json.dumps(users_data, ensure_ascii=False, indent=2)
+    content_json = json.dumps(serializable_data, ensure_ascii=False, indent=2)
     content_bytes = content_json.encode("utf-8")
     content_base64 = base64.b64encode(content_bytes).decode("utf-8")
     
@@ -342,33 +361,6 @@ st.markdown("""
         border-right: 2px solid #d4b68a;
     }
     
-    /* Стили для блока авторизации */
-    .auth-container {
-        background: white;
-        border-radius: 20px;
-        padding: 20px;
-        margin-bottom: 20px;
-        border: 2px solid #d4b68a;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-    
-    .auth-title {
-        font-size: 1.5rem;
-        margin-bottom: 15px;
-        color: #5d3a1a;
-        text-align: center;
-    }
-    
-    .terms {
-        font-size: 0.8rem;
-        color: #666;
-        margin: 15px 0;
-        padding: 10px;
-        background: #f9f9f9;
-        border-radius: 10px;
-        border-left: 3px solid #d4b68a;
-    }
-    
     /* Кнопка доната */
     .stLinkButton a {
         background: linear-gradient(135deg, #d4b68a, #b5926a);
@@ -395,7 +387,7 @@ st.markdown("""
     /* Все кнопки */
     .stButton > button {
         background: linear-gradient(135deg, #e6d5b8, #d4b68a);
-        color: #2a1c0e;
+        color: #2a1c0e !important;
         border: 2px solid #b5926a;
         border-radius: 40px;
         padding: 15px 20px !important;
@@ -413,6 +405,58 @@ st.markdown("""
         border-color: #8b6b4f;
         transform: translateY(-3px);
         box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    }
+    
+    /* Стили для форм */
+    .stTextInput > label {
+        color: #2c1e0e !important;
+        font-weight: 600;
+    }
+    
+    .stTextInput > div > input {
+        background-color: white !important;
+        border: 2px solid #d4b68a !important;
+        border-radius: 30px !important;
+        padding: 12px 20px !important;
+        color: #2c1e0e !important;
+        font-size: 1rem !important;
+    }
+    
+    .stTextInput > div > input:focus {
+        border-color: #b5926a !important;
+        box-shadow: 0 0 0 2px rgba(181,146,106,0.2) !important;
+    }
+    
+    /* Чекбокс */
+    .stCheckbox {
+        color: #2c1e0e !important;
+    }
+    
+    .stCheckbox > label {
+        color: #2c1e0e !important;
+    }
+    
+    /* Табы */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background: #e6d5b8 !important;
+        border: 2px solid #b5926a !important;
+        border-radius: 30px !important;
+        padding: 10px 20px !important;
+        color: #2c1e0e !important;
+        font-weight: 600;
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        background: #d4b68a !important;
+    }
+    
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {
+        background: #d4b68a !important;
+        border-color: #8b6b4f !important;
     }
     
     /* КАРТОЧКИ */
@@ -652,8 +696,108 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
                 st.balloons()
                 st.success("🏆 Достижение разблокировано: «Пчелиный король»")
     
-    # Здесь можно добавить другие проверки для остальных сказок
-    # (для краткости оставлю как есть, но в вашем коде они уже есть)
+    if tale_name == "Золотая рыбка":
+        if ending_type == "sad" and ending_data:
+            if ending_data.get("ending_number") in [1,2,3]:
+                progress["rybka_greedy"] += 1
+                if progress["rybka_greedy"] >= 3 and not ach["rybka_3_greedy"]:
+                    ach["rybka_3_greedy"] = True
+                    st.balloons()
+                    st.success("🏆 Достижение разблокировано: «Золотая жадность» (3 жадные концовки)")
+        
+        progress["rybka_count"] = len(st.session_state.achieved_endings.get("Золотая рыбка", set()))
+        if progress["rybka_count"] >= 10 and not ach["rybka_all"]:
+            ach["rybka_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Мудрец» (все концовки Золотой рыбки)")
+    
+    if tale_name == "Курочка Ряба":
+        if ending_type == "happy" and ending_data:
+            if ending_data.get("ending_number") in [1,2,3,4,5,6,7]:
+                progress["ryaba_save"] += 1
+                if progress["ryaba_save"] >= 3 and not ach["ryaba_3_save"]:
+                    ach["ryaba_3_save"] = True
+                    st.balloons()
+                    st.success("🏆 Достижение разблокировано: «Курочка-спасительница» (3 спасения)")
+        
+        progress["ryaba_count"] = len(st.session_state.achieved_endings.get("Курочка Ряба", set()))
+        if progress["ryaba_count"] >= 12 and not ach["ryaba_all"]:
+            ach["ryaba_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Золотой урожай» (все концовки Курочки Рябы)")
+        
+        if ending_data and ending_data.get("ending_type") == "secret":
+            ending_num = ending_data.get("ending_number")
+            if ending_num in [5,6] and not ach["ryaba_wish"]:
+                ach["ryaba_wish"] = True
+                st.balloons()
+                st.success("🏆 Достижение разблокировано: «Хрустальный шар» (загадать желание)")
+            if ending_num == 7 and not ach["ryaba_drink"]:
+                ach["ryaba_drink"] = True
+                st.balloons()
+                st.success("🏆 Достижение разблокировано: «Гулянка» (выпить с дедом)")
+    
+    if tale_name == "Путешествие в Волшебный лес":
+        progress["forest_count"] = len(st.session_state.achieved_endings.get("Путешествие в Волшебный лес", set()))
+        if progress["forest_count"] >= 12 and not ach["forest_all"]:
+            ach["forest_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Повелитель леса» (все концовки)")
+    
+    if tale_name == "Хроники разбитых часов: Детектив времени":
+        progress["detective_count"] = len(st.session_state.achieved_endings.get(tale_name, set()))
+        if progress["detective_count"] >= 10 and not ach["detective_10"]:
+            ach["detective_10"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Следопыт» (10 концовок)")
+        if progress["detective_count"] >= 25 and not ach["detective_all"]:
+            ach["detective_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Идеальное преступление» (все концовки)")
+    
+    if tale_name == "Мелодия дождя":
+        progress["romance_count"] = len(st.session_state.achieved_endings.get(tale_name, set()))
+        if progress["romance_count"] >= 5 and not ach["romance_5_happy"]:
+            ach["romance_5_happy"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Романтик» (5 концовок)")
+        if progress["romance_count"] >= 20 and not ach["romance_all"]:
+            ach["romance_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Идеальная пара» (все концовки)")
+    
+    if tale_name == "Проклятие крови ЛИКСА":
+        progress["lyx_count"] = progress.get("lyx_count", 0)
+        progress["lyx_count"] = len(st.session_state.achieved_endings.get(tale_name, set()))
+        if progress["lyx_count"] >= 5 and not ach.get("lyx_5", False):
+            ach["lyx_5"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Выжившая» (5 концовок ЛИКСЫ)")
+        if progress["lyx_count"] >= 9 and not ach.get("lyx_all", False):
+            ach["lyx_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Проклятие снято» (все концовки ЛИКСЫ)")
+    
+    total = 0
+    for tale in tales.keys():
+        total += len(st.session_state.achieved_endings.get(tale, set()))
+    progress["total_endings_found"] = total
+    
+    if total >= 50 and not ach["total_50"]:
+        ach["total_50"] = True
+        st.balloons()
+        st.success("🏆 Достижение разблокировано: «Коллекционер» (50 концовок)")
+    if total >= 80 and not ach["total_80"]:
+        ach["total_80"] = True
+        st.balloons()
+        st.success("🏆 Достижение разблокировано: «Профессионал» (80 концовок)")
+    
+    total_possible = 16 + 14 + 20 + 12 + 12 + 25 + 20 + 9
+    if total >= total_possible and not ach["total_all"]:
+        ach["total_all"] = True
+        st.balloons()
+        st.balloons()
+        st.success("👑 ДОСТИЖЕНИЕ ПЛАТИНОВОЕ: «Библиотекарь» (ВСЕ концовки!)")
 
 def start_tale(tale_name):
     st.session_state.selected_tale = tale_name
