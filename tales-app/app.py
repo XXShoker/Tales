@@ -13,12 +13,14 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from tales_data import tales
 import time
-_last_log = time.time()
-def log_rerun(place):
-    global _last_log
+if 'last_run' not in st.session_state:
+    st.session_state.last_run = time.time()
+    print(f"Первый запуск скрипта")
+else:
     now = time.time()
-    print(f"RERUN in {place}, delta={now-_last_log:.3f}")
-    _last_log = now
+    delta = now - st.session_state.last_run
+    print(f"Повторный запуск через {delta:.3f} сек")
+    st.session_state.last_run = now
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="wide")
 
@@ -230,24 +232,23 @@ def save_user_progress():
 
 # --- Функции для работы с URL (сохранение состояния сказки) ---
 def save_tale_state_to_url():
-    old_params = dict(st.query_params)
-    params = {}
-    # ... формирование params ...
-    if params != old_params:  # только если есть изменения
-        st.query_params.update(params)
+    # Получаем текущие параметры
+    current_params = dict(st.query_params)
+    new_params = {}
     
     if st.session_state.get('selected_tale'):
-        params['tale'] = st.session_state.selected_tale
+        new_params['tale'] = st.session_state.selected_tale
     
     if st.session_state.get('scene_id') and st.session_state.scene_id != "start":
-        params['scene'] = st.session_state.scene_id
+        new_params['scene'] = st.session_state.scene_id
     
     if len(st.session_state.get('scene_history', [])) > 1:
         recent_history = st.session_state.scene_history[-5:]
-        params['history'] = ','.join(recent_history)
+        new_params['history'] = ','.join(recent_history)
     
-    if params:
-        st.query_params.update(params)
+    # Сравниваем с текущими параметрами, обновляем только если есть изменения
+    if new_params != {k: v for k, v in current_params.items() if k in new_params}:
+        st.query_params.update(new_params)
 
 def restore_tale_state_from_url():
     if 'tale_restored' not in st.session_state:
@@ -297,15 +298,15 @@ def restore_tale_state_from_url():
 
 # --- АВТОРИЗАЦИЯ (ГАРАНТИРОВАННО РАБОЧАЯ) ---
 def init_auth():
-    """Инициализация авторизации - ПРЯМОЕ ЧТЕНИЕ URL + загрузка прогресса"""
-    
     email = st.query_params.get('user_email')
     name = st.query_params.get('user_name')
     username = st.query_params.get('user_username')
     
-    print(f"🔍 URL параметры: email={email}, name={name}, username={username}")
+    # Если пользователь уже есть в session_state и email совпадает – не загружаем прогресс повторно
+    if st.session_state.get('user') and st.session_state.user['email'] == email:
+        return
     
-    # Если есть email - сразу восстанавливаем пользователя
+    # иначе устанавливаем пользователя и загружаем прогресс
     if email:
         st.session_state.user = {
             'email': email,
