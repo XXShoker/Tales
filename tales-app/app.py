@@ -283,9 +283,8 @@ def restore_tale_state_from_url():
 
 # --- АВТОРИЗАЦИЯ (ГАРАНТИРОВАННО РАБОЧАЯ) ---
 def init_auth():
-    """Инициализация авторизации - ПРЯМОЕ ЧТЕНИЕ URL"""
+    """Инициализация авторизации - ПРЯМОЕ ЧТЕНИЕ URL + загрузка прогресса"""
     
-    # ПРЯМОЕ чтение из URL - без всяких условий
     email = st.query_params.get('user_email')
     name = st.query_params.get('user_name')
     username = st.query_params.get('user_username')
@@ -301,6 +300,25 @@ def init_auth():
             'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
         }
         print(f"✅ Пользователь УСТАНОВЛЕН: {st.session_state.user}")
+        
+        # --- ЗАГРУЖАЕМ ПРОГРЕСС ПОЛЬЗОВАТЕЛЯ ИЗ GITHUB ---
+        try:
+            users = get_github_data()
+            if email in users:
+                st.session_state.achieved_endings = users[email].get("achieved_endings", {})
+                user_achievements = users[email].get("achievements", {})
+                if user_achievements:
+                    for key, value in user_achievements.items():
+                        if key in st.session_state.achievements:
+                            st.session_state.achievements[key] = value
+                print(f"✅ Прогресс загружен: {len(st.session_state.achieved_endings)} концовок")
+            else:
+                # Если пользователь есть в URL, но нет в GitHub (редкий случай)
+                st.session_state.achieved_endings = {}
+                print("⚠️ Пользователь не найден в GitHub, прогресс пуст")
+        except Exception as e:
+            print(f"❌ Ошибка загрузки прогресса: {e}")
+            st.session_state.achieved_endings = {}
     else:
         # Если нет email в URL - проверяем, может уже есть в session_state
         if 'user' not in st.session_state:
