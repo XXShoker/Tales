@@ -539,28 +539,95 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
     # Сохраняем прогресс после каждого достижения
     save_user_progress()
 
-# --- Стили ---
+# --- Стили (ИСПРАВЛЕННЫЕ для лучшей читаемости) ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Open+Sans:wght@400;600&display=swap');
     
+    /* Общий фон */
     .stApp {
         background: linear-gradient(135deg, #fcf3e0 0%, #fef9e7 100%);
     }
     
+    /* Заголовки - ТЕМНЫЕ И ЧЕТКИЕ */
     h1, h2, h3, h4, h5, h6 {
         font-family: 'Cormorant Garamond', serif;
         color: #2c1e0e !important;
-        font-weight: 600;
+        font-weight: 700 !important;
+        text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
     }
     
     h1 {
         font-size: 3rem;
-        border-bottom: 3px solid #d4b68a;
+        border-bottom: 3px solid #b5926a;
         padding-bottom: 15px;
         margin-bottom: 30px;
     }
     
+    /* Обычный текст - ТЕМНО-КОРИЧНЕВЫЙ */
+    p, li, .stMarkdown, .stText, .stChatMessage p, .stAlert, .stInfo, .stSuccess, .stWarning, .stError {
+        font-family: 'Open Sans', sans-serif;
+        color: #2c1e0e !important;
+        font-size: clamp(1rem, 2vw, 1.2rem);
+        line-height: 1.6;
+        font-weight: 500 !important;
+    }
+    
+    /* Специально для сообщений об ошибках и информации */
+    .stAlert {
+        background-color: #f8f0e0 !important;
+        border-left: 5px solid #b5926a !important;
+        color: #2c1e0e !important;
+    }
+    
+    .stInfo {
+        background-color: #e6f0fa !important;
+        color: #1a4c7a !important;
+    }
+    
+    .stSuccess {
+        background-color: #e0f0e0 !important;
+        color: #1a5a1a !important;
+    }
+    
+    .stWarning {
+        background-color: #fff0d0 !important;
+        color: #8a6a2a !important;
+    }
+    
+    .stError {
+        background-color: #ffe0e0 !important;
+        color: #a03232 !important;
+    }
+    
+    /* Боковая панель */
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #f5e9d8 0%, #ecdcc5 100%);
+        border-right: 2px solid #b5926a;
+    }
+    
+    section[data-testid="stSidebar"] .stMarkdown {
+        color: #2c1e0e !important;
+    }
+    
+    /* Кнопка доната */
+    .stLinkButton a {
+        background: linear-gradient(135deg, #d4b68a, #b5926a);
+        color: #2a1c0e !important;
+        border-radius: 50px;
+        padding: 15px 25px;
+        text-decoration: none;
+        font-weight: bold;
+        border: 2px solid #8b6b4f;
+        display: inline-block;
+        width: 100%;
+        text-align: center;
+        font-size: 1.2rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    /* Все кнопки */
     .stButton > button {
         background: linear-gradient(135deg, #e6d5b8, #d4b68a);
         color: #2a1c0e !important;
@@ -572,48 +639,71 @@ st.markdown("""
         width: 100%;
         min-height: 60px;
         transition: all 0.2s ease;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
     
-    .stButton > button:hover {
-        background: linear-gradient(135deg, #d4b68a, #b5926a);
-        transform: translateY(-3px);
-        box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    /* Текст на кнопках */
+    .stButton > button p {
+        color: #2a1c0e !important;
+        font-weight: 700 !important;
     }
     
+    /* Поля ввода */
+    .stTextInput > label {
+        color: #2c1e0e !important;
+        font-weight: 600;
+    }
+    
+    .stTextInput > div > input {
+        background-color: white !important;
+        border: 2px solid #b5926a !important;
+        border-radius: 30px !important;
+        padding: 12px 20px !important;
+        color: #2c1e0e !important;
+        font-size: 1rem !important;
+        font-weight: 500 !important;
+    }
+    
+    /* Чат сообщения */
+    .stChatMessage {
+        animation: fadeIn 0.3s ease-out;
+        background: white !important;
+        border: 2px solid #b5926a !important;
+        border-radius: 20px !important;
+        padding: 15px 20px !important;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .stChatMessage[data-testid="chatMessageUser"] {
+        background: linear-gradient(135deg, #e6d5b8, #d4b68a) !important;
+    }
+    
+    .stChatMessage p {
+        color: #2c1e0e !important;
+        font-weight: 500 !important;
+    }
+    
+    /* Карточки сказок */
     div[data-testid="column"] > div {
         background: white;
         border-radius: 24px;
         padding: 25px;
-        border: 2px solid #e9d9c4;
-        box-shadow: 0 10px 25px rgba(93,58,26,0.1);
+        border: 2px solid #b5926a;
+        box-shadow: 0 10px 25px rgba(93,58,26,0.15);
         height: auto !important;
         min-height: 500px;
         transition: all 0.3s ease;
     }
     
-    div[data-testid="column"] > div:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 20px 35px rgba(93,58,26,0.15);
-        border-color: #d4b68a;
+    div[data-testid="column"] > div p {
+        color: #2c1e0e !important;
     }
     
-    div[data-testid="column"] img {
-        width: 100%;
-        height: auto !important;
-        max-height: 300px;
-        object-fit: cover;
-        border-radius: 16px;
-        border: 2px solid #d4b68a;
-        margin-bottom: 20px;
-    }
-    
-    .stChatMessage {
-        animation: fadeIn 0.3s ease-out;
-        background: white !important;
-        border: 2px solid #e9d9c4;
-        border-radius: 20px !important;
-        padding: 15px 20px !important;
-        margin-bottom: 10px;
+    /* Прогресс-бар */
+    .stProgress > div > div {
+        background: linear-gradient(90deg, #b5926a, #8b6b4f) !important;
+        border-radius: 10px;
     }
     
     @keyframes fadeIn {
