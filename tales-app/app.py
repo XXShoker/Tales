@@ -67,21 +67,34 @@ def save_users_to_github(users_data):
     if not GH_TOKEN:
         return False
     
-    # Создаём копию данных, преобразуя set в list для JSON-сериализации
+    # Создаём глубокую копию для сериализации
     serializable_data = {}
     for email, user_data in users_data.items():
-        serializable_data[email] = user_data.copy()
-        if "achieved_endings" in serializable_data[email]:
-            endings_dict = serializable_data[email]["achieved_endings"]
-            for tale_name, endings in endings_dict.items():
-                if isinstance(endings, set):
-                    endings_dict[tale_name] = list(endings)
+        serializable_data[email] = {}
+        for key, value in user_data.items():
+            if key == "achieved_endings":
+                # Преобразуем словарь с множествами в словарь со списками
+                serializable_data[email][key] = {}
+                for tale_name, endings in value.items():
+                    if isinstance(endings, set):
+                        serializable_data[email][key][tale_name] = list(endings)
+                    else:
+                        serializable_data[email][key][tale_name] = endings
+            elif key == "achievements":
+                # Копируем как есть (словарь с булевыми значениями)
+                serializable_data[email][key] = value.copy()
+            else:
+                # Остальные поля (user_id, name, email, password_hash, created_at, verified)
+                serializable_data[email][key] = value
     
     url = f"https://api.github.com/repos/{GH_REPO}/contents/{GH_FILE_PATH}"
     headers = {"Authorization": f"token {GH_TOKEN}", "Accept": "application/vnd.github.v3+json"}
     
-    response = requests.get(url, headers=headers)
-    sha = response.json().get("sha") if response.status_code == 200 else None
+    try:
+        response = requests.get(url, headers=headers)
+        sha = response.json().get("sha") if response.status_code == 200 else None
+    except:
+        sha = None
     
     content_json = json.dumps(serializable_data, ensure_ascii=False, indent=2)
     content_bytes = content_json.encode("utf-8")
