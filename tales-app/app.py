@@ -230,7 +230,11 @@ def save_user_progress():
 
 # --- Функции для работы с URL (сохранение состояния сказки) ---
 def save_tale_state_to_url():
+    old_params = dict(st.query_params)
     params = {}
+    # ... формирование params ...
+    if params != old_params:  # только если есть изменения
+        st.query_params.update(params)
     
     if st.session_state.get('selected_tale'):
         params['tale'] = st.session_state.selected_tale
