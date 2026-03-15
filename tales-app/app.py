@@ -109,9 +109,9 @@ def init_session_state():
 
 init_session_state()
 
-# --- Функции для работы с GitHub ---
-@st.cache_resource(ttl=60)
+@st.cache_data(ttl=300)  # кэш на 5 минут (300 секунд)
 def get_github_data():
+    """Загружает данные пользователей из GitHub с кэшированием"""
     if not GH_TOKEN:
         return {}
     
@@ -125,6 +125,7 @@ def get_github_data():
             decoded = base64.b64decode(content["content"]).decode("utf-8")
             users_data = json.loads(decoded)
             
+            # Преобразуем списки обратно в множества для удобства работы
             for email, user_data in users_data.items():
                 if "achieved_endings" in user_data:
                     endings_dict = user_data["achieved_endings"]
@@ -137,6 +138,8 @@ def get_github_data():
         else:
             return {}
     except Exception as e:
+        # ВАЖНО: при ошибке возвращаем пустой словарь, но не кэшируем ошибку
+        # (можно добавить st.warning, если нужно)
         return {}
 
 def save_users_to_github(users_data):
