@@ -3,9 +3,10 @@
     "user_id": "a4238c0c24",
     "name": "zapomni2803",
     "email": "zapomni2803@gmail.com",
-    "last_login": "2026-03-15T09:59:34.183091",
+    "last_login": "2026-03-15T10:25:42.505788",
     "achieved_endings": {
       "Колобок": [
+        "happy_10",
         "sad_2"
       ],
       "Проклятие крови ЛИКСА": [
@@ -45,8 +46,7 @@
       "death_10": false,
       "lyx_5": false,
       "lyx_all": false
-    },
-    "password": "741ae8e6120fadf525afca0da22fae758dab8cf126ca60c7b227d823391676c7"
+    }
   },
   "Rakushonochek@yandex.ru": {
     "user_id": "036b0f7e85",
