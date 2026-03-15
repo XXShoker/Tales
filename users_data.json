@@ -47,12 +47,50 @@
     "verified": true
   },
   "Rakushonochek@yandex.ru": {
+    "user_id": "036b0f7e85",
     "username": "Rakushonochek",
     "name": "Анна",
-    "password": "2ebcb454ef18ba1e8bfe6544b87b708407d0531a0d37fea78973636bd458d8f3",
-    "created_at": "2026-03-15T12:09:34.848721",
-    "verified": true,
-    "achieved_endings": {},
-    "achievements": {}
+    "email": "Rakushonochek@yandex.ru",
+    "last_login": "2026-03-15T12:14:30.112351",
+    "achieved_endings": {
+      "Колобок": [
+        "neutral_2"
+      ]
+    },
+    "achievements": {
+      "kolobok_5": false,
+      "kolobok_all": false,
+      "teremok_5": false,
+      "teremok_all": false,
+      "rybka_3_greedy": false,
+      "rybka_all": false,
+      "ryaba_3_save": false,
+      "ryaba_all": false,
+      "forest_10_locations": false,
+      "forest_all_friends": false,
+      "forest_all": false,
+      "detective_10": false,
+      "detective_time_5": false,
+      "detective_save_3": false,
+      "detective_all": false,
+      "romance_3_love": false,
+      "romance_5_happy": false,
+      "romance_all": false,
+      "teremok_fairy": false,
+      "teremok_bees": false,
+      "ryaba_wish": false,
+      "ryaba_drink": false,
+      "crossover": false,
+      "total_50": false,
+      "total_80": false,
+      "total_all": false,
+      "speedrun": false,
+      "explorer": false,
+      "talisman": false,
+      "death_10": false,
+      "lyx_5": false,
+      "lyx_all": false
+    },
+    "verified": true
   }
 }
