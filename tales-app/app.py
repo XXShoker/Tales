@@ -679,6 +679,7 @@ def handle_choice(choice_text, next_scene_id):
     if next_scene:
         st.session_state.messages.append({"role": "assistant", "content": next_scene["text"]})
     save_tale_state_to_url()
+    save_user_progress()
     st.rerun()
 
 def go_back():
@@ -704,6 +705,7 @@ def go_back():
                     st.session_state.messages.append({"role": "assistant", "content": scene["text"]})
         
         save_tale_state_to_url()
+        save_user_progress()
         st.rerun()
 
 def reset_to_main():
