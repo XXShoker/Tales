@@ -274,20 +274,25 @@ def restore_tale_state_from_url():
         
         st.session_state.tale_restored = True
 
-# --- АВТОРИЗАЦИЯ ---
+# --- АВТОРИЗАЦИЯ (ИСПРАВЛЕННАЯ) ---
 def init_auth():
+    """Инициализация авторизации"""
     if 'user' not in st.session_state:
+        # Прямое чтение из URL параметров
         email = st.query_params.get('user_email')
         name = st.query_params.get('user_name')
         username = st.query_params.get('user_username')
         
-        if email:
+        print(f"🔍 init_auth: email={email}, name={name}, username={username}")
+        
+        if email and name:
             st.session_state.user = {
                 'email': email,
-                'name': name or email.split('@')[0],
-                'username': username or email.split('@')[0],
+                'name': name,
+                'username': username or name,
                 'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
             }
+            print(f"✅ Пользователь восстановлен: {st.session_state.user}")
             
             # Загружаем прогресс
             try:
@@ -300,32 +305,51 @@ def init_auth():
                             if key in st.session_state.achievements:
                                 st.session_state.achievements[key] = value
             except Exception as e:
-                pass
+                print(f"Ошибка загрузки прогресса: {e}")
 
 def login_user(email, name, username):
+    """Вход пользователя"""
+    print(f"✅ login_user: {email}, {name}, {username}")
+    
     st.session_state.user = {
         'email': email,
         'name': name,
         'username': username,
         'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
     }
+    
+    # Сохраняем в URL
     st.query_params['user_email'] = email
     st.query_params['user_name'] = name
     st.query_params['user_username'] = username
+    
+    print(f"✅ URL обновлен: {st.query_params}")
     st.rerun()
 
 def logout_user():
+    """Выход пользователя"""
+    print("👋 logout_user")
+    
     st.session_state.user = None
     st.session_state.achieved_endings = {}
+    
+    # Удаляем из URL
     if 'user_email' in st.query_params:
         del st.query_params['user_email']
     if 'user_name' in st.query_params:
         del st.query_params['user_name']
     if 'user_username' in st.query_params:
         del st.query_params['user_username']
+    
     st.rerun()
 
 init_auth()
+
+# --- ОТЛАДКА (временно) ---
+with st.sidebar:
+    with st.expander("🔧 Отладка"):
+        st.write("User в session_state:", st.session_state.get('user'))
+        st.write("Параметры URL:", dict(st.query_params))
 
 # --- ПРОВЕРКА АВТОРИЗАЦИИ ---
 if not st.session_state.get('user'):
@@ -804,15 +828,17 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
     # Сохраняем прогресс после каждого достижения
     save_user_progress()
 
-# --- Стили ---
+# --- Стили (ИСПРАВЛЕННЫЕ) ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Open+Sans:wght@400;600&display=swap');
     
+    /* Общий фон */
     .stApp {
         background: linear-gradient(135deg, #fcf3e0 0%, #fef9e7 100%);
     }
     
+    /* Заголовки - ТЕМНЫЕ И ЧЕТКИЕ */
     h1, h2, h3, h4, h5, h6 {
         font-family: 'Cormorant Garamond', serif;
         color: #2c1e0e !important;
@@ -827,7 +853,10 @@ st.markdown("""
         margin-bottom: 30px;
     }
     
-    p, li, .stMarkdown, .stText, .stChatMessage p {
+    /* ВЕСЬ ТЕКСТ - ТЕМНО-КОРИЧНЕВЫЙ */
+    p, li, span, div, .stMarkdown, .stText, .stChatMessage p, 
+    .stAlert, .stInfo, .stSuccess, .stWarning, .stError,
+    .st-bb, .st-at, .st-ae, .st-af, .st-ag {
         font-family: 'Open Sans', sans-serif;
         color: #2c1e0e !important;
         font-size: clamp(1rem, 2vw, 1.2rem);
@@ -835,6 +864,30 @@ st.markdown("""
         font-weight: 500 !important;
     }
     
+    /* Боковая панель - текст */
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] .stMarkdown,
+    section[data-testid="stSidebar"] span {
+        color: #2c1e0e !important;
+    }
+    
+    /* Поля ввода - текст */
+    .stTextInput > label {
+        color: #2c1e0e !important;
+        font-weight: 600;
+    }
+    
+    .stTextInput > div > input {
+        background-color: white !important;
+        border: 2px solid #b5926a !important;
+        border-radius: 30px !important;
+        padding: 12px 20px !important;
+        color: #2c1e0e !important;
+        font-size: 1rem !important;
+        font-weight: 500 !important;
+    }
+    
+    /* Кнопки */
     .stButton > button {
         background: linear-gradient(135deg, #e6d5b8, #d4b68a);
         color: #2a1c0e !important;
@@ -845,15 +898,27 @@ st.markdown("""
         font-weight: 600;
         width: 100%;
         min-height: 60px;
-        transition: all 0.2s ease;
     }
     
-    .stButton > button:hover {
-        background: linear-gradient(135deg, #d4b68a, #b5926a);
-        transform: translateY(-3px);
-        box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+    /* Чат сообщения */
+    .stChatMessage {
+        background: white !important;
+        border: 2px solid #b5926a !important;
+        border-radius: 20px !important;
+        padding: 15px 20px !important;
+        margin-bottom: 10px;
     }
     
+    .stChatMessage[data-testid="chatMessageUser"] {
+        background: linear-gradient(135deg, #e6d5b8, #d4b68a) !important;
+    }
+    
+    .stChatMessage p {
+        color: #2c1e0e !important;
+        font-weight: 500 !important;
+    }
+    
+    /* Карточки сказок */
     div[data-testid="column"] > div {
         background: white;
         border-radius: 24px;
@@ -862,21 +927,10 @@ st.markdown("""
         box-shadow: 0 10px 25px rgba(93,58,26,0.15);
         height: auto !important;
         min-height: 500px;
-        transition: all 0.3s ease;
     }
     
-    .stChatMessage {
-        animation: fadeIn 0.3s ease-out;
-        background: white !important;
-        border: 2px solid #b5926a !important;
-        border-radius: 20px !important;
-        padding: 15px 20px !important;
-        margin-bottom: 10px;
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+    div[data-testid="column"] > div p {
+        color: #2c1e0e !important;
     }
     
     @media (max-width: 600px) {
