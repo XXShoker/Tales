@@ -12,10 +12,10 @@ st.markdown("""
     
     /* Общий фон */
     .stApp {
-        background-color: #fef9e7;
+        background: linear-gradient(135deg, #fcf3e0 0%, #fef9e7 100%);
     }
     
-    /* Заголовки - тёмные и читаемые */
+    /* Заголовки */
     h1, h2, h3, h4, h5, h6 {
         font-family: 'Cormorant Garamond', serif;
         color: #2c1e0e !important;
@@ -26,7 +26,8 @@ st.markdown("""
         font-size: 3rem;
         border-bottom: 3px solid #d4b68a;
         padding-bottom: 15px;
-        color: #2c1e0e !important;
+        margin-bottom: 30px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.05);
     }
     
     /* Заголовки секций */
@@ -35,70 +36,51 @@ st.markdown("""
         margin: 40px 0 20px 0;
         padding-left: 15px;
         border-left: 5px solid #b5926a;
-        color: #2c1e0e !important;
-        font-family: 'Cormorant Garamond', serif;
+        background: linear-gradient(90deg, rgba(181,146,106,0.1) 0%, rgba(255,255,255,0) 100%);
+        padding: 10px 20px;
+        border-radius: 0 20px 20px 0;
     }
     
-    /* Текст - тёмный */
+    /* Текст */
     p, li, .stMarkdown, .stText, .stChatMessage p {
         font-family: 'Open Sans', sans-serif;
         color: #1a1309 !important;
-        font-size: 1.1rem;
+        font-size: clamp(1rem, 2vw, 1.2rem);
         line-height: 1.6;
     }
     
-    /* Боковая панель - на мобильных превращается в выезжающее меню */
+    /* Боковая панель */
     section[data-testid="stSidebar"] {
-        background-color: #f5e9d8;
+        background: linear-gradient(180deg, #f5e9d8 0%, #ecdcc5 100%);
+        border-right: 2px solid #d4b68a;
     }
     
-    /* Кнопка доната - улучшенная для мобильных */
+    /* Кнопка доната */
     .stLinkButton a {
-        background-color: #d4b68a;
+        background: linear-gradient(135deg, #d4b68a, #b5926a);
         color: #2a1c0e !important;
         border-radius: 50px;
         padding: 15px 25px;
         text-decoration: none;
         font-weight: bold;
-        border: 2px solid #b5926a;
+        border: 2px solid #8b6b4f;
         display: inline-block;
         width: 100%;
         text-align: center;
         font-size: 1.2rem;
         transition: all 0.3s ease;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
     
     .stLinkButton a:hover {
-        background-color: #b5926a;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    }
-    
-    /* Кнопка "Сменить сказку" в сайдбаре */
-    .sidebar-button {
-        background-color: #cbb89e;
-        color: #2a1c0e;
-        border: 2px solid #9b7e62;
-        border-radius: 40px;
-        padding: 15px 20px;
-        font-size: 1.2rem;
-        font-weight: 600;
-        width: 100%;
-        margin: 10px 0;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-align: center;
-    }
-    
-    .sidebar-button:hover {
-        background-color: #b89e7c;
-        transform: translateY(-2px);
+        background: linear-gradient(135deg, #b5926a, #9b7e62);
+        transform: translateY(-3px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.2);
     }
     
     /* Все кнопки */
     .stButton > button {
-        background-color: #e6d5b8;
+        background: linear-gradient(135deg, #e6d5b8, #d4b68a);
         color: #2a1c0e;
         border: 2px solid #b5926a;
         border-radius: 40px;
@@ -109,80 +91,103 @@ st.markdown("""
         width: 100%;
         min-height: 60px;
         transition: all 0.2s ease;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
     
     .stButton > button:hover {
-        background-color: #d4b68a;
+        background: linear-gradient(135deg, #d4b68a, #b5926a);
         border-color: #8b6b4f;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.15);
     }
     
-    /* КАРТОЧКИ - ФИКСИРОВАННАЯ ВЫСОТА */
+    /* КАРТОЧКИ */
     div[data-testid="column"] > div {
-        background-color: #fffaf0;
-        border-radius: 20px;
+        background: white;
+        border-radius: 24px;
         padding: 25px;
         border: 2px solid #e9d9c4;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        box-shadow: 0 10px 25px rgba(93,58,26,0.1);
         height: 1000px !important;
         display: flex;
         flex-direction: column;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(5px);
     }
     
-    /* Изображения - ФИКСИРОВАННАЯ ВЫСОТА */
+    div[data-testid="column"] > div:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 35px rgba(93,58,26,0.15);
+        border-color: #d4b68a;
+    }
+    
+    /* Изображения */
     div[data-testid="column"] img {
         width: 100%;
         height: 500px !important;
         object-fit: cover;
-        border-radius: 15px;
+        border-radius: 16px;
         border: 2px solid #d4b68a;
         margin-bottom: 20px;
+        transition: transform 0.3s ease;
     }
     
-    /* Заголовок сказки */
-    div[data-testid="column"] h3 {
-        font-size: 2rem;
-        margin: 0 0 15px 0;
-        color: #2c1e0e !important;
+    div[data-testid="column"] > div:hover img {
+        transform: scale(1.02);
     }
     
-    /* Описание сказки */
-    div[data-testid="column"] p {
-        font-size: 1.1rem;
-        margin: 0 0 20px 0;
+    /* Прогресс на карточке */
+    .card-progress {
+        font-size: 0.9rem;
+        color: #8b6b4f;
+        margin: 5px 0 15px 0;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .card-progress-bar {
+        height: 6px;
+        background: #e6d5b8;
+        border-radius: 3px;
         flex-grow: 1;
-        color: #1a1309 !important;
+        overflow: hidden;
     }
     
-    /* Кнопка в карточке */
-    div[data-testid="column"] .stButton {
-        margin-top: auto;
+    .card-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #b5926a, #8b6b4f);
+        border-radius: 3px;
     }
     
-    /* Сообщения чата */
+    /* Анимация появления текста */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
     .stChatMessage {
-        background-color: #fffaf0 !important;
+        animation: fadeIn 0.3s ease-out;
+        background: white !important;
         border: 2px solid #e9d9c4;
         border-radius: 20px !important;
         padding: 15px 20px !important;
         margin-bottom: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     
     .stChatMessage[data-testid="chatMessageUser"] {
-        background-color: #e6d5b8 !important;
+        background: linear-gradient(135deg, #e6d5b8, #d4b68a) !important;
     }
     
     /* Прогресс-бар */
     .stProgress > div > div {
-        background-color: #b5926a !important;
+        background: linear-gradient(90deg, #b5926a, #8b6b4f) !important;
         border-radius: 10px;
     }
     
     /* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
     @media (max-width: 600px) {
-        /* Уменьшаем карточки */
         div[data-testid="column"] > div {
             height: 800px !important;
             padding: 15px;
@@ -190,14 +195,6 @@ st.markdown("""
         div[data-testid="column"] img {
             height: 350px !important;
         }
-        div[data-testid="column"] h3 {
-            font-size: 1.5rem;
-        }
-        div[data-testid="column"] p {
-            font-size: 0.95rem;
-        }
-        
-        /* Делаем заголовок меньше */
         h1 {
             font-size: 2rem;
         }
@@ -205,105 +202,71 @@ st.markdown("""
             font-size: 1.5rem;
         }
         
-        /* Фиксированная кнопка доната внизу экрана */
-        .stLinkButton {
+        /* Плавающие кнопки */
+        .floating-home-button {
             position: fixed;
             bottom: 20px;
             left: 10px;
-            right: 10px;
             z-index: 999;
-            width: calc(100% - 20px);
-        }
-        
-        .stLinkButton a {
-            background-color: #d4b68a;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            font-size: 1.1rem;
-            padding: 12px 20px;
-            border: 2px solid #8b6b4f;
-        }
-        
-        /* Добавляем плавающую кнопку для возврата к сказкам */
-        .floating-home-button {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            z-index: 998;
-            background-color: #e6d5b8;
+            background: #e6d5b8;
             border: 2px solid #b5926a;
             border-radius: 40px;
-            padding: 8px 15px;
+            padding: 10px 20px;
             font-size: 1rem;
             font-weight: 600;
             color: #2a1c0e;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             cursor: pointer;
+            backdrop-filter: blur(5px);
         }
         
-        /* В сайдбаре скрываем стандартную кнопку доната */
+        .stLinkButton {
+            position: fixed;
+            bottom: 20px;
+            right: 10px;
+            z-index: 999;
+            width: auto;
+            max-width: 200px;
+        }
+        
+        .stLinkButton a {
+            padding: 10px 20px;
+            font-size: 1rem;
+            white-space: nowrap;
+        }
+        
         section[data-testid="stSidebar"] .stLinkButton {
             position: static;
-            margin: 10px 0;
-        }
-        
-        /* Делаем сайдбар более заметным на мобильных */
-        section[data-testid="stSidebar"] {
-            background-color: #f5e9d8;
-            width: 280px !important;
-        }
-        
-        /* Кнопки в сайдбаре */
-        section[data-testid="stSidebar"] .stButton > button {
-            font-size: 1rem;
-            padding: 12px 15px !important;
-            min-height: 50px;
-        }
-        
-        /* Делаем заголовок сайдбара более заметным */
-        section[data-testid="stSidebar"] h2 {
-            font-size: 1.5rem;
-            text-align: center;
-            background-color: #e6d5b8;
-            padding: 10px;
-            border-radius: 40px;
-            margin-top: 0;
+            max-width: none;
         }
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- JavaScript для плавающей кнопки ---
+# --- JavaScript для плавающих кнопок ---
 st.markdown("""
 <script>
-    // Функция для создания плавающей кнопки "На главную"
-    function createFloatingHomeButton() {
-        // Проверяем, не на главной ли мы
+    function createFloatingButtons() {
         const urlParams = new URLSearchParams(window.location.search);
-        if (!urlParams.has('tale')) {
-            // Если на главной, не показываем кнопку
-            return;
-        }
+        if (!urlParams.has('tale')) return;
         
-        // Создаём кнопку
-        const btn = document.createElement('div');
-        btn.className = 'floating-home-button';
-        btn.innerHTML = '🏠 К сказкам';
-        btn.onclick = function() {
-            window.location.href = window.location.pathname;
-        };
-        document.body.appendChild(btn);
+        // Кнопка "К сказкам"
+        const homeBtn = document.createElement('div');
+        homeBtn.className = 'floating-home-button';
+        homeBtn.innerHTML = '🏠 К сказкам';
+        homeBtn.onclick = () => window.location.href = window.location.pathname;
+        document.body.appendChild(homeBtn);
     }
     
-    // Запускаем после загрузки страницы
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', createFloatingHomeButton);
+        document.addEventListener('DOMContentLoaded', createFloatingButtons);
     } else {
-        createFloatingHomeButton();
+        createFloatingButtons();
     }
 </script>
 """, unsafe_allow_html=True)
 
-# --- Инициализация состояния ---
+# --- Инициализация ---
 if "selected_tale" not in st.session_state:
     st.session_state.selected_tale = None
 if "scene_id" not in st.session_state:
@@ -392,74 +355,56 @@ st.title("📖 Интерактивные сказки")
 st.caption("Выбирайте свой путь в каждой истории!")
 
 if st.session_state.selected_tale is None:
-    # Определяем категории
     all_tales = list(tales.keys())
     
-    # Категория 1: Классические сказки (детские)
+    # Категории
     classic_tales = ["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"]
-    
-    # Категория 2: Приключения и фэнтези
     adventure_tales = ["Путешествие в Волшебный лес"]
-    
-    # Категория 3: 16+ (для взрослых)
     adult_tales = ["Хроники разбитых часов: Детектив времени", "Мелодия дождя"]
     
-    # Центрируем контент
-    st.markdown('<div style="max-width: 900px; margin: 0 auto;">', unsafe_allow_html=True)
+    def render_category(title, tale_list):
+        tales_in_cat = [t for t in tale_list if t in all_tales]
+        if not tales_in_cat:
+            return
+        
+        st.markdown(f'<div class="section-header">{title}</div>', unsafe_allow_html=True)
+        
+        # Две колонки
+        cols = st.columns(2)
+        for idx, tale_name in enumerate(tales_in_cat):
+            with cols[idx % 2]:
+                with st.container():
+                    # Обложка
+                    cover_path = tales[tale_name].get("cover", "")
+                    if cover_path and os.path.exists(cover_path):
+                        st.image(cover_path, use_container_width=True)
+                    else:
+                        st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
+                    
+                    st.markdown(f"### {tale_name}")
+                    
+                    # Прогресс на карточке
+                    opened, total = get_ending_stats(tale_name)
+                    if total > 0:
+                        progress_pct = opened / total
+                        st.markdown(f"""
+                        <div class="card-progress">
+                            <span>📊 {opened}/{total}</span>
+                            <div class="card-progress-bar">
+                                <div class="card-progress-fill" style="width: {progress_pct*100}%;"></div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    st.markdown(tales[tale_name].get("description", ""))
+                    if st.button("✨ Начать", key=f"{tale_name}", use_container_width=True):
+                        start_tale(tale_name)
+                        st.rerun()
     
-    # Отображаем категории по одной карточке в столбик
-    if classic_tales:
-        st.markdown('<div class="section-header">📚 Классические сказки</div>', unsafe_allow_html=True)
-        classic_list = [t for t in classic_tales if t in all_tales]
-        for tale_name in classic_list:
-            with st.container():
-                cover_path = tales[tale_name].get("cover", "")
-                if cover_path and os.path.exists(cover_path):
-                    st.image(cover_path, use_container_width=True)
-                else:
-                    st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
-                st.markdown(f"### {tale_name}")
-                st.markdown(tales[tale_name].get("description", ""))
-                if st.button("✨ Начать", key=f"classic_{tale_name}", use_container_width=True):
-                    start_tale(tale_name)
-                    st.rerun()
-                st.markdown("<br>", unsafe_allow_html=True)  # отступ между карточками
+    render_category("📚 Классические сказки", classic_tales)
+    render_category("🧚 Приключения и фэнтези", adventure_tales)
+    render_category("🔞 16+ Детективы и романтика", adult_tales)
     
-    if adventure_tales:
-        st.markdown('<div class="section-header">🧚 Приключения и фэнтези</div>', unsafe_allow_html=True)
-        adventure_list = [t for t in adventure_tales if t in all_tales]
-        for tale_name in adventure_list:
-            with st.container():
-                cover_path = tales[tale_name].get("cover", "")
-                if cover_path and os.path.exists(cover_path):
-                    st.image(cover_path, use_container_width=True)
-                else:
-                    st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
-                st.markdown(f"### {tale_name}")
-                st.markdown(tales[tale_name].get("description", ""))
-                if st.button("✨ Начать", key=f"adventure_{tale_name}", use_container_width=True):
-                    start_tale(tale_name)
-                    st.rerun()
-                st.markdown("<br>", unsafe_allow_html=True)
-    
-    if adult_tales:
-        st.markdown('<div class="section-header">🔞 16+ Детективы и романтика</div>', unsafe_allow_html=True)
-        adult_list = [t for t in adult_tales if t in all_tales]
-        for tale_name in adult_list:
-            with st.container():
-                cover_path = tales[tale_name].get("cover", "")
-                if cover_path and os.path.exists(cover_path):
-                    st.image(cover_path, use_container_width=True)
-                else:
-                    st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", use_container_width=True)
-                st.markdown(f"### {tale_name}")
-                st.markdown(tales[tale_name].get("description", ""))
-                if st.button("✨ Начать", key=f"adult_{tale_name}", use_container_width=True):
-                    start_tale(tale_name)
-                    st.rerun()
-                st.markdown("<br>", unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("---")
     st.markdown("🌟 *Все сказки бесплатны. Если хотите поддержать проект, воспользуйтесь кнопкой в боковой панели.*")
 
