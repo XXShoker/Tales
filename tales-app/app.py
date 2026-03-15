@@ -16,12 +16,9 @@ import time
 # --- ОТЛАДКА ЧАСТОТЫ RERUN ---
 if 'last_run' not in st.session_state:
     st.session_state.last_run = time.time()
-    print("Первый запуск скрипта")
 else:
-    now = time.time()
-    delta = now - st.session_state.last_run
-    print(f"Повторный запуск через {delta:.3f} сек")
-    st.session_state.last_run = now
+    print(f"Rerun delta: {time.time() - st.session_state.last_run:.3f}s")
+    st.session_state.last_run = time.time()
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="wide")
 
@@ -365,6 +362,7 @@ def login_user(email, name, username):
     """Вход пользователя"""
     print(f"✅ Вход: {email}")
     
+    # Устанавливаем пользователя
     st.session_state.user = {
         'email': email,
         'name': name,
@@ -372,7 +370,12 @@ def login_user(email, name, username):
         'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
     }
     
-    # Загружаем прогресс из GitHub сразу после установки пользователя
+    # Сохраняем в URL
+    st.query_params['user_email'] = email
+    st.query_params['user_name'] = name
+    st.query_params['user_username'] = username
+    
+    # Загружаем прогресс сразу
     try:
         users = get_github_data()
         if email in users:
@@ -385,13 +388,6 @@ def login_user(email, name, username):
     except Exception as e:
         print(f"Ошибка загрузки прогресса при входе: {e}")
     
-    # Сохраняем в URL
-    st.query_params['user_email'] = email
-    st.query_params['user_name'] = name
-    st.query_params['user_username'] = username
-    
-    st.rerun()
-
 def logout_user():
     """Выход пользователя"""
     print("👋 Выход")
