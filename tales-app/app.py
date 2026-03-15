@@ -233,66 +233,85 @@ def restore_tale_state_from_url():
         st.session_state.tale_restored = True
 
 # --- ПРОВЕРКА АВТОРИЗАЦИИ (НАДЕЖНЫЙ ВАРИАНТ) ---
-if not st.session_state.get('user'):
-    # Пытаемся получить пользователя из experimental_user
-    if hasattr(st, 'experimental_user') and st.experimental_user:
-        user_info = st.experimental_user
-        if user_info and user_info.get('email'):
+# --- ПРОСТАЯ АВТОРИЗАЦИЯ ЧЕРЕЗ SESSION_STATE ---
+def init_auth():
+    """Инициализация авторизации"""
+    if 'user' not in st.session_state:
+        # Проверяем, есть ли сохраненная сессия в URL
+        if 'user_email' in st.query_params and 'user_name' in st.query_params:
             st.session_state.user = {
-                'email': user_info['email'],
-                'name': user_info.get('name', user_info['email'].split('@')[0]),
-                'user_id': hashlib.md5(user_info['email'].encode()).hexdigest()[:10]
+                'email': st.query_params['user_email'],
+                'name': st.query_params['user_name'],
+                'user_id': hashlib.md5(st.query_params['user_email'].encode()).hexdigest()[:10]
             }
             
             # Загружаем прогресс пользователя
             users = get_github_data()
-            if user_info['email'] in users:
-                st.session_state.achieved_endings = users[user_info['email']].get("achieved_endings", {})
-                user_achievements = users[user_info['email']].get("achievements", {})
+            if st.query_params['user_email'] in users:
+                st.session_state.achieved_endings = users[st.query_params['user_email']].get("achieved_endings", {})
+                user_achievements = users[st.query_params['user_email']].get("achievements", {})
                 if user_achievements:
                     for key, value in user_achievements.items():
                         if key in st.session_state.achievements:
                             st.session_state.achievements[key] = value
-            
-            st.rerun()  # Перезагружаем с пользователем
-    else:
-        # Если нет experimental_user, показываем вход
-        st.title("🔐 Вход в Интерактивные сказки")
+        else:
+            st.session_state.user = None
+
+def login_user(email, name):
+    """Вход пользователя"""
+    st.session_state.user = {
+        'email': email,
+        'name': name,
+        'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
+    }
+    # Сохраняем в URL для восстановления при обновлении
+    st.query_params['user_email'] = email
+    st.query_params['user_name'] = name
+    
+    # Загружаем прогресс если есть
+    users = get_github_data()
+    if email in users:
+        st.session_state.achieved_endings = users[email].get("achieved_endings", {})
+        user_achievements = users[email].get("achievements", {})
+        if user_achievements:
+            for key, value in user_achievements.items():
+                if key in st.session_state.achievements:
+                    st.session_state.achievements[key] = value
+    
+    st.rerun()
+
+def logout_user():
+    """Выход пользователя"""
+    st.session_state.user = None
+    if 'user_email' in st.query_params:
+        del st.query_params['user_email']
+    if 'user_name' in st.query_params:
+        del st.query_params['user_name']
+    st.rerun()
+
+# Вызываем инициализацию
+init_auth()
+
+# --- ПРОВЕРКА АВТОРИЗАЦИИ ---
+if not st.session_state.get('user'):
+    st.title("🔐 Вход в Интерактивные сказки")
+    
+    st.markdown("### Введите ваши данные для входа:")
+    
+    with st.form("login_form"):
+        email = st.text_input("Email")
+        name = st.text_input("Ваше имя")
+        submitted = st.form_submit_button("Войти", width='stretch')
         
-        st.markdown("""
-        ### 👇 Нажмите для входа:
-        
-        <div style="text-align: center; margin: 30px 0;">
-            <a href="https://share.streamlit.io/signin" target="_blank" style="
-                background: linear-gradient(135deg, #d4b68a, #b5926a);
-                color: #2a1c0e;
-                padding: 15px 30px;
-                border-radius: 50px;
-                text-decoration: none;
-                font-size: 1.3rem;
-                font-weight: bold;
-                border: 2px solid #8b6b4f;
-                display: inline-block;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            ">
-            🔑 Войти через Streamlit
-            </a>
-        </div>
-        
-        ---
-        ### Инструкция:
-        1. Нажмите кнопку выше
-        2. Войдите через Google (если нужно)
-        3. Вернитесь на эту страницу
-        4. **Обновите страницу** (клавиша F5)
-        """)
-        
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.image("https://via.placeholder.com/400x200/ffe6f0/ff69b4?text=✨+Сказки", width='stretch')
-            st.info("ℹ️ После входа ваш прогресс будет сохраняться автоматически")
-        
-        st.stop()
+        if submitted:
+            if email and name:
+                login_user(email, name)
+            else:
+                st.error("Пожалуйста, заполните все поля")
+    
+    st.markdown("---")
+    st.info("ℹ️ Ваш прогресс будет автоматически сохраняться")
+    st.stop()
 
 # --- Восстанавливаем состояние сказки из URL ---
 restore_tale_state_from_url()
