@@ -1013,6 +1013,30 @@ st.markdown("""
     .stExpander [data-testid="column"] {
         padding: 0 5px !important;
     }
+
+    /* ===== КНОПКА СВОРАЧИВАНИЯ БОКОВОЙ ПАНЕЛИ ===== */
+    /* Делаем её всегда видимой и контрастной */
+    .stSidebarCollapseButton button,
+    button[data-testid="collapsedControl"],
+    .st-emotion-cache-1avcm0n button,
+    .st-emotion-cache-1wbqy5l button {
+        color: #2c1e0e !important;
+        background: linear-gradient(135deg, #e6d5b8, #d4b68a) !important;
+        border: 2px solid #b5926a !important;
+        border-radius: 30px !important;
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 20px !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+        z-index: 9999 !important;
+    }
+    
+    /* Иконка внутри кнопки (гамбургер) – тоже тёмная */
+    .stSidebarCollapseButton button svg,
+    button[data-testid="collapsedControl"] svg {
+        color: #2c1e0e !important;
+        fill: #2c1e0e !important;
+    }
     
 </style>
 """, unsafe_allow_html=True)
