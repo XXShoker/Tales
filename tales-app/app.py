@@ -38,10 +38,10 @@ def send_verification_email(to_email, code):
         
         body = f"""
         <html>
-        <body style="font-family: Arial, sans-serif;">
+        <body ="font-family: Arial, sans-serif;">
             <h2>Подтверждение регистрации</h2>
             <p>Ваш код подтверждения:</p>
-            <h1 style="font-size: 36px; background: #f0f0f0; padding: 15px; text-align: center; letter-spacing: 5px;">{code}</h1>
+            <h1 ="font-size: 36px; background: #f0f0f0; padding: 15px; text-align: center; letter-spacing: 5px;">{code}</h1>
             <p>Код действителен в течение 10 минут.</p>
             <p>Если вы не регистрировались, проигнорируйте это письмо.</p>
         </body>
@@ -1034,6 +1034,31 @@ st.markdown("""
     /* Иконка внутри кнопки (гамбургер) – тоже тёмная */
     .stSidebarCollapseButton button svg,
     button[data-testid="collapsedControl"] svg {
+        color: #2c1e0e !important;
+        fill: #2c1e0e !important;
+    }
+
+    /* ===== КНОПКА ОТКРЫТИЯ СВЁРНУТОЙ ПАНЕЛИ ===== */
+    button[kind="secondary"],
+    button[data-testid="baseButton-secondary"],
+    button:has(svg[data-testid="chevron-right"]),
+    button:has(svg[data-testid="menu"]),
+    button[aria-label*="expand" i],
+    button[aria-label*="open" i] {
+        background: linear-gradient(135deg, #e6d5b8, #d4b68a) !important;
+        border: 2px solid #b5926a !important;
+        color: #2c1e0e !important;
+        border-radius: 30px !important;
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 20px !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+        z-index: 9999 !important;
+    }
+    button[kind="secondary"] svg,
+    button[data-testid="baseButton-secondary"] svg,
+    button:has(svg[data-testid="chevron-right"]) svg,
+    button:has(svg[data-testid="menu"]) svg {
         color: #2c1e0e !important;
         fill: #2c1e0e !important;
     }
