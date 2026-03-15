@@ -934,20 +934,20 @@ st.markdown("""
     .stChatMessage[data-testid="chatMessageUser"] {
         background: linear-gradient(135deg, #e6d5b8, #d4b68a) !important;
     }
-    div[data-testid="column"] > div {
+        div[data-testid="column"] > div {
         background: white !important;
         border: 2px solid #b5926a !important;
         border-radius: 24px !important;
         padding: 25px !important;
         box-shadow: 0 10px 25px rgba(93,58,26,0.15) !important;
-        height: 680px !important;           /* фиксированная высота – подберите под свои карточки */
+        height: 680px !important;           /* подберите точное значение под ваши карточки */
         display: flex;
         flex-direction: column;
         transition: all 0.3s ease;
-        overflow: hidden;                    /* чтобы ничего не вылезало */
+        overflow: hidden;
     }
     
-    /* Изображение – фиксированная высота, не сжимается */
+    /* Изображение – фиксированная высота */
     div[data-testid="column"] > div img {
         width: 100% !important;
         height: 260px !important;            /* подберите под свои обложки */
@@ -958,27 +958,27 @@ st.markdown("""
         flex-shrink: 0;
     }
     
-    /* Заголовок сказки – не сжимается */
+    /* Заголовок сказки */
     div[data-testid="column"] > div h3 {
         margin: 0 0 10px 0 !important;
         flex-shrink: 0;
     }
     
-    /* Блок с описанием – занимает оставшееся место, с прокруткой */
+    /* Все блоки stMarkdown (прогресс и описание) по умолчанию не растягиваются */
     div[data-testid="column"] > div .stMarkdown {
+        flex-shrink: 0;
+        margin-bottom: 10px !important;
+    }
+    
+    /* Описание – последний stMarkdown занимает всё оставшееся место и прокручивается */
+    div[data-testid="column"] > div .stMarkdown:last-of-type {
         flex: 1 1 auto;
         overflow-y: auto;
         margin-bottom: 15px !important;
-        padding-right: 5px;
-        min-height: 80px;                   /* минимальная высота, чтобы не схлопывалось */
+        min-height: 60px;
     }
     
-    /* Прогресс (если выводится отдельно) – тоже не сжимается */
-    div[data-testid="column"] > div .stMarkdown p:first-child {
-        margin-top: 0;
-    }
-    
-    /* Кнопка "Начать" – всегда внизу */
+    /* Кнопка всегда внизу */
     div[data-testid="column"] > div .stButton {
         margin-top: auto;
         width: 100%;
