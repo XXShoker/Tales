@@ -950,7 +950,7 @@ st.markdown("""
     /* Контейнер для описания – с прокруткой при необходимости */
     div[data-testid="column"] > div .stMarkdown {
         flex: 1 1 auto;
-        overflow-y: auto;
+        overflow-y: hidden;
         max-height: 200px;                  /* ограничиваем высоту текста */
         margin-bottom: 15px;
     }
