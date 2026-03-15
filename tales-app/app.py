@@ -13,11 +13,12 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from tales_data import tales
 import time
-# --- ОТЛАДКА ЧАСТОТЫ RERUN ---
 if 'last_run' not in st.session_state:
     st.session_state.last_run = time.time()
 else:
-    print(f"Rerun delta: {time.time() - st.session_state.last_run:.3f}s")
+    delta = time.time() - st.session_state.last_run
+    if delta < 0.5:
+        print(f"⚠️ Частый rerun: {delta:.3f} сек")
     st.session_state.last_run = time.time()
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="wide")
@@ -71,6 +72,8 @@ def send_verification_email(to_email, code):
 def init_session_state():
     if "selected_tale" not in st.session_state:
         st.session_state.selected_tale = None
+    if "progress_loaded" not in st.session_state:
+        st.session_state.progress_loaded = False
     if "scene_id" not in st.session_state:
         st.session_state.scene_id = "start"
     if "messages" not in st.session_state:
@@ -318,14 +321,14 @@ def restore_tale_state_from_url():
 
 # --- АВТОРИЗАЦИЯ (ГАРАНТИРОВАННО РАБОЧАЯ) ---
 def init_auth():
-    """Инициализация авторизации - загружает прогресс только один раз"""
+    """Инициализация авторизации – выполняется только один раз после входа"""
     
     email = st.query_params.get('user_email')
     name = st.query_params.get('user_name')
     username = st.query_params.get('user_username')
     
-    # Если пользователь уже есть в session_state и email совпадает – ничего не делаем
-    if st.session_state.get('user') and st.session_state.user['email'] == email:
+    # Если пользователь уже есть – ничего не делаем
+    if st.session_state.get('user'):
         return
     
     if email:
@@ -338,8 +341,8 @@ def init_auth():
         }
         print(f"✅ Пользователь УСТАНОВЛЕН: {st.session_state.user}")
         
-        # Загружаем прогресс (только если ещё не загружен)
-        if not st.session_state.achieved_endings:
+        # Загружаем прогресс только один раз
+        if not st.session_state.progress_loaded:
             try:
                 users = get_github_data()
                 if email in users:
@@ -350,19 +353,18 @@ def init_auth():
                             if key in st.session_state.achievements:
                                 st.session_state.achievements[key] = value
                     print(f"✅ Прогресс загружен: {len(st.session_state.achieved_endings)} концовок")
+                st.session_state.progress_loaded = True
             except Exception as e:
                 print(f"❌ Ошибка загрузки прогресса: {e}")
     else:
-        # Если нет email в URL – удаляем пользователя из session_state
-        if 'user' in st.session_state:
+        # Если нет email – удаляем пользователя
+        if st.session_state.get('user'):
             st.session_state.user = None
-            print("ℹ️ Пользователь удалён из-за отсутствия email в URL")
 
 def login_user(email, name, username):
     """Вход пользователя"""
     print(f"✅ Вход: {email}")
     
-    # Устанавливаем пользователя
     st.session_state.user = {
         'email': email,
         'name': name,
@@ -385,8 +387,11 @@ def login_user(email, name, username):
                 for key, value in user_achievements.items():
                     if key in st.session_state.achievements:
                         st.session_state.achievements[key] = value
+        st.session_state.progress_loaded = True
     except Exception as e:
         print(f"Ошибка загрузки прогресса при входе: {e}")
+    
+    st.rerun()  # один rerun для обновления интерфейса
     
 def logout_user():
     """Выход пользователя"""
