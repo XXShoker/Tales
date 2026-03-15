@@ -190,13 +190,17 @@ def save_users_to_github(users_data):
         return False
 
 def save_user_progress():
-    """Сохраняет прогресс пользователя"""
+    """Сохраняет прогресс пользователя, НЕ затирая пароль и другие поля"""
     if st.session_state.user:
         try:
             email = st.session_state.user["email"]
             users = get_github_data()
             
-            users[email] = {
+            # Берём существующие данные пользователя (если есть)
+            user_data = users.get(email, {})
+            
+            # Обновляем только те поля, которые должны измениться
+            user_data.update({
                 "user_id": st.session_state.user["user_id"],
                 "username": st.session_state.user["username"],
                 "name": st.session_state.user["name"],
@@ -205,11 +209,12 @@ def save_user_progress():
                 "achieved_endings": st.session_state.achieved_endings,
                 "achievements": st.session_state.achievements,
                 "verified": True
-            }
+            })
             
+            users[email] = user_data
             save_users_to_github(users)
         except Exception as e:
-            pass
+            print(f"Ошибка сохранения прогресса: {e}")
 
 # --- Функции для работы с URL (сохранение состояния сказки) ---
 def save_tale_state_to_url():
@@ -492,6 +497,7 @@ if not st.session_state.get('user'):
                         
                         if save_users_to_github(users):
                             login_user(pending['email'], pending['name'], pending['username'])
+                            save_user_progress()  # <--- ДОБАВЛЕННАЯ СТРОКА
                             st.session_state.pending_verification = None
                             st.success("✅ Регистрация успешна!")
                             st.rerun()
