@@ -940,7 +940,7 @@ st.markdown("""
         border-radius: 24px !important;
         padding: 25px !important;
         box-shadow: 0 10px 25px rgba(93,58,26,0.15) !important;
-        height: 680px !important;           /* подберите точное значение под ваши карточки */
+        height: 800px !important;           /* подберите точное значение под ваши карточки */
         display: flex;
         flex-direction: column;
         transition: all 0.3s ease;
