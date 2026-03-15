@@ -461,7 +461,12 @@ if not st.session_state.get('user'):
                     if found_user:
                         # Проверяем пароль
                         stored_password = found_user.get('password')
-                        if stored_password == hashlib.sha256(login_password.encode()).hexdigest():
+                        
+                        # Добавляем соль как в старом коде
+                        salt = "interactive_tales_salt"
+                        input_hash = hashlib.sha256((login_password + salt).encode()).hexdigest()
+                        
+                        if input_hash == stored_password:
                             name = found_user.get('name', found_email.split('@')[0])
                             username = found_user.get('username', found_email.split('@')[0])
                             login_user(found_email, name, username)
@@ -469,10 +474,14 @@ if not st.session_state.get('user'):
                             st.rerun()
                         else:
                             st.error("❌ Неверный пароль!")
+                            # Для отладки
+                            with st.expander("🔧 Отладка"):
+                                st.write("Ваш хеш:", input_hash)
+                                st.write("Хеш в БД:", stored_password) 
                     else:
                         st.error("❌ Пользователь не найден!")
                 else:
-                    st.error("❌ Заполните все поля")
+                    st.error("❌ Заполните все поля")  
     
     with tab2:
         st.markdown("### Создание нового аккаунта")
@@ -524,10 +533,14 @@ if not st.session_state.get('user'):
                             st.error("❌ Этот логин уже занят. Придумайте другой")
                         else:
                             # Регистрируем нового пользователя
+# Добавляем соль как в старом коде
+                            salt = "interactive_tales_salt"
+                            password_hash = hashlib.sha256((reg_password + salt).encode()).hexdigest()
+                            
                             users[reg_email] = {
                                 'username': reg_username,
                                 'name': reg_name,
-                                'password': hashlib.sha256(reg_password.encode()).hexdigest(),
+                                'password': password_hash,
                                 'created_at': datetime.now().isoformat(),
                                 'achieved_endings': {},
                                 'achievements': {}
@@ -600,7 +613,9 @@ if not st.session_state.get('user'):
                         email = reset_data['email']
                         
                         if email in users:
-                            users[email]['password'] = hashlib.sha256(new_password.encode()).hexdigest()
+                            salt = "interactive_tales_salt"
+                            new_password_hash = hashlib.sha256((new_password + salt).encode()).hexdigest()
+                            users[email]['password'] = new_password_hash
                             
                             if save_users_to_github(users):
                                 st.success("✅ Пароль успешно изменен!")
