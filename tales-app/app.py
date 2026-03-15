@@ -952,51 +952,50 @@ st.markdown("""
         color: #2c1e0e !important;
     }
 
-    /* ===== УЛУЧШЕНИЯ ДЛЯ БЛОКА ДОСТИЖЕНИЙ ===== */
-    /* Прогресс-бар достижений - делаем выше и красивее */
+    /* ===== ДОСТИЖЕНИЯ – ПРОГРЕСС-БАР И СПИСОК ===== */
+    /* Прогресс-бар внутри экспандера – теперь нормальная высота и цвет */
+    .stExpander .stProgress {
+        height: 20px !important;
+        margin: 10px 0 15px 0 !important;
+    }
     .stExpander .stProgress > div {
-        height: 16px !important;
         background-color: #e6d5b8 !important;
-        border-radius: 8px !important;
-        overflow: hidden !important;
-        margin: 5px 0 10px 0 !important;
+        border-radius: 10px !important;
+        height: 20px !important;
     }
     .stExpander .stProgress > div > div {
-        height: 16px !important;
         background: linear-gradient(90deg, #b5926a, #8b6b4f) !important;
-        border-radius: 8px !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+        border-radius: 10px !important;
+        height: 20px !important;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.2) !important;
     }
-    
-    /* Стили для каждой строки достижения */
+
+    /* Убираем лишние обёртки – у вас уже есть стили для .stMarkdown p */
+    /* Оставляем только аккуратное отображение строк */
     .stExpander .stMarkdown p {
-        margin: 6px 0 !important;
-        padding: 6px 10px !important;
-        border-radius: 8px !important;
-        background: rgba(255,255,255,0.3) !important;
+        margin: 5px 0 !important;
+        padding: 5px 8px !important;
         border-left: 3px solid transparent !important;
-        transition: all 0.2s ease !important;
+        transition: 0.2s !important;
         font-size: 0.95rem !important;
     }
-    
-    /* Подсветка разблокированных достижений (если используется класс achievement-unlocked) */
-    .stExpander .stMarkdown p:has(span.achievement-unlocked),
+
+    /* Подсветка открытых достижений (по наличию эмодзи-животных) */
     .stExpander .stMarkdown p:has(🐺, 🦊, 🐭, 🏠, 🐠, 👑, 🐔, 🥚, 🌲, 🦌, 🕵️, ⏰, 🫀, 🔪, 💔, 🌹, 💍, 🧛, 🩸, 🧚, 🐝, 🔮, 🍷, ⏳, 📀, 💿, 📚, ⚡, 🔍, 🍀, 💀) {
-        background: rgba(181, 146, 106, 0.15) !important;
-        border-left: 3px solid #b5926a !important;
+        background: rgba(181, 146, 106, 0.1) !important;
+        border-left-color: #b5926a !important;
         font-weight: 500 !important;
     }
-    
-    /* Заголовки внутри экспандера */
+
+    /* Заголовки секций внутри экспандера */
     .stExpander h3 {
-        margin-top: 10px !important;
-        margin-bottom: 8px !important;
+        margin: 15px 0 8px 0 !important;
         font-size: 1.2rem !important;
         border-bottom: 1px solid #b5926a !important;
-        padding-bottom: 5px !important;
+        padding-bottom: 4px !important;
     }
-    
-    /* Колонки внутри достижений */
+
+    /* Отступы между колонками */
     .stExpander [data-testid="column"] {
         padding: 0 5px !important;
     }
