@@ -16,6 +16,45 @@ GH_REPO = st.secrets.get("GH_REPO")
 GH_FILE_PATH = st.secrets.get("GH_FILE_PATH", "users_data.json")
 SESSION_SECRET = st.secrets.get("SESSION_SECRET", "default_secret_change_me")
 
+def send_reset_code(email, code):
+    """Отправка кода восстановления на email"""
+    try:
+        # Настройки почты из secrets
+        EMAIL_HOST = st.secrets.get("EMAIL_HOST", "smtp.gmail.com")
+        EMAIL_PORT = st.secrets.get("EMAIL_PORT", 587)
+        EMAIL_USER = st.secrets.get("EMAIL_USER")
+        EMAIL_PASSWORD = st.secrets.get("EMAIL_PASSWORD")
+        FROM_EMAIL = st.secrets.get("FROM_EMAIL", EMAIL_USER)
+        
+        msg = MIMEMultipart()
+        msg["From"] = FROM_EMAIL
+        msg["To"] = email
+        msg["Subject"] = "Восстановление пароля - Интерактивные сказки"
+        
+        body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif;">
+            <h2>Восстановление пароля</h2>
+            <p>Ваш код для восстановления пароля:</p>
+            <h1 style="font-size: 32px; background: #f0f0f0; padding: 10px; text-align: center;">{code}</h1>
+            <p>Код действителен в течение 15 минут.</p>
+            <p>Если вы не запрашивали восстановление пароля, проигнорируйте это письмо.</p>
+        </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(body, "html"))
+        
+        server = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
+        server.starttls()
+        server.login(EMAIL_USER, EMAIL_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        return True
+    except Exception as e:
+        st.error(f"Ошибка отправки email: {e}")
+        return False
+
 # --- Инициализация состояния ---
 def init_session_state():
     if "selected_tale" not in st.session_state:
@@ -439,7 +478,12 @@ if not st.session_state.get('user'):
                         
                         # Здесь нужно отправить код на email
                         # Для демо покажем код на экране
-                        st.info(f"🔐 Код подтверждения: **{reset_code}** (в демо-режиме)")
+                        if send_reset_code(reset_email, reset_code):
+                            st.success("✅ Код отправлен на ваш email!")
+                            st.session_state.reset_code_sent = True
+                            st.rerun()
+                        else:
+                            st.error("❌ Не удалось отправить код. Попробуйте позже")
                         st.session_state.reset_code_sent = True
                         st.rerun()
                     else:
