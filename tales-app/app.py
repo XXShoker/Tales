@@ -160,13 +160,14 @@ st.markdown("""
         border-radius: 3px;
     }
     
-        /* Достижения - улучшенный дизайн */
+    /* Достижения - полностью переработанный дизайн */
     .stExpander {
         background-color: #fffaf0 !important;
         border: 2px solid #d4b68a !important;
         border-radius: 20px !important;
         margin: 15px 0 !important;
         box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+        overflow: hidden !important;
     }
     
     .stExpander summary {
@@ -176,8 +177,8 @@ st.markdown("""
         color: #2c1e0e !important;
         padding: 15px 20px !important;
         background: linear-gradient(135deg, #e6d5b8, #d4b68a) !important;
-        border-radius: 18px 18px 0 0 !important;
         border-bottom: 2px solid #b5926a !important;
+        cursor: pointer !important;
     }
     
     .stExpander summary:hover {
@@ -187,33 +188,43 @@ st.markdown("""
     .stExpander > div {
         background-color: #fffaf0 !important;
         padding: 20px !important;
-        border-radius: 0 0 18px 18px !important;
     }
     
-    /* Прогресс-бар в достижениях - ИСПРАВЛЕНО */
+    /* Прогресс-бар в достижениях - ЯВНО ЗАДАННЫЕ СТИЛИ */
     .stExpander .stProgress {
-        margin: 10px 0 !important;
+        margin: 15px 0 20px 0 !important;
+        width: 100% !important;
     }
     
     .stExpander .stProgress > div {
         background-color: #e6d5b8 !important;
-        border-radius: 15px !important;
-        height: 24px !important;
-        border: 1px solid #b5926a !important;
+        border-radius: 25px !important;
+        height: 30px !important;
+        border: 2px solid #b5926a !important;
         overflow: hidden !important;
+        position: relative !important;
     }
     
     .stExpander .stProgress > div > div {
         background: linear-gradient(90deg, #b5926a, #8b6b4f) !important;
-        border-radius: 15px !important;
+        border-radius: 25px !important;
         height: 100% !important;
-        box-shadow: inset 0 1px 3px rgba(0,0,0,0.2) !important;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.2) !important;
+        transition: width 0.3s ease !important;
     }
     
     /* Текст в достижениях */
     .stExpander p, .stExpander span, .stExpander div:not(.stProgress) {
         color: #2c1e0e !important;
         font-size: 1rem !important;
+        font-family: 'Open Sans', sans-serif !important;
+    }
+    
+    /* Заголовок "Общий прогресс" */
+    .stExpander p:first-of-type {
+        font-weight: 600 !important;
+        font-size: 1.1rem !important;
+        margin-bottom: 5px !important;
     }
     
     /* Секции достижений */
@@ -238,7 +249,7 @@ st.markdown("""
     /* Текст внутри секций */
     .achievement-section p, .achievement-section div {
         color: #2c1e0e !important;
-        font-size: 1rem !important;
+        font-size: 0.95rem !important;
         line-height: 1.5 !important;
     }
     
@@ -260,12 +271,6 @@ st.markdown("""
     
     .stChatMessage[data-testid="chatMessageUser"] {
         background: linear-gradient(135deg, #e6d5b8, #d4b68a) !important;
-    }
-    
-    /* Прогресс-бар */
-    .stProgress > div > div {
-        background: linear-gradient(90deg, #b5926a, #8b6b4f) !important;
-        border-radius: 10px;
     }
     
     /* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
