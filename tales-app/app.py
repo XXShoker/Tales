@@ -233,26 +233,104 @@ def restore_tale_state_from_url():
         st.session_state.tale_restored = True
 
 # --- ПРОСТАЯ АВТОРИЗАЦИЯ ЧЕРЕЗ SESSION_STATE ---
+# --- РАБОТА С COOKIES ЧЕРЕЗ JAVASCRIPT ---
+def set_cookie(name, value, days=30):
+    """Устанавливает cookie через JavaScript"""
+    js = f"""
+    <script>
+    function setCookie(name, value, days) {{
+        let expires = "";
+        if (days) {{
+            const date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            expires = "; expires=" + date.toUTCString();
+        }}
+        document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax";
+    }}
+    setCookie('{name}', '{value}', {days});
+    </script>
+    """
+    st.components.v1.html(js, height=0)
+
+def get_cookie_js():
+    """JavaScript для получения cookies и передачи в URL"""
+    return """
+    <script>
+    function getCookie(name) {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
+        for(let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+    }
+    
+    // Получаем cookies и добавляем в URL
+    const userEmail = getCookie('user_email');
+    const userName = getCookie('user_name');
+    
+    if (userEmail && userName) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('cookie_email', userEmail);
+        url.searchParams.set('cookie_name', userName);
+        window.history.replaceState({}, '', url);
+    }
+    </script>
+    """
+
+def clear_cookie(name):
+    """Удаляет cookie"""
+    js = f"""
+    <script>
+    document.cookie = '{name}=; Max-Age=-99999999; path=/';
+    </script>
+    """
+    st.components.v1.html(js, height=0)
+
+# --- АВТОРИЗАЦИЯ ---
 def init_auth():
-    """Инициализация авторизации"""
+    """Инициализация авторизации с проверкой cookies"""
+    
+    # Добавляем JavaScript для чтения cookies
+    st.components.v1.html(get_cookie_js(), height=0)
+    
     if 'user' not in st.session_state:
-        # Проверяем, есть ли сохраненная сессия в URL
-        if 'user_email' in st.query_params and 'user_name' in st.query_params:
+        # 1. Проверяем cookies через URL параметры
+        cookie_email = st.query_params.get('cookie_email')
+        cookie_name = st.query_params.get('cookie_name')
+        
+        if cookie_email and cookie_name:
+            st.session_state.user = {
+                'email': cookie_email,
+                'name': cookie_name,
+                'user_id': hashlib.md5(cookie_email.encode()).hexdigest()[:10]
+            }
+            
+            # Загружаем прогресс
+            users = get_github_data()
+            if cookie_email in users:
+                st.session_state.achieved_endings = users[cookie_email].get("achieved_endings", {})
+                user_achievements = users[cookie_email].get("achievements", {})
+                if user_achievements:
+                    for key, value in user_achievements.items():
+                        if key in st.session_state.achievements:
+                            st.session_state.achievements[key] = value
+            
+            # Очищаем временные параметры
+            if 'cookie_email' in st.query_params:
+                del st.query_params['cookie_email']
+            if 'cookie_name' in st.query_params:
+                del st.query_params['cookie_name']
+        
+        # 2. Если нет cookies, проверяем прямые параметры (старая система)
+        elif 'user_email' in st.query_params and 'user_name' in st.query_params:
             st.session_state.user = {
                 'email': st.query_params['user_email'],
                 'name': st.query_params['user_name'],
                 'user_id': hashlib.md5(st.query_params['user_email'].encode()).hexdigest()[:10]
             }
-            
-            # Загружаем прогресс пользователя
-            users = get_github_data()
-            if st.query_params['user_email'] in users:
-                st.session_state.achieved_endings = users[st.query_params['user_email']].get("achieved_endings", {})
-                user_achievements = users[st.query_params['user_email']].get("achievements", {})
-                if user_achievements:
-                    for key, value in user_achievements.items():
-                        if key in st.session_state.achievements:
-                            st.session_state.achievements[key] = value
         else:
             st.session_state.user = None
 
@@ -263,11 +341,12 @@ def login_user(email, name):
         'name': name,
         'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
     }
-    # Сохраняем в URL для восстановления при обновлении
-    st.query_params['user_email'] = email
-    st.query_params['user_name'] = name
     
-    # Загружаем прогресс если есть
+    # Устанавливаем cookies (30 дней)
+    set_cookie('user_email', email, 30)
+    set_cookie('user_name', name, 30)
+    
+    # Загружаем прогресс
     users = get_github_data()
     if email in users:
         st.session_state.achieved_endings = users[email].get("achieved_endings", {})
@@ -277,15 +356,30 @@ def login_user(email, name):
                 if key in st.session_state.achievements:
                     st.session_state.achievements[key] = value
     
+    # Сохраняем в URL для немедленного восстановления
+    st.query_params['user_email'] = email
+    st.query_params['user_name'] = name
+    
     st.rerun()
 
 def logout_user():
     """Выход пользователя"""
     st.session_state.user = None
+    
+    # Удаляем cookies
+    clear_cookie('user_email')
+    clear_cookie('user_name')
+    
+    # Очищаем параметры URL
     if 'user_email' in st.query_params:
         del st.query_params['user_email']
     if 'user_name' in st.query_params:
         del st.query_params['user_name']
+    if 'cookie_email' in st.query_params:
+        del st.query_params['cookie_email']
+    if 'cookie_name' in st.query_params:
+        del st.query_params['cookie_name']
+    
     st.rerun()
 
 # Вызываем инициализацию
@@ -721,8 +815,13 @@ st.markdown("""
 # --- Боковая панель ---
 with st.sidebar:
     if st.session_state.get('user'):
-        # Показываем email вместо имени (которое сейчас дублирует email)
-        st.markdown(f"👋 Привет, **{st.session_state.user['email']}**!")
+        # Показываем имя пользователя
+        st.markdown(f"👋 Привет, **{st.session_state.user['name']}**!")
+        st.markdown(f"📧 {st.session_state.user['email']}")
+        
+        # КНОПКА ВЫХОДА - должна быть здесь!
+        if st.button("🚪 Выйти", width='stretch', key='logout_btn'):
+            logout_user()
     else:
         st.markdown("👋 Добро пожаловать!")
     
