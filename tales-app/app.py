@@ -951,6 +951,7 @@ st.markdown("""
     div[data-testid="column"] > div .stMarkdown {
         flex: 1 1 auto;
         overflow-y: hidden;
+        text-overflow: ellipsis;
         max-height: 200px;                  /* ограничиваем высоту текста */
         margin-bottom: 15px;
     }
