@@ -407,10 +407,100 @@ def logout_user():
 init_auth()
 
 # --- ПРОВЕРКА АВТОРИЗАЦИИ ---
+# --- ПРОВЕРКА АВТОРИЗАЦИИ ---
 if not st.session_state.get('user'):
     st.title("🔐 Интерактивные сказки")
     
-    # Создаем вкладки для входа и регистрации
+    # Проверяем, не в режиме ли восстановления пароля
+    if 'reset_mode' not in st.session_state:
+        st.session_state.reset_mode = False
+    
+    if st.session_state.reset_mode:
+        # --- РЕЖИМ ВОССТАНОВЛЕНИЯ ПАРОЛЯ ---
+        st.markdown("### 🔑 Восстановление пароля")
+        
+        with st.form("reset_form"):
+            reset_email = st.text_input("Ваш Email", placeholder="your@email.com")
+            submitted_reset = st.form_submit_button("📧 Отправить код", width='stretch')
+            
+            if submitted_reset:
+                if reset_email:
+                    users = get_github_data()
+                    if reset_email in users:
+                        # Генерируем временный код
+                        reset_code = ''.join(random.choices(string.digits, k=6))
+                        expiry = datetime.now() + timedelta(minutes=15)
+                        
+                        st.session_state.reset_data = {
+                            'email': reset_email,
+                            'code': reset_code,
+                            'expiry': expiry.isoformat()
+                        }
+                        
+                        # Здесь нужно отправить код на email
+                        # Для демо покажем код на экране
+                        st.info(f"🔐 Код подтверждения: **{reset_code}** (в демо-режиме)")
+                        st.session_state.reset_code_sent = True
+                        st.rerun()
+                    else:
+                        st.error("❌ Пользователь с таким email не найден")
+                else:
+                    st.error("❌ Введите email")
+        
+        # Если код отправлен, показываем форму ввода
+        if st.session_state.get('reset_code_sent'):
+            with st.form("verify_reset_form"):
+                verify_code = st.text_input("Введите код из письма", max_chars=6)
+                new_password = st.text_input("Новый пароль", type="password")
+                new_password2 = st.text_input("Подтвердите пароль", type="password")
+                
+                submitted_verify = st.form_submit_button("🔄 Сменить пароль", width='stretch')
+                
+                if submitted_verify:
+                    reset_data = st.session_state.get('reset_data', {})
+                    
+                    if not reset_data:
+                        st.error("❌ Сессия восстановления истекла")
+                    elif datetime.now() > datetime.fromisoformat(reset_data['expiry']):
+                        st.error("❌ Код истек. Запросите новый")
+                        del st.session_state.reset_data
+                        del st.session_state.reset_code_sent
+                        st.rerun()
+                    elif verify_code != reset_data['code']:
+                        st.error("❌ Неверный код")
+                    elif not new_password or len(new_password) < 6:
+                        st.error("❌ Пароль должен быть не менее 6 символов")
+                    elif new_password != new_password2:
+                        st.error("❌ Пароли не совпадают")
+                    else:
+                        # Обновляем пароль
+                        users = get_github_data()
+                        email = reset_data['email']
+                        
+                        if email in users:
+                            users[email]['password'] = hashlib.sha256(new_password.encode()).hexdigest()
+                            
+                            if save_users_to_github(users):
+                                st.success("✅ Пароль успешно изменен!")
+                                # Очищаем данные восстановления
+                                del st.session_state.reset_data
+                                del st.session_state.reset_code_sent
+                                st.session_state.reset_mode = False
+                                st.rerun()
+                            else:
+                                st.error("❌ Ошибка сохранения")
+        
+        if st.button("◀️ Вернуться ко входу", width='stretch'):
+            st.session_state.reset_mode = False
+            if 'reset_data' in st.session_state:
+                del st.session_state.reset_data
+            if 'reset_code_sent' in st.session_state:
+                del st.session_state.reset_code_sent
+            st.rerun()
+        
+        st.stop()
+    
+    # --- ОСНОВНЫЕ ВКЛАДКИ ВХОДА И РЕГИСТРАЦИИ ---
     tab1, tab2 = st.tabs(["🔑 Вход", "📝 Регистрация"])
     
     with tab1:
@@ -420,38 +510,48 @@ if not st.session_state.get('user'):
             login_email = st.text_input("Email или Логин", placeholder="your@email.com или username")
             login_password = st.text_input("Пароль", type="password", placeholder="••••••••")
             
-            submitted_login = st.form_submit_button("🔑 Войти", width='stretch')
-            
-            if submitted_login:
-                if login_email and login_password:
-                    users = get_github_data()
-                    
-                    # Ищем пользователя по email или логину
-                    found_user = None
-                    found_email = None
-                    
-                    for email, user_data in users.items():
-                        if (email == login_email or 
-                            user_data.get('username') == login_email):
-                            found_user = user_data
-                            found_email = email
-                            break
-                    
-                    if found_user:
-                        # Проверяем пароль
-                        stored_password = found_user.get('password')
-                        if stored_password == hashlib.sha256(login_password.encode()).hexdigest():
-                            name = found_user.get('name', found_email.split('@')[0])
-                            username = found_user.get('username', found_email.split('@')[0])
-                            login_user(found_email, name, username)
-                            st.success("✅ Вход выполнен!")
-                            st.rerun()
-                        else:
-                            st.error("❌ Неверный пароль!")
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                submitted_login = st.form_submit_button("🔑 Войти", width='stretch')
+            with col2:
+                # Кнопка "Забыли пароль" не в форме, чтобы не отправлять форму
+                pass
+        
+        # Кнопка "Забыли пароль" отдельно
+        if st.button("❓ Забыли пароль?", width='stretch'):
+            st.session_state.reset_mode = True
+            st.rerun()
+        
+        if submitted_login:
+            if login_email and login_password:
+                users = get_github_data()
+                
+                # Ищем пользователя по email или логину
+                found_user = None
+                found_email = None
+                
+                for email, user_data in users.items():
+                    if (email == login_email or 
+                        user_data.get('username') == login_email):
+                        found_user = user_data
+                        found_email = email
+                        break
+                
+                if found_user:
+                    # Проверяем пароль
+                    stored_password = found_user.get('password')
+                    if stored_password == hashlib.sha256(login_password.encode()).hexdigest():
+                        name = found_user.get('name', found_email.split('@')[0])
+                        username = found_user.get('username', found_email.split('@')[0])
+                        login_user(found_email, name, username)
+                        st.success("✅ Вход выполнен!")
+                        st.rerun()
                     else:
-                        st.error("❌ Пользователь не найден!")
+                        st.error("❌ Неверный пароль!")
                 else:
-                    st.error("❌ Заполните все поля")
+                    st.error("❌ Пользователь не найден!")
+            else:
+                st.error("❌ Заполните все поля")
     
     with tab2:
         st.markdown("### Создание нового аккаунта")
