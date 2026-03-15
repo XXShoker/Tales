@@ -12,6 +12,10 @@ from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from tales_data import tales
+import time
+_start_time = time.time()
+def log_time(place):
+    print(f"[{place}] Прошло: {time.time() - _start_time:.3f} сек")
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="wide")
 
