@@ -4,7 +4,7 @@
     "username": "XShoker",
     "name": "Viacheslav",
     "email": "zapomni2803@gmail.com",
-    "last_login": "2026-03-15T11:08:26.379694",
+    "last_login": "2026-03-15T12:01:57.008758",
     "achieved_endings": {
       "Колобок": [
         "sad_2"
@@ -44,7 +44,6 @@
       "lyx_5": false,
       "lyx_all": false
     },
-    "verified": true,
-    "password": "b8a03eba597b272e9318199ad00daa9bb618b07275ada187a24efc3fbf327939"
+    "verified": true
   }
 }
