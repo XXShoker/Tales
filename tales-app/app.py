@@ -13,9 +13,10 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from tales_data import tales
 import time
+# --- ОТЛАДКА ЧАСТОТЫ RERUN ---
 if 'last_run' not in st.session_state:
     st.session_state.last_run = time.time()
-    print(f"Первый запуск скрипта")
+    print("Первый запуск скрипта")
 else:
     now = time.time()
     delta = now - st.session_state.last_run
@@ -232,8 +233,12 @@ def save_user_progress():
 
 # --- Функции для работы с URL (сохранение состояния сказки) ---
 def save_tale_state_to_url():
-    # Получаем текущие параметры
-    current_params = dict(st.query_params)
+    """Сохраняет состояние сказки в URL, только если оно изменилось"""
+    
+    # Текущие параметры
+    current = st.query_params.to_dict()
+    
+    # Формируем новые параметры
     new_params = {}
     
     if st.session_state.get('selected_tale'):
@@ -246,9 +251,27 @@ def save_tale_state_to_url():
         recent_history = st.session_state.scene_history[-5:]
         new_params['history'] = ','.join(recent_history)
     
-    # Сравниваем с текущими параметрами, обновляем только если есть изменения
-    if new_params != {k: v for k, v in current_params.items() if k in new_params}:
-        st.query_params.update(new_params)
+    # Сравниваем с текущими (только по ключам, которые есть в new_params)
+    changed = False
+    for key, value in new_params.items():
+        if current.get(key) != value:
+            changed = True
+            break
+    
+    # Также проверяем, не удалились ли параметры, которые были
+    for key in ['tale', 'scene', 'history']:
+        if key not in new_params and key in current:
+            changed = True
+            break
+    
+    if changed:
+        # Обновляем только изменённые параметры
+        for key, value in new_params.items():
+            st.query_params[key] = value
+        # Удаляем те, которых больше нет
+        for key in ['tale', 'scene', 'history']:
+            if key not in new_params and key in st.query_params:
+                del st.query_params[key]
 
 def restore_tale_state_from_url():
     if 'tale_restored' not in st.session_state:
@@ -298,16 +321,18 @@ def restore_tale_state_from_url():
 
 # --- АВТОРИЗАЦИЯ (ГАРАНТИРОВАННО РАБОЧАЯ) ---
 def init_auth():
+    """Инициализация авторизации - загружает прогресс только один раз"""
+    
     email = st.query_params.get('user_email')
     name = st.query_params.get('user_name')
     username = st.query_params.get('user_username')
     
-    # Если пользователь уже есть в session_state и email совпадает – не загружаем прогресс повторно
+    # Если пользователь уже есть в session_state и email совпадает – ничего не делаем
     if st.session_state.get('user') and st.session_state.user['email'] == email:
         return
     
-    # иначе устанавливаем пользователя и загружаем прогресс
     if email:
+        # Устанавливаем пользователя
         st.session_state.user = {
             'email': email,
             'name': name or email.split('@')[0],
@@ -316,29 +341,25 @@ def init_auth():
         }
         print(f"✅ Пользователь УСТАНОВЛЕН: {st.session_state.user}")
         
-        # --- ЗАГРУЖАЕМ ПРОГРЕСС ПОЛЬЗОВАТЕЛЯ ИЗ GITHUB ---
-        try:
-            users = get_github_data()
-            if email in users:
-                st.session_state.achieved_endings = users[email].get("achieved_endings", {})
-                user_achievements = users[email].get("achievements", {})
-                if user_achievements:
-                    for key, value in user_achievements.items():
-                        if key in st.session_state.achievements:
-                            st.session_state.achievements[key] = value
-                print(f"✅ Прогресс загружен: {len(st.session_state.achieved_endings)} концовок")
-            else:
-                # Если пользователь есть в URL, но нет в GitHub (редкий случай)
-                st.session_state.achieved_endings = {}
-                print("⚠️ Пользователь не найден в GitHub, прогресс пуст")
-        except Exception as e:
-            print(f"❌ Ошибка загрузки прогресса: {e}")
-            st.session_state.achieved_endings = {}
+        # Загружаем прогресс (только если ещё не загружен)
+        if not st.session_state.achieved_endings:
+            try:
+                users = get_github_data()
+                if email in users:
+                    st.session_state.achieved_endings = users[email].get("achieved_endings", {})
+                    user_achievements = users[email].get("achievements", {})
+                    if user_achievements:
+                        for key, value in user_achievements.items():
+                            if key in st.session_state.achievements:
+                                st.session_state.achievements[key] = value
+                    print(f"✅ Прогресс загружен: {len(st.session_state.achieved_endings)} концовок")
+            except Exception as e:
+                print(f"❌ Ошибка загрузки прогресса: {e}")
     else:
-        # Если нет email в URL - проверяем, может уже есть в session_state
-        if 'user' not in st.session_state:
+        # Если нет email в URL – удаляем пользователя из session_state
+        if 'user' in st.session_state:
             st.session_state.user = None
-            print("ℹ️ Нет пользователя в URL")
+            print("ℹ️ Пользователь удалён из-за отсутствия email в URL")
 
 def login_user(email, name, username):
     """Вход пользователя"""
