@@ -21,10 +21,10 @@ GH_REPO = st.secrets.get("GH_REPO")
 GH_FILE_PATH = st.secrets.get("GH_FILE_PATH", "users_data.json")
 SESSION_SECRET = st.secrets.get("SESSION_SECRET", "default_secret_change_me")
 
-def send_reset_code(email, code):
-    """Отправка кода восстановления на email"""
+# --- Функции для отправки email ---
+def send_verification_email(to_email, code):
+    """Отправка кода подтверждения на email"""
     try:
-        # Настройки почты из secrets
         EMAIL_HOST = st.secrets.get("EMAIL_HOST", "smtp.gmail.com")
         EMAIL_PORT = st.secrets.get("EMAIL_PORT", 587)
         EMAIL_USER = st.secrets.get("EMAIL_USER")
@@ -33,17 +33,17 @@ def send_reset_code(email, code):
         
         msg = MIMEMultipart()
         msg["From"] = FROM_EMAIL
-        msg["To"] = email
-        msg["Subject"] = "Восстановление пароля - Интерактивные сказки"
+        msg["To"] = to_email
+        msg["Subject"] = "Код подтверждения - Интерактивные сказки"
         
         body = f"""
         <html>
         <body style="font-family: Arial, sans-serif;">
-            <h2>Восстановление пароля</h2>
-            <p>Ваш код для восстановления пароля:</p>
-            <h1 style="font-size: 32px; background: #f0f0f0; padding: 10px; text-align: center;">{code}</h1>
-            <p>Код действителен в течение 15 минут.</p>
-            <p>Если вы не запрашивали восстановление пароля, проигнорируйте это письмо.</p>
+            <h2>Подтверждение регистрации</h2>
+            <p>Ваш код подтверждения:</p>
+            <h1 style="font-size: 36px; background: #f0f0f0; padding: 15px; text-align: center; letter-spacing: 5px;">{code}</h1>
+            <p>Код действителен в течение 10 минут.</p>
+            <p>Если вы не регистрировались, проигнорируйте это письмо.</p>
         </body>
         </html>
         """
@@ -76,6 +76,10 @@ def init_session_state():
         st.session_state.achieved_endings = {}
     if "user" not in st.session_state:
         st.session_state.user = None
+    if "pending_verification" not in st.session_state:
+        st.session_state.pending_verification = None
+    if "reset_data" not in st.session_state:
+        st.session_state.reset_data = None
     if "achievements" not in st.session_state:
         st.session_state.achievements = {
             "kolobok_5": False, "kolobok_all": False,
@@ -192,14 +196,15 @@ def save_user_progress():
             email = st.session_state.user["email"]
             users = get_github_data()
             
-            # Создаем или обновляем запись пользователя
             users[email] = {
                 "user_id": st.session_state.user["user_id"],
+                "username": st.session_state.user["username"],
                 "name": st.session_state.user["name"],
                 "email": email,
                 "last_login": datetime.now().isoformat(),
                 "achieved_endings": st.session_state.achieved_endings,
-                "achievements": st.session_state.achievements
+                "achievements": st.session_state.achievements,
+                "verified": True
             }
             
             save_users_to_github(users)
@@ -208,7 +213,6 @@ def save_user_progress():
 
 # --- Функции для работы с URL (сохранение состояния сказки) ---
 def save_tale_state_to_url():
-    """Сохраняет состояние сказки в URL"""
     params = {}
     
     if st.session_state.get('selected_tale'):
@@ -217,17 +221,14 @@ def save_tale_state_to_url():
     if st.session_state.get('scene_id') and st.session_state.scene_id != "start":
         params['scene'] = st.session_state.scene_id
     
-    # Сохраняем историю (не более 5 сцен)
     if len(st.session_state.get('scene_history', [])) > 1:
         recent_history = st.session_state.scene_history[-5:]
         params['history'] = ','.join(recent_history)
     
-    # Обновляем URL
     if params:
         st.query_params.update(params)
 
 def restore_tale_state_from_url():
-    """Восстанавливает состояние сказки из URL"""
     if 'tale_restored' not in st.session_state:
         tale_name = st.query_params.get('tale')
         scene_id = st.query_params.get('scene', 'start')
@@ -239,11 +240,9 @@ def restore_tale_state_from_url():
             if tale_data:
                 st.session_state.scenes = tale_data["scenes"]
                 
-                # Проверяем существование сцены
                 if scene_id not in st.session_state.scenes:
                     scene_id = "start"
                 
-                # Восстанавливаем историю
                 if history_str:
                     history = history_str.split(',')
                     valid_history = [h for h in history if h in st.session_state.scenes]
@@ -256,7 +255,6 @@ def restore_tale_state_from_url():
                 
                 st.session_state.scene_id = scene_id
                 
-                # Восстанавливаем сообщения
                 st.session_state.messages = []
                 for i, hist_scene_id in enumerate(st.session_state.scene_history):
                     scene = st.session_state.scenes.get(hist_scene_id)
@@ -276,64 +274,7 @@ def restore_tale_state_from_url():
         
         st.session_state.tale_restored = True
 
-# --- ПРОСТАЯ АВТОРИЗАЦИЯ ЧЕРЕЗ SESSION_STATE ---
-# --- РАБОТА С COOKIES ЧЕРЕЗ JAVASCRIPT ---
-def set_cookie(name, value, days=30):
-    """Устанавливает cookie через JavaScript"""
-    js = f"""
-    <script>
-    function setCookie(name, value, days) {{
-        let expires = "";
-        if (days) {{
-            const date = new Date();
-            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-            expires = "; expires=" + date.toUTCString();
-        }}
-        document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax";
-    }}
-    setCookie('{name}', '{value}', {days});
-    </script>
-    """
-    st.components.v1.html(js, height=0)
-
-def get_cookie_js():
-    """JavaScript для получения cookies и передачи в URL"""
-    return """
-    <script>
-    function getCookie(name) {
-        const nameEQ = name + "=";
-        const ca = document.cookie.split(';');
-        for(let i = 0; i < ca.length; i++) {
-            let c = ca[i];
-            while (c.charAt(0) == ' ') c = c.substring(1, c.length);
-            if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
-        }
-        return null;
-    }
-    
-    // Получаем cookies и добавляем в URL
-    const userEmail = getCookie('user_email');
-    const userName = getCookie('user_name');
-    
-    if (userEmail && userName) {
-        const url = new URL(window.location.href);
-        url.searchParams.set('cookie_email', userEmail);
-        url.searchParams.set('cookie_name', userName);
-        window.history.replaceState({}, '', url);
-    }
-    </script>
-    """
-
-def clear_cookie(name):
-    """Удаляет cookie"""
-    js = f"""
-    <script>
-    document.cookie = '{name}=; Max-Age=-99999999; path=/';
-    </script>
-    """
-    st.components.v1.html(js, height=0)
-
-# --- АВТОРИЗАЦИЯ ЧЕРЕЗ SESSIONSTORAGE (РАБОТАЕТ 100%) ---
+# --- АВТОРИЗАЦИЯ ---
 def init_auth():
     if 'user' not in st.session_state:
         email = st.query_params.get('user_email')
@@ -347,9 +288,21 @@ def init_auth():
                 'username': username or email.split('@')[0],
                 'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
             }
+            
+            # Загружаем прогресс
+            try:
+                users = get_github_data()
+                if email in users:
+                    st.session_state.achieved_endings = users[email].get("achieved_endings", {})
+                    user_achievements = users[email].get("achievements", {})
+                    if user_achievements:
+                        for key, value in user_achievements.items():
+                            if key in st.session_state.achievements:
+                                st.session_state.achievements[key] = value
+            except Exception as e:
+                pass
 
 def login_user(email, name, username):
-    """Вход пользователя"""
     st.session_state.user = {
         'email': email,
         'name': name,
@@ -363,40 +316,36 @@ def login_user(email, name, username):
 
 def logout_user():
     st.session_state.user = None
-    del st.query_params['user_email']
-    del st.query_params['user_name']
-    del st.query_params['user_username']
+    st.session_state.achieved_endings = {}
+    if 'user_email' in st.query_params:
+        del st.query_params['user_email']
+    if 'user_name' in st.query_params:
+        del st.query_params['user_name']
+    if 'user_username' in st.query_params:
+        del st.query_params['user_username']
     st.rerun()
 
-# Инициализация
 init_auth()
-
-# --- ДИАГНОСТИКА (временно) ---
-st.sidebar.markdown("### 🔍 Отладка")
-st.sidebar.write("User в session_state:", st.session_state.get('user'))
-st.sidebar.write("Параметры URL:", dict(st.query_params))
 
 # --- ПРОВЕРКА АВТОРИЗАЦИИ ---
 if not st.session_state.get('user'):
     st.title("🔐 Интерактивные сказки")
     
-    # Создаем вкладки для входа и регистрации
     tab1, tab2, tab3 = st.tabs(["🔑 Вход", "📝 Регистрация", "❓ Забыли пароль"])
     
+    # --- ВХОД ---
     with tab1:
         st.markdown("### Вход в существующий аккаунт")
         
         with st.form("login_form"):
             login_email = st.text_input("Email или Логин", placeholder="your@email.com или username")
             login_password = st.text_input("Пароль", type="password", placeholder="••••••••")
-            
             submitted_login = st.form_submit_button("🔑 Войти", width='stretch')
             
             if submitted_login:
                 if login_email and login_password:
                     users = get_github_data()
                     
-                    # Ищем пользователя по email или логину
                     found_user = None
                     found_email = None
                     
@@ -408,131 +357,188 @@ if not st.session_state.get('user'):
                             break
                     
                     if found_user:
-                        # Проверяем пароль
-                        stored_password = found_user.get('password')
-                        
-                        # Добавляем соль как в старом коде
-                        salt = "interactive_tales_salt"
-                        input_hash = hashlib.sha256((login_password + salt).encode()).hexdigest()
-                        
-                        if input_hash == stored_password:
-                            name = found_user.get('name', found_email.split('@')[0])
-                            username = found_user.get('username', found_email.split('@')[0])
-                            login_user(found_email, name, username)
-                            st.success("✅ Вход выполнен!")
-                            st.rerun()
+                        if not found_user.get('verified', False):
+                            st.error("❌ Email не подтвержден! Проверьте почту или зарегистрируйтесь заново.")
                         else:
-                            st.error("❌ Неверный пароль!")
-                            # Для отладки
-                            with st.expander("🔧 Отладка"):
-                                st.write("Ваш хеш:", input_hash)
-                                st.write("Хеш в БД:", stored_password) 
+                            stored_password = found_user.get('password')
+                            salt = "interactive_tales_salt"
+                            input_hash = hashlib.sha256((login_password + salt).encode()).hexdigest()
+                            
+                            if input_hash == stored_password:
+                                name = found_user.get('name', found_email.split('@')[0])
+                                username = found_user.get('username', found_email.split('@')[0])
+                                login_user(found_email, name, username)
+                                st.success("✅ Вход выполнен!")
+                                st.rerun()
+                            else:
+                                st.error("❌ Неверный пароль!")
                     else:
                         st.error("❌ Пользователь не найден!")
                 else:
-                    st.error("❌ Заполните все поля")  
+                    st.error("❌ Заполните все поля")
     
+    # --- РЕГИСТРАЦИЯ С ВЕРИФИКАЦИЕЙ ---
     with tab2:
         st.markdown("### Создание нового аккаунта")
         
-        with st.form("register_form"):
-            reg_email = st.text_input("Email", placeholder="your@email.com")
-            reg_username = st.text_input("Логин (уникальный)", placeholder="username123")
-            reg_name = st.text_input("Ваше имя", placeholder="Иван Петров")
-            reg_password = st.text_input("Пароль", type="password", placeholder="••••••••")
-            reg_password2 = st.text_input("Подтвердите пароль", type="password", placeholder="••••••••")
-            
-            st.markdown("---")
-            st.markdown("### 📜 Пользовательское соглашение")
-            agree = st.checkbox("Я принимаю условия пользовательского соглашения")
-            
-            submitted_reg = st.form_submit_button("📝 Зарегистрироваться", width='stretch')
-            
-            if submitted_reg:
-                # Проверка заполнения полей
-                if not reg_email:
-                    st.error("❌ Введите email")
-                elif not reg_username:
-                    st.error("❌ Введите логин")
-                elif not reg_name:
-                    st.error("❌ Введите имя")
-                elif not reg_password:
-                    st.error("❌ Введите пароль")
-                elif reg_password != reg_password2:
-                    st.error("❌ Пароли не совпадают")
-                elif len(reg_password) < 6:
-                    st.error("❌ Пароль должен быть не менее 6 символов")
-                elif not agree:
-                    st.error("❌ Примите пользовательское соглашение")
-                else:
-                    users = get_github_data()
-                    
-                    # Проверяем, нет ли уже такого email
-                    if reg_email in users:
-                        st.error("❌ Пользователь с таким email уже существует")
+        if 'pending_verification' not in st.session_state:
+            with st.form("register_form"):
+                reg_email = st.text_input("Email", placeholder="your@email.com")
+                reg_username = st.text_input("Логин (уникальный)", placeholder="username123")
+                reg_name = st.text_input("Ваше имя", placeholder="Иван Петров")
+                reg_password = st.text_input("Пароль", type="password", placeholder="••••••••")
+                reg_password2 = st.text_input("Подтвердите пароль", type="password", placeholder="••••••••")
+                
+                st.markdown("---")
+                st.markdown("### 📜 Пользовательское соглашение")
+                agree = st.checkbox("Я принимаю условия пользовательского соглашения")
+                
+                submitted_reg = st.form_submit_button("📝 Зарегистрироваться", width='stretch')
+                
+                if submitted_reg:
+                    if not reg_email:
+                        st.error("❌ Введите email")
+                    elif not reg_username:
+                        st.error("❌ Введите логин")
+                    elif not reg_name:
+                        st.error("❌ Введите имя")
+                    elif not reg_password:
+                        st.error("❌ Введите пароль")
+                    elif reg_password != reg_password2:
+                        st.error("❌ Пароли не совпадают")
+                    elif len(reg_password) < 6:
+                        st.error("❌ Пароль должен быть не менее 6 символов")
+                    elif not agree:
+                        st.error("❌ Примите пользовательское соглашение")
                     else:
-                        # Проверяем, нет ли уже такого логина
-                        username_exists = False
-                        for email, user_data in users.items():
-                            if user_data.get('username') == reg_username:
-                                username_exists = True
-                                break
+                        users = get_github_data()
                         
-                        if username_exists:
-                            st.error("❌ Этот логин уже занят. Придумайте другой")
+                        if reg_email in users:
+                            st.error("❌ Пользователь с таким email уже существует")
                         else:
-                            # Регистрируем нового пользователя
-# Добавляем соль как в старом коде
-                            salt = "interactive_tales_salt"
-                            password_hash = hashlib.sha256((reg_password + salt).encode()).hexdigest()
+                            username_exists = False
+                            for email, user_data in users.items():
+                                if user_data.get('username') == reg_username:
+                                    username_exists = True
+                                    break
                             
-                            users[reg_email] = {
-                                'username': reg_username,
-                                'name': reg_name,
-                                'password': password_hash,
-                                'created_at': datetime.now().isoformat(),
-                                'achieved_endings': {},
-                                'achievements': {}
-                            }
-                            
-                            if save_users_to_github(users):
-                                login_user(reg_email, reg_name, reg_username)
-                                st.success("✅ Регистрация успешна!")
-                                st.rerun()
+                            if username_exists:
+                                st.error("❌ Этот логин уже занят. Придумайте другой")
                             else:
-                                st.error("❌ Ошибка сохранения данных")
+                                verification_code = ''.join(random.choices(string.digits, k=6))
+                                expiry = datetime.now() + timedelta(minutes=10)
+                                
+                                st.session_state.pending_verification = {
+                                    'email': reg_email,
+                                    'username': reg_username,
+                                    'name': reg_name,
+                                    'password': reg_password,
+                                    'code': verification_code,
+                                    'expiry': expiry.isoformat()
+                                }
+                                
+                                if send_verification_email(reg_email, verification_code):
+                                    st.success("✅ Код подтверждения отправлен на email!")
+                                    st.rerun()
+                                else:
+                                    st.error("❌ Не удалось отправить код")
+                                    del st.session_state.pending_verification
+        else:
+            st.info(f"📧 Код отправлен на {st.session_state.pending_verification['email']}")
+            
+            with st.form("verify_form"):
+                verification_input = st.text_input("Введите 6-значный код", max_chars=6)
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    submitted_verify = st.form_submit_button("✅ Подтвердить", width='stretch')
+                with col2:
+                    resend = st.form_submit_button("🔄 Отправить снова", width='stretch')
+                
+                if submitted_verify:
+                    pending = st.session_state.pending_verification
+                    
+                    if datetime.now() > datetime.fromisoformat(pending['expiry']):
+                        st.error("❌ Код истек. Запросите новый")
+                        del st.session_state.pending_verification
+                        st.rerun()
+                    elif verification_input == pending['code']:
+                        users = get_github_data()
+                        
+                        salt = "interactive_tales_salt"
+                        password_hash = hashlib.sha256((pending['password'] + salt).encode()).hexdigest()
+                        
+                        users[pending['email']] = {
+                            'username': pending['username'],
+                            'name': pending['name'],
+                            'password': password_hash,
+                            'created_at': datetime.now().isoformat(),
+                            'verified': True,
+                            'achieved_endings': {},
+                            'achievements': {}
+                        }
+                        
+                        if save_users_to_github(users):
+                            login_user(pending['email'], pending['name'], pending['username'])
+                            del st.session_state.pending_verification
+                            st.success("✅ Регистрация успешна!")
+                            st.rerun()
+                        else:
+                            st.error("❌ Ошибка сохранения данных")
+                    else:
+                        st.error("❌ Неверный код")
+                
+                if resend:
+                    pending = st.session_state.pending_verification
+                    new_code = ''.join(random.choices(string.digits, k=6))
+                    new_expiry = datetime.now() + timedelta(minutes=10)
+                    
+                    pending['code'] = new_code
+                    pending['expiry'] = new_expiry.isoformat()
+                    
+                    if send_verification_email(pending['email'], new_code):
+                        st.success("✅ Новый код отправлен!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Ошибка отправки")
+            
+            if st.button("◀️ Назад к регистрации"):
+                del st.session_state.pending_verification
+                st.rerun()
     
+    # --- ВОССТАНОВЛЕНИЕ ПАРОЛЯ ---
     with tab3:
         st.markdown("### 🔑 Восстановление пароля")
         
-        with st.form("reset_form"):
-            reset_email = st.text_input("Ваш Email", placeholder="your@email.com")
-            submitted_reset = st.form_submit_button("📧 Отправить код", width='stretch')
-            
-            if submitted_reset:
-                if reset_email:
-                    users = get_github_data()
-                    if reset_email in users:
-                        # Генерируем временный код
-                        reset_code = ''.join(random.choices(string.digits, k=6))
-                        expiry = datetime.now() + timedelta(minutes=15)
-                        
-                        st.session_state.reset_data = {
-                            'email': reset_email,
-                            'code': reset_code,
-                            'expiry': expiry.isoformat()
-                        }
-                        
-                        st.info(f"🔐 Код подтверждения: **{reset_code}**")
-                        st.session_state.reset_code_sent = True
-                        st.rerun()
+        if 'reset_data' not in st.session_state:
+            with st.form("reset_form"):
+                reset_email = st.text_input("Ваш Email", placeholder="your@email.com")
+                submitted_reset = st.form_submit_button("📧 Отправить код", width='stretch')
+                
+                if submitted_reset:
+                    if reset_email:
+                        users = get_github_data()
+                        if reset_email in users:
+                            reset_code = ''.join(random.choices(string.digits, k=6))
+                            expiry = datetime.now() + timedelta(minutes=15)
+                            
+                            st.session_state.reset_data = {
+                                'email': reset_email,
+                                'code': reset_code,
+                                'expiry': expiry.isoformat()
+                            }
+                            
+                            if send_verification_email(reset_email, reset_code):
+                                st.success("✅ Код отправлен на email!")
+                                st.rerun()
+                            else:
+                                st.error("❌ Ошибка отправки")
+                                del st.session_state.reset_data
+                        else:
+                            st.error("❌ Пользователь с таким email не найден")
                     else:
-                        st.error("❌ Пользователь с таким email не найден")
-                else:
-                    st.error("❌ Введите email")
-        
-        # Если код отправлен, показываем форму ввода
-        if st.session_state.get('reset_code_sent'):
+                        st.error("❌ Введите email")
+        else:
             with st.form("verify_reset_form"):
                 verify_code = st.text_input("Введите код из письма", max_chars=6)
                 new_password = st.text_input("Новый пароль", type="password")
@@ -541,14 +547,11 @@ if not st.session_state.get('user'):
                 submitted_verify = st.form_submit_button("🔄 Сменить пароль", width='stretch')
                 
                 if submitted_verify:
-                    reset_data = st.session_state.get('reset_data', {})
+                    reset_data = st.session_state.reset_data
                     
-                    if not reset_data:
-                        st.error("❌ Сессия восстановления истекла")
-                    elif datetime.now() > datetime.fromisoformat(reset_data['expiry']):
+                    if datetime.now() > datetime.fromisoformat(reset_data['expiry']):
                         st.error("❌ Код истек. Запросите новый")
                         del st.session_state.reset_data
-                        del st.session_state.reset_code_sent
                         st.rerun()
                     elif verify_code != reset_data['code']:
                         st.error("❌ Неверный код")
@@ -557,7 +560,6 @@ if not st.session_state.get('user'):
                     elif new_password != new_password2:
                         st.error("❌ Пароли не совпадают")
                     else:
-                        # Обновляем пароль
                         users = get_github_data()
                         email = reset_data['email']
                         
@@ -569,16 +571,19 @@ if not st.session_state.get('user'):
                             if save_users_to_github(users):
                                 st.success("✅ Пароль успешно изменен!")
                                 del st.session_state.reset_data
-                                del st.session_state.reset_code_sent
                                 st.rerun()
                             else:
                                 st.error("❌ Ошибка сохранения")
+            
+            if st.button("◀️ Назад"):
+                del st.session_state.reset_data
+                st.rerun()
     
     st.markdown("---")
     st.info("ℹ️ Ваш прогресс будет автоматически сохраняться")
     st.stop()
 
-# --- Восстанавливаем состояние сказки из URL ---
+# --- Восстанавливаем состояние сказки ---
 restore_tale_state_from_url()
 
 # --- Функции для сказок ---
@@ -609,7 +614,6 @@ def start_tale(tale_name):
         st.session_state.messages.append({"role": "assistant", "content": first_scene["text"]})
     if tale_name not in st.session_state.achieved_endings:
         st.session_state.achieved_endings[tale_name] = set()
-    
     save_tale_state_to_url()
 
 def handle_choice(choice_text, next_scene_id):
@@ -619,7 +623,6 @@ def handle_choice(choice_text, next_scene_id):
     next_scene = st.session_state.scenes.get(next_scene_id)
     if next_scene:
         st.session_state.messages.append({"role": "assistant", "content": next_scene["text"]})
-    
     save_tale_state_to_url()
 
 def go_back():
@@ -627,7 +630,6 @@ def go_back():
         st.session_state.scene_history.pop()
         st.session_state.scene_id = st.session_state.scene_history[-1]
         
-        # Перестраиваем сообщения
         st.session_state.messages = []
         for i, hist_scene_id in enumerate(st.session_state.scene_history):
             scene = st.session_state.scenes.get(hist_scene_id)
@@ -653,7 +655,6 @@ def reset_to_main():
     st.session_state.messages = []
     st.session_state.scenes = {}
     st.session_state.scene_history = []
-    
     if 'tale' in st.query_params:
         del st.query_params['tale']
     if 'scene' in st.query_params:
@@ -804,17 +805,15 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
     # Сохраняем прогресс после каждого достижения
     save_user_progress()
 
-# --- Стили (ИСПРАВЛЕННЫЕ для лучшей читаемости) ---
+# --- Стили ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Open+Sans:wght@400;600&display=swap');
     
-    /* Общий фон */
     .stApp {
         background: linear-gradient(135deg, #fcf3e0 0%, #fef9e7 100%);
     }
     
-    /* Заголовки - ТЕМНЫЕ И ЧЕТКИЕ */
     h1, h2, h3, h4, h5, h6 {
         font-family: 'Cormorant Garamond', serif;
         color: #2c1e0e !important;
@@ -829,8 +828,7 @@ st.markdown("""
         margin-bottom: 30px;
     }
     
-    /* Обычный текст - ТЕМНО-КОРИЧНЕВЫЙ */
-    p, li, .stMarkdown, .stText, .stChatMessage p, .stAlert, .stInfo, .stSuccess, .stWarning, .stError {
+    p, li, .stMarkdown, .stText, .stChatMessage p {
         font-family: 'Open Sans', sans-serif;
         color: #2c1e0e !important;
         font-size: clamp(1rem, 2vw, 1.2rem);
@@ -838,61 +836,6 @@ st.markdown("""
         font-weight: 500 !important;
     }
     
-    /* Специально для сообщений об ошибках и информации */
-    .stAlert {
-        background-color: #f8f0e0 !important;
-        border-left: 5px solid #b5926a !important;
-        color: #2c1e0e !important;
-    }
-    
-    .stInfo {
-        background-color: #e6f0fa !important;
-        color: #1a4c7a !important;
-    }
-    
-    .stSuccess {
-        background-color: #e0f0e0 !important;
-        color: #1a5a1a !important;
-    }
-    
-    .stWarning {
-        background-color: #fff0d0 !important;
-        color: #8a6a2a !important;
-    }
-    
-    .stError {
-        background-color: #ffe0e0 !important;
-        color: #a03232 !important;
-    }
-    
-    /* Боковая панель */
-    section[data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #f5e9d8 0%, #ecdcc5 100%);
-        border-right: 2px solid #b5926a;
-    }
-    
-    section[data-testid="stSidebar"] .stMarkdown {
-        color: #2c1e0e !important;
-    }
-    
-    /* Кнопка доната */
-    .stLinkButton a {
-        background: linear-gradient(135deg, #d4b68a, #b5926a);
-        color: #2a1c0e !important;
-        border-radius: 50px;
-        padding: 15px 25px;
-        text-decoration: none;
-        font-weight: bold;
-        border: 2px solid #8b6b4f;
-        display: inline-block;
-        width: 100%;
-        text-align: center;
-        font-size: 1.2rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    
-    /* Все кнопки */
     .stButton > button {
         background: linear-gradient(135deg, #e6d5b8, #d4b68a);
         color: #2a1c0e !important;
@@ -904,52 +847,14 @@ st.markdown("""
         width: 100%;
         min-height: 60px;
         transition: all 0.2s ease;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
     
-    /* Текст на кнопках */
-    .stButton > button p {
-        color: #2a1c0e !important;
-        font-weight: 700 !important;
+    .stButton > button:hover {
+        background: linear-gradient(135deg, #d4b68a, #b5926a);
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.15);
     }
     
-    /* Поля ввода */
-    .stTextInput > label {
-        color: #2c1e0e !important;
-        font-weight: 600;
-    }
-    
-    .stTextInput > div > input {
-        background-color: white !important;
-        border: 2px solid #b5926a !important;
-        border-radius: 30px !important;
-        padding: 12px 20px !important;
-        color: #2c1e0e !important;
-        font-size: 1rem !important;
-        font-weight: 500 !important;
-    }
-    
-    /* Чат сообщения */
-    .stChatMessage {
-        animation: fadeIn 0.3s ease-out;
-        background: white !important;
-        border: 2px solid #b5926a !important;
-        border-radius: 20px !important;
-        padding: 15px 20px !important;
-        margin-bottom: 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    
-    .stChatMessage[data-testid="chatMessageUser"] {
-        background: linear-gradient(135deg, #e6d5b8, #d4b68a) !important;
-    }
-    
-    .stChatMessage p {
-        color: #2c1e0e !important;
-        font-weight: 500 !important;
-    }
-    
-    /* Карточки сказок */
     div[data-testid="column"] > div {
         background: white;
         border-radius: 24px;
@@ -961,14 +866,13 @@ st.markdown("""
         transition: all 0.3s ease;
     }
     
-    div[data-testid="column"] > div p {
-        color: #2c1e0e !important;
-    }
-    
-    /* Прогресс-бар */
-    .stProgress > div > div {
-        background: linear-gradient(90deg, #b5926a, #8b6b4f) !important;
-        border-radius: 10px;
+    .stChatMessage {
+        animation: fadeIn 0.3s ease-out;
+        background: white !important;
+        border: 2px solid #b5926a !important;
+        border-radius: 20px !important;
+        padding: 15px 20px !important;
+        margin-bottom: 10px;
     }
     
     @keyframes fadeIn {
@@ -999,7 +903,6 @@ with st.sidebar:
     st.markdown("## 📖 О проекте")
     st.markdown("Вы сами выбираете, как развернётся история.")
     
-    # --- Прогресс текущей сказки ---
     if st.session_state.selected_tale:
         opened, total = get_ending_stats(st.session_state.selected_tale)
         st.markdown(f"### 📊 Прогресс")
@@ -1019,10 +922,8 @@ st.title("📖 Интерактивные сказки")
 st.caption("Выбирайте свой путь в каждой истории!")
 
 if st.session_state.selected_tale is None:
-    # Отображаем список сказок
     all_tales = list(tales.keys())
     
-    # Категории
     classic_tales = ["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"]
     adventure_tales = ["Путешествие в Волшебный лес"]
     adult_tales = [
@@ -1038,12 +939,10 @@ if st.session_state.selected_tale is None:
         
         st.markdown(f"### {title}")
         
-        # Две колонки
         cols = st.columns(2)
         for idx, tale_name in enumerate(tales_in_cat):
             with cols[idx % 2]:
                 with st.container():
-                    # Обложка
                     cover_path = tales[tale_name].get("cover", "")
                     if cover_path and os.path.exists(cover_path):
                         st.image(cover_path, width='stretch')
@@ -1052,7 +951,6 @@ if st.session_state.selected_tale is None:
                     
                     st.markdown(f"### {tale_name}")
                     
-                    # Прогресс
                     opened, total = get_ending_stats(tale_name)
                     if total > 0:
                         st.markdown(f"📊 Прогресс: {opened}/{total}")
@@ -1067,7 +965,6 @@ if st.session_state.selected_tale is None:
     render_category("🔞 16+ Детективы и романтика", adult_tales)
 
 else:
-    # Отображаем сказку
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.write(msg["content"])
@@ -1075,7 +972,6 @@ else:
     current = st.session_state.scenes.get(st.session_state.scene_id)
     if current:
         if not current.get("options"):
-            # Концовка
             if current.get("ending_type") and current.get("ending_number"):
                 ending_id = f"{current['ending_type']}_{current['ending_number']}"
             else:
@@ -1112,7 +1008,6 @@ else:
                     start_tale(st.session_state.selected_tale)
                     st.rerun()
         else:
-            # Выборы
             st.markdown("### Твой выбор:")
             for opt in current["options"]:
                 if st.button(opt["text"], key=f"choice_{opt['next']}", width='stretch'):
