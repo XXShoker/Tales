@@ -940,6 +940,24 @@ st.markdown("""
         border-radius: 24px !important;
         padding: 25px !important;
         box-shadow: 0 10px 25px rgba(93,58,26,0.15) !important;
+        height: 100% !important;           /* растягиваем на всю высоту колонки */
+        min-height: 550px;                  /* фиксированная минимальная высота */
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s ease;
+    }
+    
+    /* Контейнер для описания – с прокруткой при необходимости */
+    div[data-testid="column"] > div .stMarkdown {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        max-height: 200px;                  /* ограничиваем высоту текста */
+        margin-bottom: 15px;
+    }
+    
+    /* Кнопка "Начать" всегда внизу */
+    div[data-testid="column"] > div .stButton {
+        margin-top: auto;
     }
     div[data-testid="column"] > div * { color: #2c1e0e !important; }
     .stProgress > div > div { background: linear-gradient(90deg, #b5926a, #8b6b4f) !important; }
