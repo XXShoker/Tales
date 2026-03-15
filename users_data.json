@@ -4,10 +4,10 @@
     "username": "XShoker",
     "name": "Viacheslav",
     "email": "zapomni2803@gmail.com",
-    "last_login": "2026-03-15T13:29:44.365950",
+    "last_login": "2026-03-15T17:07:10.461519",
     "achieved_endings": {
-      "Колобок": [
-        "sad_2"
+      "Сталкер в себе": [
+        "neutral_7"
       ]
     },
     "achievements": {
@@ -42,7 +42,10 @@
       "talisman": false,
       "death_10": false,
       "lyx_5": false,
-      "lyx_all": false
+      "lyx_all": false,
+      "stalker_10": false,
+      "stalker_all": false,
+      "stalker_secret1": false
     },
     "verified": true,
     "password": "e942980ddfec127914b2ec43f295fd4f71abd75280b6e51b6b17a8a54d1cf98f"
