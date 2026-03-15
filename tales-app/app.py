@@ -381,7 +381,7 @@ if not st.session_state.get('user'):
     with tab2:
         st.markdown("### Создание нового аккаунта")
         
-        if 'pending_verification' not in st.session_state:
+        if 'pending_verification' not in st.session_state or st.session_state.pending_verification is None:
             with st.form("register_form"):
                 reg_email = st.text_input("Email", placeholder="your@email.com")
                 reg_username = st.text_input("Логин (уникальный)", placeholder="username123")
@@ -442,9 +442,11 @@ if not st.session_state.get('user'):
                                     st.rerun()
                                 else:
                                     st.error("❌ Не удалось отправить код")
-                                    del st.session_state.pending_verification
+                                    st.session_state.pending_verification = None
         else:
-            st.info(f"📧 Код отправлен на {st.session_state.pending_verification['email']}")
+            # Здесь pending_verification существует и не None
+            pending = st.session_state.pending_verification
+            st.info(f"📧 Код отправлен на {pending['email']}")
             
             with st.form("verify_form"):
                 verification_input = st.text_input("Введите 6-значный код", max_chars=6)
@@ -456,11 +458,9 @@ if not st.session_state.get('user'):
                     resend = st.form_submit_button("🔄 Отправить снова", width='stretch')
                 
                 if submitted_verify:
-                    pending = st.session_state.pending_verification
-                    
                     if datetime.now() > datetime.fromisoformat(pending['expiry']):
                         st.error("❌ Код истек. Запросите новый")
-                        del st.session_state.pending_verification
+                        st.session_state.pending_verification = None
                         st.rerun()
                     elif verification_input == pending['code']:
                         users = get_github_data()
@@ -480,7 +480,7 @@ if not st.session_state.get('user'):
                         
                         if save_users_to_github(users):
                             login_user(pending['email'], pending['name'], pending['username'])
-                            del st.session_state.pending_verification
+                            st.session_state.pending_verification = None
                             st.success("✅ Регистрация успешна!")
                             st.rerun()
                         else:
@@ -489,7 +489,6 @@ if not st.session_state.get('user'):
                         st.error("❌ Неверный код")
                 
                 if resend:
-                    pending = st.session_state.pending_verification
                     new_code = ''.join(random.choices(string.digits, k=6))
                     new_expiry = datetime.now() + timedelta(minutes=10)
                     
@@ -503,7 +502,7 @@ if not st.session_state.get('user'):
                         st.error("❌ Ошибка отправки")
             
             if st.button("◀️ Назад к регистрации"):
-                del st.session_state.pending_verification
+                st.session_state.pending_verification = None
                 st.rerun()
     
     # --- ВОССТАНОВЛЕНИЕ ПАРОЛЯ ---
