@@ -961,13 +961,22 @@ st.markdown("""
         color: #2c1e0e !important;
     }
 
-      /* ===== ДОСТИЖЕНИЯ – УПРОЩЁННЫЙ ВАРИАНТ ===== */
-    /* Заголовок экспандера – чтобы не сливался */
-    .stExpander header * {
+    /* ===== ДОСТИЖЕНИЯ – УПРОЩЁННЫЙ ВАРИАНТ ===== */
+    /* Заголовок экспандера – чтобы не чернел при раскрытии */
+    .stExpander header,
+    .stExpander summary,
+    .stExpander header *,
+    .stExpander summary *,
+    .stExpander[data-state="open"] header,
+    .stExpander[data-state="open"] summary,
+    .stExpander[open] header,
+    .stExpander[open] summary,
+    .stExpander[data-state="open"] header *,
+    .stExpander[open] header * {
         color: #2c1e0e !important;
+        background: transparent !important;
         font-weight: 700 !important;
         font-size: 1.2rem !important;
-        background: transparent !important;
         text-shadow: 1px 1px 2px rgba(255,255,255,0.5) !important;
     }
     
