@@ -13,6 +13,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email_validator import validate_email, EmailNotValidError
 from tales_data import tales
+import time
+import re
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="wide")
 
@@ -26,59 +28,217 @@ EMAIL_USER = st.secrets.get("EMAIL_USER")
 EMAIL_PASSWORD = st.secrets.get("EMAIL_PASSWORD")
 FROM_EMAIL = st.secrets.get("FROM_EMAIL", EMAIL_USER)
 SESSION_SECRET = st.secrets.get("SESSION_SECRET", "default_secret_change_me")
+SESSION_TIMEOUT = 30  # дней
+APP_URL = st.secrets.get("APP_URL", "https://funtales.streamlit.app")
 
-# --- Функции для работы с cookies и URL ---
-def init_from_url():
-    """Инициализация состояния из URL параметров при загрузке"""
-    
-    # Восстанавливаем выбранную сказку
-    if 'tale' in st.query_params and not st.session_state.get('selected_tale'):
-        tale_name = st.query_params['tale']
-        if tale_name in tales:
-            start_tale(tale_name)
-    
-    # Восстанавливаем сцену
-    if 'scene' in st.query_params and st.session_state.get('selected_tale'):
-        scene_id = st.query_params['scene']
-        if scene_id in st.session_state.get('scenes', {}):
-            # Проверяем, не была ли уже загружена эта сцена
-            if st.session_state.scene_id != scene_id:
-                st.session_state.scene_id = scene_id
-                
-                # Восстанавливаем историю сообщений
-                tale_data = tales.get(st.session_state.selected_tale)
+# --- Функции для работы с сессией через URL (безопасное хранение) ---
+def encode_session_data(email):
+    """Кодирует данные сессии для URL с защитой от подделки"""
+    expiry = (datetime.now() + timedelta(days=SESSION_TIMEOUT)).timestamp()
+    # Создаем подпись для предотвращения подделки
+    data = f"{email}:{expiry}:{SESSION_SECRET}"
+    signature = hashlib.sha256(data.encode()).hexdigest()[:16]
+    # Кодируем email в base64 для безопасности
+    email_b64 = base64.b64encode(email.encode()).decode().replace('=', '')
+    return f"{email_b64}|{expiry}|{signature}"
+
+def decode_session_data(session_str):
+    """Декодирует данные сессии из URL с проверкой подписи"""
+    try:
+        parts = session_str.split('|')
+        if len(parts) != 3:
+            return None
+        
+        email_b64, expiry_str, signature = parts
+        expiry = float(expiry_str)
+        
+        # Проверяем срок действия
+        if datetime.now().timestamp() > expiry:
+            return None
+        
+        # Декодируем email
+        try:
+            # Добавляем padding если нужно
+            padding = 4 - (len(email_b64) % 4)
+            if padding != 4:
+                email_b64 += '=' * padding
+            email = base64.b64decode(email_b64).decode()
+        except:
+            return None
+        
+        # Проверяем подпись
+        expected_data = f"{email}:{expiry}:{SESSION_SECRET}"
+        expected_signature = hashlib.sha256(expected_data.encode()).hexdigest()[:16]
+        
+        if signature != expected_signature:
+            return None
+        
+        return email
+    except Exception as e:
+        return None
+
+def save_session_to_url(email):
+    """Сохраняет сессию в URL"""
+    try:
+        session_data = encode_session_data(email)
+        st.query_params['session'] = session_data
+        return True
+    except:
+        return False
+
+def restore_session_from_url():
+    """Восстанавливает сессию из URL"""
+    if 'session_restored' not in st.session_state and not st.session_state.get('user'):
+        try:
+            session_data = st.query_params.get('session')
+            if session_data:
+                email = decode_session_data(session_data)
+                if email:
+                    users = get_github_data()
+                    if email in users:
+                        st.session_state.user = users[email]
+                        st.session_state.achieved_endings = users[email].get("achieved_endings", {})
+                        
+                        # Восстанавливаем достижения пользователя
+                        user_achievements = users[email].get("achievements", {})
+                        if user_achievements:
+                            for key, value in user_achievements.items():
+                                if key in st.session_state.achievements:
+                                    st.session_state.achievements[key] = value
+        except Exception as e:
+            # В случае ошибки просто очищаем сессию
+            if 'session' in st.query_params:
+                del st.query_params['session']
+        
+        st.session_state.session_restored = True
+
+def clear_session_from_url():
+    """Удаляет сессию из URL"""
+    if 'session' in st.query_params:
+        del st.query_params['session']
+
+# --- Функции для работы с состоянием сказки в URL ---
+def save_tale_state_to_url():
+    """Сохраняет состояние сказки в URL"""
+    try:
+        params = {}
+        
+        if st.session_state.get('selected_tale'):
+            params['tale'] = st.session_state.selected_tale
+        
+        if st.session_state.get('scene_id') and st.session_state.scene_id != "start":
+            params['scene'] = st.session_state.scene_id
+        
+        # Сохраняем историю для глубокой навигации (не более 10 сцен)
+        if len(st.session_state.get('scene_history', [])) > 1:
+            # Берем последние 5 сцен, чтобы URL не был слишком длинным
+            recent_history = st.session_state.scene_history[-5:]
+            history_str = ','.join(recent_history)
+            # Ограничиваем длину
+            if len(history_str) < 200:  # Безопасный лимит
+                params['history'] = history_str
+        
+        # Обновляем только если есть изменения
+        current_params = dict(st.query_params)
+        for key, value in params.items():
+            if current_params.get(key) != value:
+                st.query_params[key] = value
+        
+        # Удаляем устаревшие параметры
+        for key in ['tale', 'scene', 'history']:
+            if key not in params and key in st.query_params:
+                del st.query_params[key]
+    except Exception as e:
+        pass  # Игнорируем ошибки при сохранении URL
+
+def restore_tale_state_from_url():
+    """Восстанавливает состояние сказки из URL"""
+    if 'tale_restored' not in st.session_state:
+        try:
+            tale_name = st.query_params.get('tale')
+            scene_id = st.query_params.get('scene', 'start')
+            history_str = st.query_params.get('history', '')
+            
+            if tale_name and tale_name in tales and not st.session_state.get('selected_tale'):
+                # Запускаем сказку
+                st.session_state.selected_tale = tale_name
+                tale_data = tales.get(tale_name)
                 if tale_data:
                     st.session_state.scenes = tale_data["scenes"]
                     
-                    # Перестраиваем историю сообщений
-                    st.session_state.messages = []
-                    st.session_state.scene_history = []
+                    # Проверяем существование сцены
+                    if scene_id not in st.session_state.scenes:
+                        scene_id = "start"
                     
-                    # Восстанавливаем путь к сцене (упрощенно - показываем только текущую)
-                    current_scene = st.session_state.scenes.get(scene_id)
-                    if current_scene:
-                        st.session_state.messages.append({"role": "assistant", "content": current_scene["text"]})
-                        st.session_state.scene_history.append(scene_id)
+                    # Восстанавливаем историю
+                    if history_str:
+                        history = history_str.split(',')
+                        # Фильтруем только существующие сцены
+                        valid_history = [h for h in history if h in st.session_state.scenes]
+                        if valid_history:
+                            st.session_state.scene_history = valid_history
+                        else:
+                            st.session_state.scene_history = [scene_id]
+                    else:
+                        st.session_state.scene_history = [scene_id]
+                    
+                    st.session_state.scene_id = scene_id
+                    
+                    # Восстанавливаем сообщения
+                    st.session_state.messages = []
+                    
+                    # Строим сообщения на основе истории
+                    for i, hist_scene_id in enumerate(st.session_state.scene_history):
+                        scene = st.session_state.scenes.get(hist_scene_id)
+                        if scene:
+                            if i == 0:
+                                # Первая сцена
+                                st.session_state.messages.append({"role": "assistant", "content": scene["text"]})
+                            else:
+                                # Для последующих сцен добавляем заглушку выбора пользователя
+                                prev_scene = st.session_state.scenes.get(st.session_state.scene_history[i-1])
+                                if prev_scene and prev_scene.get("options"):
+                                    # Находим выбор, который привел к этой сцене
+                                    choice_text = "→ Далее"
+                                    for opt in prev_scene["options"]:
+                                        if opt["next"] == hist_scene_id:
+                                            choice_text = opt["text"]
+                                            break
+                                    st.session_state.messages.append({"role": "user", "content": choice_text})
+                                st.session_state.messages.append({"role": "assistant", "content": scene["text"]})
+        except Exception as e:
+            # В случае ошибки сбрасываем состояние
+            st.session_state.selected_tale = None
+            if 'tale' in st.query_params:
+                del st.query_params['tale']
+            if 'scene' in st.query_params:
+                del st.query_params['scene']
+            if 'history' in st.query_params:
+                del st.query_params['history']
+        
+        st.session_state.tale_restored = True
 
-def update_url():
-    """Обновляет URL параметры в соответствии с текущим состоянием"""
-    params = {}
-    
-    if st.session_state.get('selected_tale'):
-        params['tale'] = st.session_state.selected_tale
-    
-    if st.session_state.get('scene_id') and st.session_state.scene_id != "start":
-        params['scene'] = st.session_state.scene_id
-    
-    # Обновляем URL параметры без перезагрузки
-    if params:
-        st.query_params.update(params)
-    else:
-        # Очищаем параметры если нет активной сказки
+# --- Функция для очистки старых параметров ---
+def clean_url_params():
+    """Очищает устаревшие или некорректные параметры URL"""
+    try:
+        # Проверяем параметр tale
         if 'tale' in st.query_params:
-            del st.query_params['tale']
-        if 'scene' in st.query_params:
-            del st.query_params['scene']
+            tale_name = st.query_params['tale']
+            if tale_name not in tales:
+                del st.query_params['tale']
+                if 'scene' in st.query_params:
+                    del st.query_params['scene']
+                if 'history' in st.query_params:
+                    del st.query_params['history']
+        
+        # Проверяем параметр session на валидность
+        if 'session' in st.query_params:
+            email = decode_session_data(st.query_params['session'])
+            if not email:
+                del st.query_params['session']
+    except:
+        pass
 
 # --- Инициализация состояния ---
 def init_session_state():
@@ -123,10 +283,16 @@ def init_session_state():
             "total_endings_found": 0, "death_count": 0, "speedrun_tales": set(),
             "lyx_count": 0
         }
-    
-    # Инициализация из URL при первом запуске
-    if 'initialized' not in st.session_state:
-        init_from_url()
+    if "initialized" not in st.session_state:
+        # Очищаем некорректные параметры
+        clean_url_params()
+        
+        # Восстанавливаем сессию из URL
+        restore_session_from_url()
+        
+        # Восстанавливаем состояние сказки из URL
+        restore_tale_state_from_url()
+        
         st.session_state.initialized = True
 
 init_session_state()
@@ -269,6 +435,9 @@ def register_user(email, name, password):
     if not is_valid_email(email):
         return False, "Некорректный email"
     
+    if len(password) < 6:
+        return False, "Пароль должен быть не менее 6 символов"
+    
     users = get_github_data()
     if email in users:
         return False, "Пользователь с таким email уже существует"
@@ -312,13 +481,17 @@ def verify_registration(code):
         "created_at": datetime.now().isoformat(),
         "verified": True,
         "achieved_endings": {},
-        "achievements": {}
+        "achievements": st.session_state.achievements.copy()
     }
     
     if save_users_to_github(users):
         st.session_state.user = users[email]
         st.session_state.achieved_endings = {}
         del st.session_state.pending_registration
+        
+        # Сохраняем сессию в URL
+        save_session_to_url(email)
+        
         return True, "Регистрация успешна!"
     else:
         return False, "Ошибка при сохранении данных"
@@ -335,20 +508,46 @@ def login_user(email, password):
     if verify_password(password, user["password_hash"]):
         st.session_state.user = user
         st.session_state.achieved_endings = user.get("achieved_endings", {})
+        
+        # Восстанавливаем достижения пользователя
+        user_achievements = user.get("achievements", {})
+        if user_achievements:
+            for key, value in user_achievements.items():
+                if key in st.session_state.achievements:
+                    st.session_state.achievements[key] = value
+        
+        # Сохраняем сессию в URL
+        save_session_to_url(email)
+        
         return True, "Вход выполнен успешно!"
     else:
         return False, "Неверный пароль"
 
 def logout_user():
     if st.session_state.user:
+        # Сохраняем прогресс перед выходом
         email = st.session_state.user["email"]
         users = get_github_data()
         if email in users:
             users[email]["achieved_endings"] = st.session_state.achieved_endings
+            users[email]["achievements"] = st.session_state.achievements
             save_users_to_github(users)
     
+    # Очищаем состояние
     st.session_state.user = None
     st.session_state.achieved_endings = {}
+    
+    # Очищаем сессию из URL
+    clear_session_from_url()
+    
+    # Очищаем параметры сказки
+    if 'tale' in st.query_params:
+        del st.query_params['tale']
+    if 'scene' in st.query_params:
+        del st.query_params['scene']
+    if 'history' in st.query_params:
+        del st.query_params['history']
+    
     st.rerun()
 
 def delete_account():
@@ -364,11 +563,15 @@ def delete_account():
 
 def save_user_progress():
     if st.session_state.user:
-        email = st.session_state.user["email"]
-        users = get_github_data()
-        if email in users:
-            users[email]["achieved_endings"] = st.session_state.achieved_endings
-            save_users_to_github(users)
+        try:
+            email = st.session_state.user["email"]
+            users = get_github_data()
+            if email in users:
+                users[email]["achieved_endings"] = st.session_state.achieved_endings
+                users[email]["achievements"] = st.session_state.achievements
+                save_users_to_github(users)
+        except Exception as e:
+            pass  # Игнорируем ошибки сохранения
 
 # --- Вспомогательные функции для сказок ---
 def count_total_endings(tale_name):
@@ -524,6 +727,9 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
         st.balloons()
         st.balloons()
         st.success("👑 ДОСТИЖЕНИЕ ПЛАТИНОВОЕ: «Библиотекарь» (ВСЕ концовки!)")
+    
+    # Сохраняем прогресс после каждого достижения
+    save_user_progress()
 
 def start_tale(tale_name):
     st.session_state.selected_tale = tale_name
@@ -538,8 +744,8 @@ def start_tale(tale_name):
     if tale_name not in st.session_state.achieved_endings:
         st.session_state.achieved_endings[tale_name] = set()
     
-    # Обновляем URL
-    update_url()
+    # Сохраняем состояние в URL
+    save_tale_state_to_url()
 
 def handle_choice(choice_text, next_scene_id):
     st.session_state.messages.append({"role": "user", "content": choice_text})
@@ -549,19 +755,33 @@ def handle_choice(choice_text, next_scene_id):
     if next_scene:
         st.session_state.messages.append({"role": "assistant", "content": next_scene["text"]})
     
-    # Обновляем URL
-    update_url()
+    # Сохраняем состояние в URL
+    save_tale_state_to_url()
 
 def go_back():
     if len(st.session_state.scene_history) > 1:
         st.session_state.scene_history.pop()
         st.session_state.scene_id = st.session_state.scene_history[-1]
-        if len(st.session_state.messages) >= 2:
-            st.session_state.messages.pop()
-            st.session_state.messages.pop()
+        # Перестраиваем сообщения
+        st.session_state.messages = []
+        for i, hist_scene_id in enumerate(st.session_state.scene_history):
+            scene = st.session_state.scenes.get(hist_scene_id)
+            if scene:
+                if i == 0:
+                    st.session_state.messages.append({"role": "assistant", "content": scene["text"]})
+                else:
+                    prev_scene = st.session_state.scenes.get(st.session_state.scene_history[i-1])
+                    if prev_scene and prev_scene.get("options"):
+                        choice_text = "→ Далее"
+                        for opt in prev_scene["options"]:
+                            if opt["next"] == hist_scene_id:
+                                choice_text = opt["text"]
+                                break
+                        st.session_state.messages.append({"role": "user", "content": choice_text})
+                    st.session_state.messages.append({"role": "assistant", "content": scene["text"]})
         
-        # Обновляем URL
-        update_url()
+        # Сохраняем состояние в URL
+        save_tale_state_to_url()
         st.rerun()
 
 def reset_to_main():
@@ -570,11 +790,13 @@ def reset_to_main():
     st.session_state.scenes = {}
     st.session_state.scene_history = []
     
-    # Очищаем URL параметры
+    # Очищаем параметры сказки из URL
     if 'tale' in st.query_params:
         del st.query_params['tale']
     if 'scene' in st.query_params:
         del st.query_params['scene']
+    if 'history' in st.query_params:
+        del st.query_params['history']
 
 # --- Стили (исправленные) ---
 st.markdown("""
@@ -650,7 +872,7 @@ st.markdown("""
         box-shadow: 0 6px 18px rgba(0,0,0,0.2);
     }
     
-    /* Все кнопки - ИСПРАВЛЕНО: заменен use_container_width на width */
+    /* Все кнопки */
     .stButton > button {
         background: linear-gradient(135deg, #e6d5b8, #d4b68a);
         color: #2a1c0e !important;
@@ -725,7 +947,7 @@ st.markdown("""
         border-color: #8b6b4f !important;
     }
     
-    /* КАРТОЧКИ - ИСПРАВЛЕНО: убрана фиксированная высота */
+    /* КАРТОЧКИ */
     div[data-testid="column"] > div {
         background: white;
         border-radius: 24px;
@@ -746,7 +968,7 @@ st.markdown("""
         border-color: #d4b68a;
     }
     
-    /* Изображения - ИСПРАВЛЕНО: убрана фиксированная высота */
+    /* Изображения */
     div[data-testid="column"] img {
         width: 100%;
         height: auto !important;
@@ -831,6 +1053,12 @@ st.markdown("""
         border-radius: 10px;
     }
     
+    /* Уведомления */
+    .stAlert {
+        border-radius: 15px !important;
+        border-left: 5px solid #b5926a !important;
+    }
+    
     /* ===== МОБИЛЬНАЯ АДАПТАЦИЯ ===== */
     @media (max-width: 600px) {
         div[data-testid="column"] > div {
@@ -896,325 +1124,336 @@ st.markdown("""
         const urlParams = new URLSearchParams(window.location.search);
         if (!urlParams.has('tale')) return;
         
-        // Проверяем, не создана ли уже кнопка
         if (document.querySelector('.floating-home-button')) return;
         
         const homeBtn = document.createElement('div');
         homeBtn.className = 'floating-home-button';
         homeBtn.innerHTML = '🏠 К сказкам';
         homeBtn.onclick = () => {
-            // Очищаем URL параметры и перезагружаем
             const url = new URL(window.location.href);
             url.searchParams.delete('tale');
             url.searchParams.delete('scene');
-            window.location.href = url.pathname;
+            url.searchParams.delete('history');
+            window.location.href = url.pathname + url.search;
         };
         document.body.appendChild(homeBtn);
     }
     
-    // Создаем кнопку после загрузки страницы
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', createFloatingButtons);
     } else {
         createFloatingButtons();
     }
     
-    // Также проверяем при изменении URL
     window.addEventListener('popstate', createFloatingButtons);
 </script>
 """, unsafe_allow_html=True)
 
-# --- Боковая панель с авторизацией (исправлены use_container_width) ---
-with st.sidebar:
-    st.markdown("## 📖 О проекте")
-    st.markdown("Вы сами выбираете, как развернётся история. Все сказки абсолютно бесплатны.")
-    st.markdown("---")
-    
-    # --- Блок авторизации ---
-    if st.session_state.user:
-        st.markdown(f"👋 Привет, **{st.session_state.user['name']}**!")
-        st.markdown(f"📧 {st.session_state.user['email']}")
-        if st.button("🚪 Выйти", width='stretch'):
-            logout_user()
-        with st.expander("⚠️ Удалить аккаунт"):
-            st.warning("Это действие необратимо. Все ваши данные будут удалены.")
-            if st.button("🗑️ Подтвердить удаление", width='stretch'):
-                if delete_account():
-                    st.success("Аккаунт удалён.")
-                    st.rerun()
-    else:
-        if not st.session_state.pending_registration:
-            tab1, tab2 = st.tabs(["🔑 Вход", "📝 Регистрация"])
-            
-            with tab1:
-                with st.form("login_form"):
-                    email = st.text_input("Email")
-                    password = st.text_input("Пароль", type="password")
-                    submitted = st.form_submit_button("Войти", width='stretch')
-                    if submitted:
-                        success, msg = login_user(email, password)
-                        if success:
-                            st.success(msg)
-                            st.rerun()
-                        else:
-                            st.error(msg)
-            
-            with tab2:
-                with st.form("register_form"):
-                    reg_name = st.text_input("Имя")
-                    reg_email = st.text_input("Email")
-                    reg_password = st.text_input("Пароль", type="password")
-                    reg_password2 = st.text_input("Подтвердите пароль", type="password")
-                    
-                    st.markdown("---")
-                    st.markdown("### 📜 Пользовательское соглашение")
-                    with st.expander("Ознакомьтесь с условиями"):
-                        st.markdown("""
-                        **1. Общие положения**  
-                        Настоящее приложение предоставляет интерактивные сказки для развлечения.  
-                        
-                        **2. Персональные данные**  
-                        Для сохранения прогресса мы собираем и храним ваш email, имя и хеш пароля. Данные хранятся в зашифрованном виде в репозитории GitHub. Мы не передаём данные третьим лицам.
-                        
-                        **3. Ответственность**  
-                        Автор приложения не несёт ответственности за любые возможные последствия использования. Вы используете приложение на свой страх и риск.
-                        
-                        **4. Согласие**  
-                        Нажимая кнопку «Зарегистрироваться», вы подтверждаете, что ознакомились и согласны с условиями.
-                        """)
-                    agree = st.checkbox("Я принимаю условия пользовательского соглашения")
-                    
-                    submitted = st.form_submit_button("Зарегистрироваться", width='stretch')
-                    if submitted:
-                        if not agree:
-                            st.error("Вы должны принять условия.")
-                        elif reg_password != reg_password2:
-                            st.error("Пароли не совпадают")
-                        elif len(reg_password) < 6:
-                            st.error("Пароль должен быть не менее 6 символов")
-                        else:
-                            success, msg = register_user(reg_email, reg_name, reg_password)
+# --- Обработчик ошибок для отладки ---
+if 'error_count' not in st.session_state:
+    st.session_state.error_count = 0
+
+try:
+    # --- Боковая панель с авторизацией ---
+    with st.sidebar:
+        st.markdown("## 📖 О проекте")
+        st.markdown("Вы сами выбираете, как развернётся история. Все сказки абсолютно бесплатны.")
+        st.markdown("---")
+        
+        # --- Блок авторизации ---
+        if st.session_state.user:
+            st.markdown(f"👋 Привет, **{st.session_state.user['name']}**!")
+            st.markdown(f"📧 {st.session_state.user['email']}")
+            if st.button("🚪 Выйти", width='stretch'):
+                logout_user()
+            with st.expander("⚠️ Удалить аккаунт"):
+                st.warning("Это действие необратимо. Все ваши данные будут удалены.")
+                if st.button("🗑️ Подтвердить удаление", width='stretch'):
+                    if delete_account():
+                        st.success("Аккаунт удалён.")
+                        st.rerun()
+        else:
+            if not st.session_state.pending_registration:
+                tab1, tab2 = st.tabs(["🔑 Вход", "📝 Регистрация"])
+                
+                with tab1:
+                    with st.form("login_form"):
+                        email = st.text_input("Email")
+                        password = st.text_input("Пароль", type="password")
+                        submitted = st.form_submit_button("Войти", width='stretch')
+                        if submitted:
+                            success, msg = login_user(email, password)
                             if success:
                                 st.success(msg)
                                 st.rerun()
                             else:
                                 st.error(msg)
+                
+                with tab2:
+                    with st.form("register_form"):
+                        reg_name = st.text_input("Имя")
+                        reg_email = st.text_input("Email")
+                        reg_password = st.text_input("Пароль", type="password")
+                        reg_password2 = st.text_input("Подтвердите пароль", type="password")
+                        
+                        st.markdown("---")
+                        st.markdown("### 📜 Пользовательское соглашение")
+                        with st.expander("Ознакомьтесь с условиями"):
+                            st.markdown("""
+                            **1. Общие положения**  
+                            Настоящее приложение предоставляет интерактивные сказки для развлечения.  
+                            
+                            **2. Персональные данные**  
+                            Для сохранения прогресса мы собираем и храним ваш email, имя и хеш пароля. Данные хранятся в зашифрованном виде в репозитории GitHub. Мы не передаём данные третьим лицам.
+                            
+                            **3. Ответственность**  
+                            Автор приложения не несёт ответственности за любые возможные последствия использования. Вы используете приложение на свой страх и риск.
+                            
+                            **4. Согласие**  
+                            Нажимая кнопку «Зарегистрироваться», вы подтверждаете, что ознакомились и согласны с условиями.
+                            """)
+                        agree = st.checkbox("Я принимаю условия пользовательского соглашения")
+                        
+                        submitted = st.form_submit_button("Зарегистрироваться", width='stretch')
+                        if submitted:
+                            if not agree:
+                                st.error("Вы должны принять условия.")
+                            elif reg_password != reg_password2:
+                                st.error("Пароли не совпадают")
+                            elif len(reg_password) < 6:
+                                st.error("Пароль должен быть не менее 6 символов")
+                            else:
+                                success, msg = register_user(reg_email, reg_name, reg_password)
+                                if success:
+                                    st.success(msg)
+                                    st.rerun()
+                                else:
+                                    st.error(msg)
+            
+            else:
+                st.markdown("### ✉️ Подтверждение email")
+                st.info(f"Код отправлен на {st.session_state.pending_registration['email']}")
+                with st.form("verify_form"):
+                    code = st.text_input("Введите 6-значный код", max_chars=6)
+                    submitted = st.form_submit_button("Подтвердить", width='stretch')
+                    if submitted:
+                        success, msg = verify_registration(code)
+                        if success:
+                            st.success(msg)
+                            st.rerun()
+                        else:
+                            st.error(msg)
+                if st.button("Отменить регистрацию", width='stretch'):
+                    st.session_state.pending_registration = None
+                    st.rerun()
         
-        else:
-            st.markdown("### ✉️ Подтверждение email")
-            st.info(f"Код отправлен на {st.session_state.pending_registration['email']}")
-            with st.form("verify_form"):
-                code = st.text_input("Введите 6-значный код", max_chars=6)
-                submitted = st.form_submit_button("Подтвердить", width='stretch')
-                if submitted:
-                    success, msg = verify_registration(code)
-                    if success:
-                        st.success(msg)
-                        st.session_state.pending_registration = None
-                        st.rerun()
-                    else:
-                        st.error(msg)
-            if st.button("Отменить регистрацию", width='stretch'):
-                st.session_state.pending_registration = None
+        st.markdown("---")
+        st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", width='stretch')
+        
+        # --- Прогресс текущей сказки ---
+        if st.session_state.selected_tale:
+            opened, total = get_ending_stats(st.session_state.selected_tale)
+            st.markdown(f"### 📊 Прогресс")
+            st.markdown(f"**{st.session_state.selected_tale}**")
+            if total > 0:
+                st.progress(min(opened/total, 1.0))
+            st.markdown(f"Найдено концовок: **{opened} / {total}**")
+            if st.button("🔄 Сменить сказку", width='stretch'):
+                reset_to_main()
                 st.rerun()
-    
-    st.markdown("---")
-    st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", width='stretch')
-    
-    # --- Прогресс текущей сказки ---
-    if st.session_state.selected_tale:
-        opened, total = get_ending_stats(st.session_state.selected_tale)
-        st.markdown(f"### 📊 Прогресс")
-        st.markdown(f"**{st.session_state.selected_tale}**")
-        if total > 0:
-            st.progress(min(opened/total, 1.0))
-        st.markdown(f"Найдено концовок: **{opened} / {total}**")
-        if st.button("🔄 Сменить сказку", width='stretch'):
-            reset_to_main()
-            st.rerun()
-    
-    # --- Достижения ---
-    if st.session_state.selected_tale is None:
-        with st.expander("🏆 Достижения"):
-            ach = st.session_state.achievements
-            total_achieved = sum(1 for v in ach.values() if v)
-            st.markdown(f"**Прогресс: {total_achieved}/33**")
-            st.progress(total_achieved / 33)
-            st.markdown("---")
-            
-            cols = st.columns(2)
-            with cols[0]:
-                st.markdown("### 📚 Классика")
-                st.markdown(f"{'🐺' if ach['kolobok_5'] else '⬜'} Колобок-беглец (5/16)")
-                st.markdown(f"{'🦊' if ach['kolobok_all'] else '⬜'} Ни одна лиса не страшна")
-                st.markdown(f"{'🐭' if ach['teremok_5'] else '⬜'} Терем-теремок (5/14)")
-                st.markdown(f"{'🏠' if ach['teremok_all'] else '⬜'} Всем дом")
-                st.markdown(f"{'🐠' if ach['rybka_3_greedy'] else '⬜'} Золотая жадность")
-                st.markdown(f"{'👑' if ach['rybka_all'] else '⬜'} Мудрец")
-                st.markdown(f"{'🐔' if ach['ryaba_3_save'] else '⬜'} Курочка-спасительница")
-                st.markdown(f"{'🥚' if ach['ryaba_all'] else '⬜'} Золотой урожай")
-            
-            with cols[1]:
-                st.markdown("### 🧚 Приключения")
-                st.markdown(f"{'🌲' if ach['forest_10_locations'] else '⬜'} Лесной исследователь")
-                st.markdown(f"{'🦌' if ach['forest_all_friends'] else '⬜'} Друг зверей")
-                st.markdown(f"{'👑' if ach['forest_all'] else '⬜'} Повелитель леса")
+        
+        # --- Достижения ---
+        if st.session_state.selected_tale is None:
+            with st.expander("🏆 Достижения"):
+                ach = st.session_state.achievements
+                total_achieved = sum(1 for v in ach.values() if v)
+                st.markdown(f"**Прогресс: {total_achieved}/33**")
+                st.progress(total_achieved / 33)
+                st.markdown("---")
+                
+                cols = st.columns(2)
+                with cols[0]:
+                    st.markdown("### 📚 Классика")
+                    st.markdown(f"{'🐺' if ach['kolobok_5'] else '⬜'} Колобок-беглец (5/16)")
+                    st.markdown(f"{'🦊' if ach['kolobok_all'] else '⬜'} Ни одна лиса не страшна")
+                    st.markdown(f"{'🐭' if ach['teremok_5'] else '⬜'} Терем-теремок (5/14)")
+                    st.markdown(f"{'🏠' if ach['teremok_all'] else '⬜'} Всем дом")
+                    st.markdown(f"{'🐠' if ach['rybka_3_greedy'] else '⬜'} Золотая жадность")
+                    st.markdown(f"{'👑' if ach['rybka_all'] else '⬜'} Мудрец")
+                    st.markdown(f"{'🐔' if ach['ryaba_3_save'] else '⬜'} Курочка-спасительница")
+                    st.markdown(f"{'🥚' if ach['ryaba_all'] else '⬜'} Золотой урожай")
+                
+                with cols[1]:
+                    st.markdown("### 🧚 Приключения")
+                    st.markdown(f"{'🌲' if ach['forest_10_locations'] else '⬜'} Лесной исследователь")
+                    st.markdown(f"{'🦌' if ach['forest_all_friends'] else '⬜'} Друг зверей")
+                    st.markdown(f"{'👑' if ach['forest_all'] else '⬜'} Повелитель леса")
+                    
+                    st.markdown("---")
+                    st.markdown("### 🔞 16+")
+                    st.markdown(f"{'🕵️' if ach['detective_10'] else '⬜'} Следопыт")
+                    st.markdown(f"{'⏰' if ach['detective_time_5'] else '⬜'} Мастер времени")
+                    st.markdown(f"{'🫀' if ach['detective_save_3'] else '⬜'} Спаситель")
+                    st.markdown(f"{'🔪' if ach['detective_all'] else '⬜'} Идеальное преступление")
+                    st.markdown(f"{'💔' if ach['romance_3_love'] else '⬜'} Сердцеед")
+                    st.markdown(f"{'🌹' if ach['romance_5_happy'] else '⬜'} Романтик")
+                    st.markdown(f"{'💍' if ach['romance_all'] else '⬜'} Идеальная пара")
+                    st.markdown(f"{'🧛' if ach.get('lyx_5', False) else '⬜'} Выжившая (5/9)")
+                    st.markdown(f"{'🩸' if ach.get('lyx_all', False) else '⬜'} Проклятие снято (9/9)")
                 
                 st.markdown("---")
-                st.markdown("### 🔞 16+")
-                st.markdown(f"{'🕵️' if ach['detective_10'] else '⬜'} Следопыт")
-                st.markdown(f"{'⏰' if ach['detective_time_5'] else '⬜'} Мастер времени")
-                st.markdown(f"{'🫀' if ach['detective_save_3'] else '⬜'} Спаситель")
-                st.markdown(f"{'🔪' if ach['detective_all'] else '⬜'} Идеальное преступление")
-                st.markdown(f"{'💔' if ach['romance_3_love'] else '⬜'} Сердцеед")
-                st.markdown(f"{'🌹' if ach['romance_5_happy'] else '⬜'} Романтик")
-                st.markdown(f"{'💍' if ach['romance_all'] else '⬜'} Идеальная пара")
-                st.markdown(f"{'🧛' if ach.get('lyx_5', False) else '⬜'} Выжившая (5/9)")
-                st.markdown(f"{'🩸' if ach.get('lyx_all', False) else '⬜'} Проклятие снято (9/9)")
-            
-            st.markdown("---")
-            st.markdown("### 🔮 Секретные")
-            cols2 = st.columns(3)
-            with cols2[0]:
-                st.markdown(f"{'🧚' if ach['teremok_fairy'] else '⬜'} Фея")
-                st.markdown(f"{'🐝' if ach['teremok_bees'] else '⬜'} Пчёлы")
-            with cols2[1]:
-                st.markdown(f"{'🔮' if ach['ryaba_wish'] else '⬜'} Желание")
-                st.markdown(f"{'🍷' if ach['ryaba_drink'] else '⬜'} Гулянка")
-            with cols2[2]:
-                st.markdown(f"{'⏳' if ach['crossover'] else '⬜'} Хранитель")
-            
-            st.markdown("---")
-            st.markdown("### 🏆 Мета")
-            st.markdown(f"{'📀' if ach['total_50'] else '⬜'} Коллекционер (50)")
-            st.markdown(f"{'💿' if ach['total_80'] else '⬜'} Профессионал (80)")
-            st.markdown(f"{'📚' if ach['total_all'] else '⬜'} Библиотекарь (все)")
-            st.markdown(f"{'⚡' if ach['speedrun'] else '⬜'} Скороход")
-            st.markdown(f"{'🔍' if ach['explorer'] else '⬜'} Исследователь")
-            st.markdown(f"{'🍀' if ach['talisman'] else '⬜'} Талисман")
-            st.markdown(f"{'💀' if ach['death_10'] else '⬜'} Бессмертный")
-
-# --- Основная область ---
-st.title("📖 Интерактивные сказки")
-st.caption("Выбирайте свой путь в каждой истории!")
-
-if st.session_state.selected_tale is None:
-    all_tales = list(tales.keys())
-    
-    # Категории
-    classic_tales = ["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"]
-    adventure_tales = ["Путешествие в Волшебный лес"]
-    adult_tales = [
-        "Хроники разбитых часов: Детектив времени", 
-        "Мелодия дождя",
-        "Проклятие крови ЛИКСА"
-    ]
-    
-    def render_category(title, tale_list):
-        tales_in_cat = [t for t in tale_list if t in all_tales]
-        if not tales_in_cat:
-            return
-        
-        st.markdown(f'<div class="section-header">{title}</div>', unsafe_allow_html=True)
-        
-        # Две колонки
-        cols = st.columns(2)
-        for idx, tale_name in enumerate(tales_in_cat):
-            with cols[idx % 2]:
-                with st.container():
-                    # Обложка
-                    cover_path = tales[tale_name].get("cover", "")
-                    if cover_path and os.path.exists(cover_path):
-                        st.image(cover_path, width='stretch')
-                    else:
-                        st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", width='stretch')
-                    
-                    st.markdown(f"### {tale_name}")
-                    
-                    # Прогресс на карточке
-                    opened, total = get_ending_stats(tale_name)
-                    if total > 0:
-                        progress_pct = opened / total if total > 0 else 0
-                        st.markdown(f"""
-                        <div class="card-progress">
-                            <span>📊 {opened}/{total}</span>
-                            <div class="card-progress-bar">
-                                <div class="card-progress-fill" style="width: {progress_pct*100}%;"></div>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    
-                    st.markdown(tales[tale_name].get("description", ""))
-                    if st.button("✨ Начать", key=f"{tale_name}", width='stretch'):
-                        start_tale(tale_name)
-                        st.rerun()
-    
-    render_category("📚 Классические сказки", classic_tales)
-    render_category("🧚 Приключения и фэнтези", adventure_tales)
-    render_category("🔞 16+ Детективы и романтика", adult_tales)
-    
-    st.markdown("---")
-    st.markdown("🌟 *Все сказки бесплатны. Если хотите поддержать проект, воспользуйтесь кнопкой в боковой панели.*")
-
-else:
-    # Сама сказка
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.write(msg["content"])
-    
-    current = st.session_state.scenes.get(st.session_state.scene_id)
-    if current:
-        if not current.get("options"):
-            if current.get("ending_type") and current.get("ending_number"):
-                ending_id = f"{current['ending_type']}_{current['ending_number']}"
-            else:
-                ending_id = current["text"][:100]
-            
-            if st.session_state.selected_tale not in st.session_state.achieved_endings:
-                st.session_state.achieved_endings[st.session_state.selected_tale] = set()
-            
-            if ending_id not in st.session_state.achieved_endings[st.session_state.selected_tale]:
-                st.session_state.achieved_endings[st.session_state.selected_tale].add(ending_id)
-                check_achievements(st.session_state.selected_tale, current.get("ending_type"), current)
-                save_user_progress()
-                st.rerun()
-            
-            st.markdown("---")
-            if current.get("ending_type"):
-                emoji = {"happy": "😊", "sad": "😢", "neutral": "😐", "secret": "🤫"}.get(current["ending_type"], "🎉")
-                st.markdown(f"## {emoji} **Концовка #{current['ending_number']}**")
-                if current["ending_type"] == "happy":
-                    st.success("🎉 Поздравляем! Это счастливый конец!")
-                else:
-                    st.info("😕 Это не счастливый конец. Попробуй пройти сказку снова!")
-            else:
-                st.markdown("## 🎉 **Конец сказки!**")
-            
-            opened, total = get_ending_stats(st.session_state.selected_tale)
-            st.markdown(f"*Всего в этой сказке **{total}** концовок. Ты нашёл уже **{opened}**.*")
-            
-            st.markdown("---")
-            col1, col2 = st.columns(2)
-            with col1:
-                if len(st.session_state.scene_history) > 1:
-                    if st.button("↩️ Вернуться назад", width='stretch'):
-                        go_back()
-            with col2:
-                if st.button("🔄 Начать заново", width='stretch'):
-                    start_tale(st.session_state.selected_tale)
-                    st.rerun()
-        else:
-            st.markdown("### Твой выбор:")
-            for opt in current["options"]:
-                if st.button(opt["text"], key=f"choice_{opt['next']}", width='stretch'):
-                    handle_choice(opt["text"], opt["next"])
-                    st.rerun()
-            if len(st.session_state.scene_history) > 1:
+                st.markdown("### 🔮 Секретные")
+                cols2 = st.columns(3)
+                with cols2[0]:
+                    st.markdown(f"{'🧚' if ach['teremok_fairy'] else '⬜'} Фея")
+                    st.markdown(f"{'🐝' if ach['teremok_bees'] else '⬜'} Пчёлы")
+                with cols2[1]:
+                    st.markdown(f"{'🔮' if ach['ryaba_wish'] else '⬜'} Желание")
+                    st.markdown(f"{'🍷' if ach['ryaba_drink'] else '⬜'} Гулянка")
+                with cols2[2]:
+                    st.markdown(f"{'⏳' if ach['crossover'] else '⬜'} Хранитель")
+                
                 st.markdown("---")
-                if st.button("↩️ Назад к выбору", width='stretch'):
-                    go_back()
+                st.markdown("### 🏆 Мета")
+                st.markdown(f"{'📀' if ach['total_50'] else '⬜'} Коллекционер (50)")
+                st.markdown(f"{'💿' if ach['total_80'] else '⬜'} Профессионал (80)")
+                st.markdown(f"{'📚' if ach['total_all'] else '⬜'} Библиотекарь (все)")
+                st.markdown(f"{'⚡' if ach['speedrun'] else '⬜'} Скороход")
+                st.markdown(f"{'🔍' if ach['explorer'] else '⬜'} Исследователь")
+                st.markdown(f"{'🍀' if ach['talisman'] else '⬜'} Талисман")
+                st.markdown(f"{'💀' if ach['death_10'] else '⬜'} Бессмертный")
+
+    # --- Основная область ---
+    st.title("📖 Интерактивные сказки")
+    st.caption("Выбирайте свой путь в каждой истории!")
+
+    if st.session_state.selected_tale is None:
+        all_tales = list(tales.keys())
+        
+        # Категории
+        classic_tales = ["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"]
+        adventure_tales = ["Путешествие в Волшебный лес"]
+        adult_tales = [
+            "Хроники разбитых часов: Детектив времени", 
+            "Мелодия дождя",
+            "Проклятие крови ЛИКСА"
+        ]
+        
+        def render_category(title, tale_list):
+            tales_in_cat = [t for t in tale_list if t in all_tales]
+            if not tales_in_cat:
+                return
+            
+            st.markdown(f'<div class="section-header">{title}</div>', unsafe_allow_html=True)
+            
+            # Две колонки
+            cols = st.columns(2)
+            for idx, tale_name in enumerate(tales_in_cat):
+                with cols[idx % 2]:
+                    with st.container():
+                        # Обложка
+                        cover_path = tales[tale_name].get("cover", "")
+                        if cover_path and os.path.exists(cover_path):
+                            st.image(cover_path, width='stretch')
+                        else:
+                            st.image("https://via.placeholder.com/800x500/ffe6f0/ff69b4?text=✨", width='stretch')
+                        
+                        st.markdown(f"### {tale_name}")
+                        
+                        # Прогресс на карточке
+                        opened, total = get_ending_stats(tale_name)
+                        if total > 0:
+                            progress_pct = opened / total if total > 0 else 0
+                            st.markdown(f"""
+                            <div class="card-progress">
+                                <span>📊 {opened}/{total}</span>
+                                <div class="card-progress-bar">
+                                    <div class="card-progress-fill" style="width: {progress_pct*100}%;"></div>
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                        st.markdown(tales[tale_name].get("description", ""))
+                        if st.button("✨ Начать", key=f"{tale_name}", width='stretch'):
+                            start_tale(tale_name)
+                            st.rerun()
+        
+        render_category("📚 Классические сказки", classic_tales)
+        render_category("🧚 Приключения и фэнтези", adventure_tales)
+        render_category("🔞 16+ Детективы и романтика", adult_tales)
+        
+        st.markdown("---")
+        st.markdown("🌟 *Все сказки бесплатны. Если хотите поддержать проект, воспользуйтесь кнопкой в боковой панели.*")
+
     else:
-        st.error("⚠️ Сцена не найдена")
-        if st.button("⬅️ К выбору сказок", width='stretch'):
+        # Сама сказка
+        for msg in st.session_state.messages:
+            with st.chat_message(msg["role"]):
+                st.write(msg["content"])
+        
+        current = st.session_state.scenes.get(st.session_state.scene_id)
+        if current:
+            if not current.get("options"):
+                # Это концовка
+                if current.get("ending_type") and current.get("ending_number"):
+                    ending_id = f"{current['ending_type']}_{current['ending_number']}"
+                else:
+                    ending_id = current["text"][:100]
+                
+                if st.session_state.selected_tale not in st.session_state.achieved_endings:
+                    st.session_state.achieved_endings[st.session_state.selected_tale] = set()
+                
+                if ending_id not in st.session_state.achieved_endings[st.session_state.selected_tale]:
+                    st.session_state.achieved_endings[st.session_state.selected_tale].add(ending_id)
+                    check_achievements(st.session_state.selected_tale, current.get("ending_type"), current)
+                    st.rerun()
+                
+                st.markdown("---")
+                if current.get("ending_type"):
+                    emoji = {"happy": "😊", "sad": "😢", "neutral": "😐", "secret": "🤫"}.get(current["ending_type"], "🎉")
+                    st.markdown(f"## {emoji} **Концовка #{current['ending_number']}**")
+                    if current["ending_type"] == "happy":
+                        st.success("🎉 Поздравляем! Это счастливый конец!")
+                    else:
+                        st.info("😕 Это не счастливый конец. Попробуй пройти сказку снова!")
+                else:
+                    st.markdown("## 🎉 **Конец сказки!**")
+                
+                opened, total = get_ending_stats(st.session_state.selected_tale)
+                st.markdown(f"*Всего в этой сказке **{total}** концовок. Ты нашёл уже **{opened}**.*")
+                
+                st.markdown("---")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if len(st.session_state.scene_history) > 1:
+                        if st.button("↩️ Вернуться назад", width='stretch'):
+                            go_back()
+                with col2:
+                    if st.button("🔄 Начать заново", width='stretch'):
+                        start_tale(st.session_state.selected_tale)
+                        st.rerun()
+            else:
+                # Есть варианты выбора
+                st.markdown("### Твой выбор:")
+                for opt in current["options"]:
+                    if st.button(opt["text"], key=f"choice_{opt['next']}", width='stretch'):
+                        handle_choice(opt["text"], opt["next"])
+                        st.rerun()
+                if len(st.session_state.scene_history) > 1:
+                    st.markdown("---")
+                    if st.button("↩️ Назад к выбору", width='stretch'):
+                        go_back()
+        else:
+            st.error("⚠️ Сцена не найдена")
+            if st.button("⬅️ К выбору сказок", width='stretch'):
+                reset_to_main()
+                st.rerun()
+
+except Exception as e:
+    st.session_state.error_count += 1
+    if st.session_state.error_count < 3:  # Предотвращаем бесконечный цикл ошибок
+        st.error(f"Произошла ошибка: {str(e)}")
+        st.info("Попробуйте обновить страницу или вернуться к выбору сказок.")
+        if st.button("🔄 Вернуться к выбору сказок", width='stretch'):
             reset_to_main()
             st.rerun()
