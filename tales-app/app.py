@@ -13,9 +13,12 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from tales_data import tales
 import time
-_start_time = time.time()
-def log_time(place):
-    print(f"[{place}] Прошло: {time.time() - _start_time:.3f} сек")
+_last_log = time.time()
+def log_rerun(place):
+    global _last_log
+    now = time.time()
+    print(f"RERUN in {place}, delta={now-_last_log:.3f}")
+    _last_log = now
 
 st.set_page_config(page_title="Интерактивные сказки", page_icon="📖", layout="wide")
 
