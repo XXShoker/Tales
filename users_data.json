@@ -1,16 +1,50 @@
 {
   "zapomni2803@gmail.com": {
     "user_id": "a4238c0c24",
-    "name": "Viacheslav",
+    "name": "zapomni2803",
     "email": "zapomni2803@gmail.com",
-    "password_hash": "b8a03eba597b272e9318199ad00daa9bb618b07275ada187a24efc3fbf327939",
-    "created_at": "2026-03-15T08:05:23.487534",
-    "verified": true,
+    "last_login": "2026-03-15T09:59:33.285410",
     "achieved_endings": {
       "Колобок": [
         "sad_2"
+      ],
+      "Проклятие крови ЛИКСА": [
+        "sad_1"
       ]
     },
-    "achievements": {}
+    "achievements": {
+      "kolobok_5": false,
+      "kolobok_all": false,
+      "teremok_5": false,
+      "teremok_all": false,
+      "rybka_3_greedy": false,
+      "rybka_all": false,
+      "ryaba_3_save": false,
+      "ryaba_all": false,
+      "forest_10_locations": false,
+      "forest_all_friends": false,
+      "forest_all": false,
+      "detective_10": false,
+      "detective_time_5": false,
+      "detective_save_3": false,
+      "detective_all": false,
+      "romance_3_love": false,
+      "romance_5_happy": false,
+      "romance_all": false,
+      "teremok_fairy": false,
+      "teremok_bees": false,
+      "ryaba_wish": false,
+      "ryaba_drink": false,
+      "crossover": false,
+      "total_50": false,
+      "total_80": false,
+      "total_all": false,
+      "speedrun": false,
+      "explorer": false,
+      "talisman": false,
+      "death_10": false,
+      "lyx_5": false,
+      "lyx_all": false
+    }
   }
 }
