@@ -399,11 +399,6 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
                 ach["teremok_bees"] = True
                 st.balloons()
                 st.success("🏆 Достижение разблокировано: «Пчелиный король» (секретные пчёлы)")
-            
-            # Золото (концовка 8)
-            if ending_num == 8 and not ach.get("teremok_gold", False):
-                # Добавим новое достижение для золота, если хотим
-                pass
     
     # --- Золотая рыбка ---
     if tale_name == "Золотая рыбка":
@@ -481,6 +476,18 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
             st.balloons()
             st.success("🏆 Достижение разблокировано: «Идеальная пара» (все концовки)")
     
+    # --- Новая сказка: Проклятие крови ЛИКСА ---
+    if tale_name == "Проклятие крови ЛИКСА":
+        progress["lyx_count"] = len(st.session_state.achieved_endings.get(tale_name, set()))
+        if progress["lyx_count"] >= 5 and not ach.get("lyx_5", False):
+            ach["lyx_5"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Выжившая» (5 концовок ЛИКСЫ)")
+        if progress["lyx_count"] >= 9 and not ach.get("lyx_all", False):
+            ach["lyx_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Проклятие снято» (все концовки ЛИКСЫ)")
+    
     # --- Общая статистика ---
     total = 0
     for tale in tales.keys():
@@ -497,7 +504,7 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
         st.success("🏆 Достижение разблокировано: «Профессионал» (80 концовок)")
     
     # Подсчёт всех возможных концовок
-    total_possible = 16 + 14 + 20 + 12 + 12 + 25 + 20  # обновил для золотой рыбки
+    total_possible = 16 + 14 + 20 + 12 + 12 + 25 + 20 + 9  # добавил 9 концовок ЛИКСЫ
     if total >= total_possible and not ach["total_all"]:
         ach["total_all"] = True
         st.balloons()
@@ -566,8 +573,8 @@ with st.sidebar:
             
             # Считаем сколько всего
             total_achieved = sum(1 for v in ach.values() if v)
-            st.markdown(f"**Прогресс: {total_achieved}/30**")
-            st.progress(total_achieved / 30)
+            st.markdown(f"**Прогресс: {total_achieved}/33**")  # обновил счётчик
+            st.progress(total_achieved / 33)
             
             st.markdown("---")
             
@@ -596,11 +603,11 @@ with st.sidebar:
                 st.markdown(f"{'✅' if ach['detective_time_5'] else '⬜'} Мастер времени")
                 st.markdown(f"{'✅' if ach['detective_save_3'] else '⬜'} Спаситель")
                 st.markdown(f"{'✅' if ach['detective_all'] else '⬜'} Идеальное преступление")
-                
-                st.markdown("**💕 Романтика**")
                 st.markdown(f"{'✅' if ach['romance_3_love'] else '⬜'} Сердцеед")
                 st.markdown(f"{'✅' if ach['romance_5_happy'] else '⬜'} Романтик")
                 st.markdown(f"{'✅' if ach['romance_all'] else '⬜'} Идеальная пара")
+                st.markdown(f"{'✅' if ach.get('lyx_5', False) else '⬜'} Выжившая (5/9)")
+                st.markdown(f"{'✅' if ach.get('lyx_all', False) else '⬜'} Проклятие снято (9/9)")
             
             st.markdown("---")
             st.markdown("**🔮 Секретные**")
@@ -631,10 +638,14 @@ st.caption("Выбирайте свой путь в каждой истории!
 if st.session_state.selected_tale is None:
     all_tales = list(tales.keys())
     
-    # Категории
+    # Категории - ИСПРАВЛЕНО
     classic_tales = ["Колобок", "Теремок", "Золотая рыбка", "Курочка Ряба"]
     adventure_tales = ["Путешествие в Волшебный лес"]
-    adult_tales = ["Хроники разбитых часов: Детектив времени", "Мелодия дождя"]
+    adult_tales = [
+        "Хроники разбитых часов: Детектив времени", 
+        "Мелодия дождя",
+        "Проклятие крови ЛИКСА"
+    ]
     
     def render_category(title, tale_list):
         tales_in_cat = [t for t in tale_list if t in all_tales]
