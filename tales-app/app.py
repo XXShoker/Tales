@@ -94,7 +94,8 @@ def init_session_state():
             "crossover": False,
             "total_50": False, "total_80": False, "total_all": False,
             "speedrun": False, "explorer": False, "talisman": False, "death_10": False,
-            "lyx_5": False, "lyx_all": False
+            "lyx_5": False, "lyx_all": False,
+            "stalker_10": False, "stalker_all": False, "stalker_secret1": False,
         }
     if "achievement_progress" not in st.session_state:
         st.session_state.achievement_progress = {
@@ -103,7 +104,7 @@ def init_session_state():
             "detective_count": 0, "detective_time": 0, "detective_save": 0,
             "romance_love": 0, "romance_happy": 0,
             "total_endings_found": 0, "death_count": 0, "speedrun_tales": set(),
-            "lyx_count": 0
+            "lyx_count": 0,  "stalker_count": 0,
         }
 
 init_session_state()
@@ -806,6 +807,27 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
             ach["lyx_all"] = True
             st.balloons()
             st.success("🏆 Достижение: «Проклятие снято» (все концовки ЛИКСЫ)")
+
+    if tale_name == "Сталкер в себе":
+        progress["stalker_count"] = len(st.session_state.achieved_endings.get("Сталкер в себе", set()))
+        # Достижение за 10 концовок (пример)
+        if progress["stalker_count"] >= 10 and not ach.get("stalker_10", False):
+            ach["stalker_10"] = True
+            st.balloons()
+            st.success("🏆 Достижение: «Бывалый» (10 концовок)")
+        # Достижение за все концовки (у нас их 23)
+        if progress["stalker_count"] >= 23 and not ach.get("stalker_all", False):
+            ach["stalker_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение: «Хозяин Зоны» (все концовки)")
+        # Секретные концовки (№9,16,19,20,21,22)
+        secret_endings = [9, 16, 19, 20, 21, 22]
+        if ending_data and ending_data.get("ending_number") in secret_endings:
+            # Например, за первую секретную концовку
+            if ending_data.get("ending_number") == 9 and not ach.get("stalker_secret1", False):
+                ach["stalker_secret1"] = True
+                st.balloons()
+                st.success("🏆 Достижение: «Предатель» (секрет)")
     
     total = 0
     for tale in tales.keys():
@@ -1097,8 +1119,8 @@ with st.sidebar:
         with st.expander("🏆 Достижения"):
             ach = st.session_state.achievements
             total_achieved = sum(1 for v in ach.values() if v)
-            st.markdown(f"**Прогресс: {total_achieved}/33**")
-            st.progress(total_achieved / 33)
+            st.markdown(f"**Прогресс: {total_achieved}/36**")
+            st.progress(total_achieved / 36)
             st.markdown("---")
             
             st.markdown("### 📚 Классика")
@@ -1146,6 +1168,9 @@ with st.sidebar:
             st.markdown(f"{'🔍' if ach['explorer'] else '⬜'} Исследователь")
             st.markdown(f"{'🍀' if ach['talisman'] else '⬜'} Талисман")
             st.markdown(f"{'💀' if ach['death_10'] else '⬜'} Бессмертный")
+            st.markdown("### 🧬 Сталкер в себе")
+            st.markdown(f"{'🔫' if ach.get('stalker_10', False) else '⬜'} Бывалый (10/23)")
+            st.markdown(f"{'👁️' if ach.get('stalker_all', False) else '⬜'} Хозяин Зоны (23/23)")
     
     st.markdown("---")
     st.link_button("💖 Поддержать донатом", "https://donate.stream/donate_69b56f4953f16", width='stretch')
@@ -1162,7 +1187,8 @@ if st.session_state.selected_tale is None:
     adult_tales = [
         "Хроники разбитых часов: Детектив времени", 
         "Мелодия дождя",
-        "Проклятие крови ЛИКСА"
+        "Проклятие крови ЛИКСА",
+        "Сталкер в себе"
     ]
     
     def render_category(title, tale_list):
