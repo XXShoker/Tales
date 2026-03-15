@@ -339,11 +339,6 @@ def logout_user():
 # ВЫЗЫВАЕМ init_auth() - ОБЯЗАТЕЛЬНО!
 init_auth()
 
-# --- ДИАГНОСТИКА ---
-st.sidebar.markdown("### 🔍 Диагностика")
-st.sidebar.write("User в session_state:", st.session_state.get('user'))
-st.sidebar.write("Параметры URL:", dict(st.query_params))
-
 # --- ПРОВЕРКА АВТОРИЗАЦИИ ---
 if not st.session_state.get('user'):
     st.title("🔐 Интерактивные сказки")
@@ -938,6 +933,25 @@ st.markdown("""
     @media (max-width: 600px) {
         h1 { font-size: 2rem; }
     }
+
+        /* Кнопка доната - текст должен быть виден */
+    .stLinkButton a {
+        color: #2a1c0e !important;
+        background: linear-gradient(135deg, #d4b68a, #b5926a) !important;
+        border: 2px solid #8b6b4f !important;
+        text-decoration: none;
+        font-weight: bold;
+    }
+    
+    .stLinkButton a:hover {
+        background: linear-gradient(135deg, #b5926a, #9b7e62) !important;
+    }
+    
+    /* Убираем глобальный цвет для ссылок, если мешает */
+    a {
+        color: #2c1e0e !important;
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
