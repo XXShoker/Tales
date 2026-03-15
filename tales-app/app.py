@@ -384,17 +384,26 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
             st.balloons()
             st.success("🏆 Достижение разблокировано: «Всем дом» (все концовки Теремка)")
         
-        # Секретные
-        if ending_data and ending_data.get("ending_type") == "secret":
-            if ending_data.get("ending_number") in [6,7,9,10,11,12,13]:
-                if not ach["teremok_fairy"] and ending_data.get("ending_number") in [6,7]:
-                    ach["teremok_fairy"] = True
-                    st.balloons()
-                    st.success("🏆 Достижение разблокировано: «Постучи три раза» (секретная фея)")
-                if not ach["teremok_bees"] and ending_data.get("ending_number") in [9,10,11]:
-                    ach["teremok_bees"] = True
-                    st.balloons()
-                    st.success("🏆 Достижение разблокировано: «Пчелиный король» (секретные пчёлы)")
+        # Секретные достижения Теремка
+        if ending_data:
+            ending_num = ending_data.get("ending_number")
+            
+            # Фея (концовки 6 и 7)
+            if ending_num in [6, 7] and not ach["teremok_fairy"]:
+                ach["teremok_fairy"] = True
+                st.balloons()
+                st.success("🏆 Достижение разблокировано: «Постучи три раза» (секретная фея)")
+            
+            # Пчёлы (концовки 9, 10, 11)
+            if ending_num in [9, 10, 11] and not ach["teremok_bees"]:
+                ach["teremok_bees"] = True
+                st.balloons()
+                st.success("🏆 Достижение разблокировано: «Пчелиный король» (секретные пчёлы)")
+            
+            # Золото (концовка 8)
+            if ending_num == 8 and not ach.get("teremok_gold", False):
+                # Добавим новое достижение для золота, если хотим
+                pass
     
     # --- Золотая рыбка ---
     if tale_name == "Золотая рыбка":
@@ -428,18 +437,49 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
             st.balloons()
             st.success("🏆 Достижение разблокировано: «Золотой урожай» (все концовки Курочки Рябы)")
         
-        # Секретные
+        # Секретные Рябы
         if ending_data and ending_data.get("ending_type") == "secret":
-            if ending_data.get("ending_number") in [5,6,7]:
-                if not ach["ryaba_wish"] and ending_data.get("ending_number") in [5,6]:
-                    ach["ryaba_wish"] = True
-                    st.balloons()
-                    st.success("🏆 Достижение разблокировано: «Хрустальный шар» (загадать желание)")
-            if ending_data.get("ending_number") == 7:
-                if not ach["ryaba_drink"]:
-                    ach["ryaba_drink"] = True
-                    st.balloons()
-                    st.success("🏆 Достижение разблокировано: «Гулянка» (выпить с дедом)")
+            ending_num = ending_data.get("ending_number")
+            if ending_num in [5,6] and not ach["ryaba_wish"]:
+                ach["ryaba_wish"] = True
+                st.balloons()
+                st.success("🏆 Достижение разблокировано: «Хрустальный шар» (загадать желание)")
+            if ending_num == 7 and not ach["ryaba_drink"]:
+                ach["ryaba_drink"] = True
+                st.balloons()
+                st.success("🏆 Достижение разблокировано: «Гулянка» (выпить с дедом)")
+    
+    # --- Путешествие в Волшебный лес ---
+    if tale_name == "Путешествие в Волшебный лес":
+        progress["forest_count"] = len(st.session_state.achieved_endings.get("Путешествие в Волшебный лес", set()))
+        if progress["forest_count"] >= 12 and not ach["forest_all"]:
+            ach["forest_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Повелитель леса» (все концовки)")
+    
+    # --- Хроники разбитых часов ---
+    if tale_name == "Хроники разбитых часов: Детектив времени":
+        progress["detective_count"] = len(st.session_state.achieved_endings.get(tale_name, set()))
+        if progress["detective_count"] >= 10 and not ach["detective_10"]:
+            ach["detective_10"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Следопыт» (10 концовок)")
+        if progress["detective_count"] >= 25 and not ach["detective_all"]:
+            ach["detective_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Идеальное преступление» (все концовки)")
+    
+    # --- Мелодия дождя ---
+    if tale_name == "Мелодия дождя":
+        progress["romance_count"] = len(st.session_state.achieved_endings.get(tale_name, set()))
+        if progress["romance_count"] >= 5 and not ach["romance_5_happy"]:
+            ach["romance_5_happy"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Романтик» (5 концовок)")
+        if progress["romance_count"] >= 20 and not ach["romance_all"]:
+            ach["romance_all"] = True
+            st.balloons()
+            st.success("🏆 Достижение разблокировано: «Идеальная пара» (все концовки)")
     
     # --- Общая статистика ---
     total = 0
@@ -456,8 +496,8 @@ def check_achievements(tale_name, ending_type=None, ending_data=None):
         st.balloons()
         st.success("🏆 Достижение разблокировано: «Профессионал» (80 концовок)")
     
-    # Подсчёт всех возможных концовок (примерно 109)
-    total_possible = 16 + 14 + 10 + 12 + 12 + 25 + 20
+    # Подсчёт всех возможных концовок
+    total_possible = 16 + 14 + 20 + 12 + 12 + 25 + 20  # обновил для золотой рыбки
     if total >= total_possible and not ach["total_all"]:
         ach["total_all"] = True
         st.balloons()
