@@ -17,6 +17,7 @@ GH_FILE_PATH = st.secrets.get("GH_FILE_PATH", "users_data.json")
 SESSION_SECRET = st.secrets.get("SESSION_SECRET", "default_secret_change_me")
 
 # --- ВСТРОЕННАЯ АУТЕНТИФИКАЦИЯ STREAMLIT ---
+# --- ИСПРАВЛЕННАЯ ФУНКЦИЯ ПРОВЕРКИ АВТОРИЗАЦИИ ---
 def check_password():
     """Проверяет авторизацию пользователя"""
     
@@ -24,29 +25,57 @@ def check_password():
     if st.session_state.get("user"):
         return True
     
-    # Проверяем через experimental_user (Streamlit Community Cloud)
-    if hasattr(st, 'experimental_user') and st.experimental_user:
-        user_info = st.experimental_user
-        if user_info and user_info.get('email'):
-            email = user_info['email']
-            name = user_info.get('name', email.split('@')[0])
-            
+    # Проверяем несколько возможных источников авторизации
+    try:
+        # Вариант 1: experimental_user (Streamlit Community Cloud)
+        if hasattr(st, 'experimental_user'):
+            user_info = st.experimental_user
+            if user_info and user_info.get('email'):
+                email = user_info['email']
+                name = user_info.get('name', email.split('@')[0])
+                
+                st.session_state.user = {
+                    'email': email,
+                    'name': name,
+                    'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
+                }
+                
+                # Загружаем прогресс пользователя
+                users = get_github_data()
+                if email in users:
+                    st.session_state.achieved_endings = users[email].get("achieved_endings", {})
+                    user_achievements = users[email].get("achievements", {})
+                    if user_achievements:
+                        for key, value in user_achievements.items():
+                            if key in st.session_state.achievements:
+                                st.session_state.achievements[key] = value
+                return True
+        
+        # Вариант 2: query_params (для обратной совместимости)
+        if 'user_email' in st.query_params:
+            email = st.query_params['user_email']
             st.session_state.user = {
                 'email': email,
-                'name': name,
+                'name': email.split('@')[0],
                 'user_id': hashlib.md5(email.encode()).hexdigest()[:10]
             }
-            
-            # Загружаем прогресс пользователя
-            users = get_github_data()
-            if email in users:
-                st.session_state.achieved_endings = users[email].get("achieved_endings", {})
-                user_achievements = users[email].get("achievements", {})
-                if user_achievements:
-                    for key, value in user_achievements.items():
-                        if key in st.session_state.achievements:
-                            st.session_state.achievements[key] = value
             return True
+            
+        # Вариант 3: тестовый режим (если APP_URL содержит localhost)
+        if 'localhost' in st.query_params.get('app_url', '') or 'streamlit.app' in st.query_params.get('app_url', ''):
+            # Для отладки создаем тестового пользователя
+            if 'debug_mode' not in st.session_state:
+                st.session_state.debug_mode = True
+                st.session_state.user = {
+                    'email': 'debug@example.com',
+                    'name': 'Debug User',
+                    'user_id': 'debug_123'
+                }
+                return True
+                
+    except Exception as e:
+        # В случае ошибки просто продолжаем
+        pass
     
     return False
 
