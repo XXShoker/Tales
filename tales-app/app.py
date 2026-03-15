@@ -940,55 +940,49 @@ st.markdown("""
         border-radius: 24px !important;
         padding: 25px !important;
         box-shadow: 0 10px 25px rgba(93,58,26,0.15) !important;
-        height: 100% !important;           /* растягиваем на всю высоту колонки */
+        height: 680px !important;           /* фиксированная высота – подберите под свои карточки */
         display: flex;
         flex-direction: column;
         transition: all 0.3s ease;
+        overflow: hidden;                    /* чтобы ничего не вылезало */
     }
     
-    /* Изображение – фиксированная высота */
+    /* Изображение – фиксированная высота, не сжимается */
     div[data-testid="column"] > div img {
         width: 100% !important;
-        height: 200px !important;          /* подберите нужное значение */
+        height: 260px !important;            /* подберите под свои обложки */
         object-fit: cover !important;
         border-radius: 16px !important;
         border: 2px solid #b5926a !important;
         margin-bottom: 15px !important;
+        flex-shrink: 0;
     }
     
-    /* Заголовок и прогресс – обычный поток */
+    /* Заголовок сказки – не сжимается */
     div[data-testid="column"] > div h3 {
-        margin-top: 0 !important;
-        margin-bottom: 10px !important;
+        margin: 0 0 10px 0 !important;
+        flex-shrink: 0;
     }
     
-    /* Контейнер для описания – ограниченная высота с прокруткой */
+    /* Блок с описанием – занимает оставшееся место, с прокруткой */
     div[data-testid="column"] > div .stMarkdown {
-        flex: 1 1 auto;                    /* занимает доступное место */
+        flex: 1 1 auto;
         overflow-y: auto;
-        max-height: 150px;                 /* подберите нужное значение */
         margin-bottom: 15px !important;
         padding-right: 5px;
+        min-height: 80px;                   /* минимальная высота, чтобы не схлопывалось */
     }
     
-    /* Кнопка всегда внизу */
+    /* Прогресс (если выводится отдельно) – тоже не сжимается */
+    div[data-testid="column"] > div .stMarkdown p:first-child {
+        margin-top: 0;
+    }
+    
+    /* Кнопка "Начать" – всегда внизу */
     div[data-testid="column"] > div .stButton {
         margin-top: auto;
         width: 100%;
-    }
-    
-    /* Контейнер для описания – с прокруткой при необходимости */
-    div[data-testid="column"] > div .stMarkdown {
-        flex: 1 1 auto;
-        overflow-y: hidden;
-        text-overflow: ellipsis;
-        max-height: 200px;                  /* ограничиваем высоту текста */
-        margin-bottom: 15px;
-    }
-    
-    /* Кнопка "Начать" всегда внизу */
-    div[data-testid="column"] > div .stButton {
-        margin-top: auto;
+        flex-shrink: 0;
     }
     div[data-testid="column"] > div * { color: #2c1e0e !important; }
     .stProgress > div > div { background: linear-gradient(90deg, #b5926a, #8b6b4f) !important; }
