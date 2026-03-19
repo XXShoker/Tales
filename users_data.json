@@ -4,45 +4,12 @@
     "username": "XShoker",
     "name": "Viacheslav",
     "email": "zapomni2803@gmail.com",
-    "last_login": "2026-03-15T18:15:48.737810",
+    "last_login": "2026-03-19T11:38:51.076124",
     "achieved_endings": {
-      "Сталкер в себе": [
-        "neutral_18",
-        "neutral_11",
-        "sad_4",
-        "sad_8",
-        "happy_6",
-        "neutral_7"
-      ],
-      "Колобок": [
-        "happy_9",
-        "happy_3",
-        "neutral_2",
-        "happy_10",
-        "happy_11",
-        "happy_4",
-        "sad_2"
-      ],
-      "Проклятие крови ЛИКСА": [
-        "neutral_4",
-        "happy_1",
-        "neutral_2",
-        "sad_1",
-        "happy_4",
-        "sad_2",
-        "neutral_1"
-      ],
-      "Хроники разбитых часов: Детектив времени": [
-        "happy_3",
-        "neutral_4",
-        "sad_4"
-      ],
-      "Путешествие в Волшебный лес": [
-        "happy_1"
-      ]
+      "Колобок": []
     },
     "achievements": {
-      "kolobok_5": true,
+      "kolobok_5": false,
       "kolobok_all": false,
       "teremok_5": false,
       "teremok_all": false,
@@ -72,7 +39,7 @@
       "explorer": false,
       "talisman": false,
       "death_10": false,
-      "lyx_5": true,
+      "lyx_5": false,
       "lyx_all": false,
       "stalker_10": false,
       "stalker_all": false,
