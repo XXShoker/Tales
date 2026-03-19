@@ -7,34 +7,34 @@
     "last_login": "2026-03-15T18:15:48.737810",
     "achieved_endings": {
       "Сталкер в себе": [
-        "neutral_11",
-        "neutral_7",
         "neutral_18",
-        "sad_8",
+        "neutral_11",
         "sad_4",
-        "happy_6"
+        "sad_8",
+        "happy_6",
+        "neutral_7"
       ],
       "Колобок": [
-        "happy_10",
-        "neutral_2",
-        "happy_3",
-        "sad_2",
         "happy_9",
+        "happy_3",
+        "neutral_2",
+        "happy_10",
+        "happy_11",
         "happy_4",
-        "happy_11"
+        "sad_2"
       ],
       "Проклятие крови ЛИКСА": [
         "neutral_4",
+        "happy_1",
         "neutral_2",
         "sad_1",
-        "sad_2",
-        "neutral_1",
         "happy_4",
-        "happy_1"
+        "sad_2",
+        "neutral_1"
       ],
       "Хроники разбитых часов: Детектив времени": [
-        "neutral_4",
         "happy_3",
+        "neutral_4",
         "sad_4"
       ],
       "Путешествие в Волшебный лес": [
@@ -89,8 +89,8 @@
     "last_login": "2026-03-15T12:16:02.895185",
     "achieved_endings": {
       "Колобок": [
-        "neutral_2",
-        "happy_2"
+        "happy_2",
+        "neutral_2"
       ]
     },
     "achievements": {
@@ -128,5 +128,14 @@
       "lyx_all": false
     },
     "verified": true
+  },
+  "officialsulainst@gmail.com": {
+    "username": "Sula",
+    "name": "Султан",
+    "password": "4eda2538f9871ca4c2f06191b1ad96a99b7be20d6f6fb1699d4ee7e49a2962bd",
+    "created_at": "2026-03-19T06:22:48.124431",
+    "verified": true,
+    "achieved_endings": {},
+    "achievements": {}
   }
 }
