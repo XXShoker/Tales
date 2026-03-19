@@ -134,8 +134,10 @@
     "username": "Sula",
     "name": "Султан",
     "email": "officialsulainst@gmail.com",
-    "last_login": "2026-03-19T06:22:48.900658",
-    "achieved_endings": {},
+    "last_login": "2026-03-19T06:23:54.590912",
+    "achieved_endings": {
+      "Колобок": []
+    },
     "achievements": {
       "kolobok_5": false,
       "kolobok_all": false,
